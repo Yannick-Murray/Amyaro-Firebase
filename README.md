@@ -1,43 +1,73 @@
-# Amyaro
+# React + TypeScript + Vite
 
-Eine Webapp, zum teilen und gleichzeitigen bearbeiten von Listen
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- Erstellen von Listen aus einer der Kategorien: Shopping oder Gift-List
-- Hinzufügen von Items zu den Listen
-- Teilfunktion der Listen mit anderen Registrierten Nutzern (diese Können dann ebenfalls die Liste in Echtzeit verwalten)
-- Möglichkeit Kategorien der Liste hinzuzufügen
-- Editieren der Listenamen, ListenItems und Kategorien
-- Gleichzeitiges hinzufügen mehrerer Items (Durch Komma getrennt)
-- Items sind antippbar und werden dann durchgestrichen und kommen in eine dynamische "erledigt" Kategorie - Diese erscheint erst, mit dem ersten erledigten Item
-- Den Items der Gift Liste kann ein Link hinzugefügt werden (z.b. Amazon oder Ebay Link)
-- Auf der Gift Liste werden die Items nicht durchgestrichen, sondern erhalten ein Kästchen mit einem Haken, wenn sie gekauft wurden von jemanden
-- Benutzerfreundliche Oberfläche
-- Responsive Design
-- Drag & Drop Funktionalität
-- Speichern der Listen-Position
-- Authentifizierung und Benutzerverwaltung
--gleichzeitiges Arbeiten an Listen
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
+## React Compiler
 
-## Technologie-Stack
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### Frontend
-- React 18
-- Vite
-- React Router v6
-- Bootstrap 5
-- React Beautiful DnD (Drag & Drop)
+## Expanding the ESLint configuration
 
-### Backend & Services
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Hosting
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-### Development
-- ESLint
-- Git & GitHub
-## Entwickelt von
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-Yannick Murray
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```

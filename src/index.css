@@ -1,0 +1,178 @@
+/* Amyaro Theme Variablen */
+:root {
+  --amyaro-primary: #3b82f6;
+  --amyaro-primary-dark: #2563eb;
+  --amyaro-secondary: #64748b;
+  --amyaro-success: #10b981;
+  --amyaro-warning: #f59e0b;
+  --amyaro-danger: #ef4444;
+  --amyaro-light: #f8fafc;
+  --amyaro-dark: #0f172a;
+  --amyaro-bg: #ffffff;
+  --amyaro-bg-secondary: #f1f5f9;
+  --amyaro-border: #e2e8f0;
+  --amyaro-text: #1e293b;
+  --amyaro-text-muted: #64748b;
+  --amyaro-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --amyaro-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Bootstrap Overrides */
+.btn-primary {
+  background-color: var(--amyaro-primary);
+  border-color: var(--amyaro-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--amyaro-primary-dark);
+  border-color: var(--amyaro-primary-dark);
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--amyaro-bg-secondary);
+  color: var(--amyaro-text);
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Custom Components */
+.amyaro-card {
+  background: var(--amyaro-bg);
+  border: 1px solid var(--amyaro-border);
+  border-radius: 12px;
+  box-shadow: var(--amyaro-shadow);
+  transition: all 0.2s ease-in-out;
+}
+
+.amyaro-card:hover {
+  box-shadow: var(--amyaro-shadow-lg);
+  transform: translateY(-1px);
+}
+
+.amyaro-navbar {
+  background: var(--amyaro-bg);
+  border-bottom: 1px solid var(--amyaro-border);
+  box-shadow: var(--amyaro-shadow);
+}
+
+.amyaro-sidebar {
+  background: var(--amyaro-bg);
+  border-right: 1px solid var(--amyaro-border);
+  min-height: calc(100vh - 76px);
+}
+
+.amyaro-todo-item {
+  background: var(--amyaro-bg);
+  border: 1px solid var(--amyaro-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--amyaro-shadow);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.amyaro-todo-item:hover {
+  box-shadow: var(--amyaro-shadow-lg);
+  transform: translateY(-1px);
+}
+
+.amyaro-todo-item.completed {
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+.amyaro-priority-high {
+  border-left: 4px solid var(--amyaro-danger);
+}
+
+.amyaro-priority-medium {
+  border-left: 4px solid var(--amyaro-warning);
+}
+
+.amyaro-priority-low {
+  border-left: 4px solid var(--amyaro-success);
+}
+
+/* Utilities */
+.text-muted {
+  color: var(--amyaro-text-muted) !important;
+}
+
+.bg-light-custom {
+  background-color: var(--amyaro-light) !important;
+}
+
+.border-custom {
+  border-color: var(--amyaro-border) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .amyaro-sidebar {
+    min-height: auto;
+  }
+}
+
+/* Loading Spinner */
+.spinner-border-custom {
+  color: var(--amyaro-primary);
+}
+
+/* Form Controls */
+.form-control:focus {
+  border-color: var(--amyaro-primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Drag and Drop */
+.dragging {
+  opacity: 0.6;
+  transform: rotate(5deg);
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
