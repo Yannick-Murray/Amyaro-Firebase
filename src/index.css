@@ -58,9 +58,15 @@ body {
   transition: all 0.2s ease-in-out;
 }
 
-.amyaro-card:hover {
+.amyaro-card:hover,
+.amyaro-card-hover:hover {
   box-shadow: var(--amyaro-shadow-lg);
   transform: translateY(-1px);
+}
+
+.amyaro-card.clickable:hover {
+  cursor: pointer;
+  border-color: var(--amyaro-primary);
 }
 
 .amyaro-navbar {
@@ -106,6 +112,99 @@ body {
 
 .amyaro-priority-low {
   border-left: 4px solid var(--amyaro-success);
+}
+
+/* Modern Button Enhancements */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Modern Form Controls */
+.form-control {
+  border-radius: 8px;
+  border: 1px solid var(--amyaro-border);
+  padding: 0.75rem 1rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--amyaro-primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Modern Modal */
+.modal-content {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+}
+
+.modal-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--amyaro-border);
+}
+
+.modal-body {
+  padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--amyaro-border);
+}
+
+/* Badge Enhancements */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* Animation Utilities */
+.transition-all {
+  transition: all 0.15s ease-in-out;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Loading Animation */
+.spinner-border-custom {
+  color: var(--amyaro-primary);
+}
+
+/* Hover Effects */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--amyaro-shadow-lg);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Focus States */
+.focus-ring:focus {
+  outline: 2px solid var(--amyaro-primary);
+  outline-offset: 2px;
+}
+
+/* Glass Effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Utilities */

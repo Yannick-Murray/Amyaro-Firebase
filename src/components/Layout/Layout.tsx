@@ -93,19 +93,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-light border-top py-3 mt-auto">
-        <div className="container text-center">
-          <small className="text-muted">
-            © 2025 Amyaro - Deine persönliche Todo-Listen App
-            {user && (
-              <span className="ms-3">
-                <i className="bi bi-person-check me-1 text-success"></i>
-                Angemeldet als {user.displayName || user.email}
-              </span>
-            )}
-          </small>
-        </div>
-      </footer>
+              <footer className="text-center text-muted mt-5 py-4 border-top border-light">
+          <div className="container">
+            © 2025 Amyaro - Deine persönliche Listen App
+          </div>
+        </footer>
     </div>
   );
 };

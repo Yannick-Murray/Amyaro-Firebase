@@ -36,32 +36,33 @@ export interface Category {
   createdAt: Date;
 }
 
-// Item-Typen (für beide Listen-Arten)
-export interface TodoItem {
+// Item-Typen (vereinfacht für bessere UX)
+export interface Item {
   id: string;
   listId: string;
-  categoryId?: string;
-  title: string;
-  description?: string;
+  name: string;
+  quantity: number; // 1-9, 0 = löschen
   completed: boolean;
   completedBy?: string; // User-ID der Person, die das Item abgehakt hat
   completedAt?: Date;
-  
-  // Einkaufslisten-spezifische Felder
-  quantity?: number;
-  unit?: string; // "kg", "Stück", "Liter", etc.
-  
-  // Geschenkelisten-spezifische Felder
-  price?: number;
-  currency?: string; // "EUR", "USD", etc.
-  productUrl?: string; // Link zum Produkt
-  priority?: 'low' | 'medium' | 'high';
-  
-  // Allgemeine Felder
   createdBy: string; // User-ID
   createdAt: Date;
   updatedAt: Date;
   order: number;
+}
+
+// Legacy support - wird schrittweise ersetzt
+export interface TodoItem extends Item {
+  title: string; // Alias für name
+  description?: string;
+  categoryId?: string;
+  
+  // Alte Felder - werden entfernt
+  unit?: string;
+  price?: number;
+  currency?: string;
+  productUrl?: string;
+  priority?: 'low' | 'medium' | 'high';
 }
 
 // Listen-Sharing

@@ -1,58 +1,149 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TodoListService } from '../services/listService';
-import type { TodoList } from '../types';
-import { getListTypeIcon, getListTypeLabel } from '../utils/helpers';
+import { Button } from '../components/ui';
+import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
+import { ListService } from '../services/listService';
+import type { List } from '../types/todoList';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [userLists, setUserLists] = useState<TodoList[]>([]);
-  const [sharedLists, setSharedLists] = useState<TodoList[]>([]);
+  const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
 
   useEffect(() => {
     if (!user) return;
-
-    const loadLists = async () => {
-      try {
-        setLoading(true);
-        const [ownLists, shared] = await Promise.all([
-          TodoListService.getUserLists(user.uid),
-          TodoListService.getSharedLists(user.uid)
-        ]);
-        
-        setUserLists(ownLists);
-        setSharedLists(shared);
-      } catch (err: any) {
-        setError('Fehler beim Laden der Listen');
-        console.error('Error loading lists:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    
+    // Initial listen laden
     loadLists();
+    
+    // Real-time Listener temporär deaktiviert bis Index erstellt ist
+    // const unsubscribe = ListService.subscribeToUserLists(user.uid, (updatedLists) => {
+    //   console.log('Real-time update: Listen geändert', updatedLists.length);
+    //   setLists(updatedLists);
+    //   setLoading(false);
+    // });
+
+    // return () => unsubscribe();
   }, [user]);
 
-  const handleCreateList = (type: 'shopping' | 'gifts') => {
-    // TODO: Implement create list modal or navigate to create page
-    console.log('Create list:', type);
+  const loadLists = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      console.log('Versuche Firebase Listen zu laden...');
+      
+      // Versuche nur User-Listen zu laden (einfacher Index)
+      const userLists = await ListService.getUserLists(user.uid);
+      console.log('Firebase Listen erfolgreich geladen:', userLists.length);
+      
+      // Shared Lists später implementieren wenn Index bereit ist
+      setLists(userLists);
+      setError(''); // Clear any previous errors
+      
+    } catch (err: any) {
+      console.warn('Firebase Fehler, verwende Mock-Daten:', err.message);
+      
+      // Fallback auf Mock-Daten nur wenn wirklich nötig
+      if (err.message.includes('index') || err.message.includes('permissions')) {
+        const mockLists: List[] = [
+          {
+            id: '1',
+            name: 'Demo Einkaufsliste',
+            description: 'Beispiel-Liste (Mock-Daten)',
+            type: 'shopping',
+            userId: user.uid,
+            isPrivate: false,
+            createdAt: {
+              toDate: () => new Date()
+            } as any,
+            updatedAt: {
+              toDate: () => new Date()
+            } as any,
+            itemCount: {
+              total: 3,
+              completed: 1
+            }
+          },
+          {
+            id: '2',
+            name: 'Demo Geschenkeliste',
+            description: 'Beispiel-Liste (Mock-Daten)',
+            type: 'gift',
+            userId: user.uid,
+            isPrivate: true,
+            createdAt: {
+              toDate: () => new Date()
+            } as any,
+            updatedAt: {
+              toDate: () => new Date()
+            } as any,
+            itemCount: {
+              total: 2,
+              completed: 0
+            }
+          }
+        ];
+        setLists(mockLists);
+        setError('Demo-Modus: Firebase Index wird erstellt...');
+      } else {
+        setError('Fehler beim Laden der Listen');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="container-fluid py-4">
-        <div className="text-center">
-          <div className="spinner-border spinner-border-custom" role="status">
-            <span className="visually-hidden">Lädt...</span>
-          </div>
-          <p className="mt-2 text-muted">Listen werden geladen...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleCreateList = async (data: CreateListData) => {
+    if (!user) return;
+
+    try {
+      // Liste wurde bereits im Modal erstellt, jetzt optimistisch zur lokalen Liste hinzufügen
+      const newList: List = {
+        id: `temp-${Date.now()}`, // Temporäre ID bis echte ID geladen wird
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        userId: user.uid,
+        isPrivate: data.isPrivate,
+        createdAt: { toDate: () => new Date() } as any,
+        updatedAt: { toDate: () => new Date() } as any,
+        itemCount: {
+          total: 0,
+          completed: 0
+        }
+      };
+
+      // Liste zur aktuellen Liste hinzufügen
+      setLists(prev => [newList, ...prev]);
+      setShowCreateModal(false);
+
+      // Listen neu laden um echte Daten zu bekommen
+      setTimeout(() => loadLists(), 500);
+      
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Listen:', error);
+      throw error;
+    }
+  };
+
+  const handleListClick = (list: List) => {
+    navigate(`/list/${list.id}`);
+  };
+
+  const filteredLists = lists.filter(list => {
+    if (filter === 'all') return true;
+    return list.type === filter;
+  });
+
+  const totalLists = lists.length;
+  const shoppingLists = lists.filter(l => l.type === 'shopping').length;
+  const giftLists = lists.filter(l => l.type === 'gift').length;
 
   return (
     <div className="container-fluid py-4">
@@ -61,29 +152,19 @@ const Dashboard = () => {
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h1 className="h3 mb-1">
-                Willkommen zurück, {user?.displayName || user?.email}! 👋
-              </h1>
+              <h1 className="h2 mb-1">Meine Listen</h1>
               <p className="text-muted mb-0">
-                Hier ist dein persönliches Todo-Dashboard
+                Du hast {totalLists} Listen ({shoppingLists} Einkaufslisten, {giftLists} Geschenkelisten)
               </p>
             </div>
-            <div className="d-flex gap-2">
-              <button 
-                className="btn btn-success"
-                onClick={() => handleCreateList('shopping')}
-              >
-                <i className="bi bi-cart-plus me-2"></i>
-                Einkaufsliste
-              </button>
-              <button 
-                className="btn btn-primary"
-                onClick={() => handleCreateList('gifts')}
-              >
-                <i className="bi bi-gift me-2"></i>
-                Geschenkeliste
-              </button>
-            </div>
+            <Button
+              variant="primary"
+              onClick={() => setShowCreateModal(true)}
+              className="d-flex align-items-center gap-2"
+            >
+              <i className="bi bi-plus-lg"></i>
+              Neue Liste
+            </Button>
           </div>
         </div>
       </div>
@@ -98,152 +179,95 @@ const Dashboard = () => {
       {/* Statistiken */}
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
-          <div className="amyaro-card p-3 text-center">
+          <div className="card p-3 text-center">
             <i className="bi bi-list-ul display-6 text-primary mb-2"></i>
-            <h5 className="mb-1">{userLists.length}</h5>
-            <small className="text-muted">Eigene Listen</small>
+            <h5 className="mb-1">{totalLists}</h5>
+            <small className="text-muted">Alle Listen</small>
           </div>
         </div>
         <div className="col-md-3 mb-3">
-          <div className="amyaro-card p-3 text-center">
-            <i className="bi bi-share display-6 text-success mb-2"></i>
-            <h5 className="mb-1">{sharedLists.length}</h5>
-            <small className="text-muted">Geteilte Listen</small>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="amyaro-card p-3 text-center">
-            <i className="bi bi-cart display-6 text-warning mb-2"></i>
-            <h5 className="mb-1">{userLists.filter(l => l.type === 'shopping').length}</h5>
+          <div className="card p-3 text-center">
+            <i className="bi bi-cart display-6 text-success mb-2"></i>
+            <h5 className="mb-1">{shoppingLists}</h5>
             <small className="text-muted">Einkaufslisten</small>
           </div>
         </div>
         <div className="col-md-3 mb-3">
-          <div className="amyaro-card p-3 text-center">
+          <div className="card p-3 text-center">
             <i className="bi bi-gift display-6 text-danger mb-2"></i>
-            <h5 className="mb-1">{userLists.filter(l => l.type === 'gifts').length}</h5>
+            <h5 className="mb-1">{giftLists}</h5>
             <small className="text-muted">Geschenkelisten</small>
           </div>
         </div>
-      </div>
-
-      {/* Eigene Listen */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <h4 className="mb-3">
-            <i className="bi bi-person-circle me-2"></i>
-            Meine Listen
-          </h4>
-          {userLists.length === 0 ? (
-            <div className="amyaro-card p-4 text-center">
-              <i className="bi bi-list-ul display-4 text-muted mb-3"></i>
-              <h5 className="text-muted">Noch keine Listen erstellt</h5>
-              <p className="text-muted mb-3">
-                Erstelle deine erste Liste um loszulegen!
-              </p>
-              <div className="d-flex gap-2 justify-content-center">
-                <button 
-                  className="btn btn-success"
-                  onClick={() => handleCreateList('shopping')}
-                >
-                  <i className="bi bi-cart-plus me-2"></i>
-                  Einkaufsliste erstellen
-                </button>
-                <button 
-                  className="btn btn-primary"
-                  onClick={() => handleCreateList('gifts')}
-                >
-                  <i className="bi bi-gift me-2"></i>
-                  Geschenkeliste erstellen
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="row">
-              {userLists.map((list) => (
-                <div key={list.id} className="col-md-6 col-lg-4 mb-3">
-                  <Link to={`/list/${list.id}`} className="text-decoration-none">
-                    <div className="amyaro-card p-3 h-100">
-                      <div className="d-flex align-items-center mb-2">
-                        <div 
-                          className="rounded-circle p-2 me-3"
-                          style={{ backgroundColor: list.color + '20', color: list.color }}
-                        >
-                          <i className={`bi ${getListTypeIcon(list.type)}`}></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <h6 className="mb-1">{list.title}</h6>
-                          <small className="text-muted">
-                            {getListTypeLabel(list.type)}
-                          </small>
-                        </div>
-                      </div>
-                      {list.description && (
-                        <p className="text-muted small mb-2">{list.description}</p>
-                      )}
-                      <div className="d-flex justify-content-between align-items-center">
-                        <small className="text-muted">
-                          Erstellt {new Date(list.createdAt).toLocaleDateString('de-DE')}
-                        </small>
-                        <i className="bi bi-arrow-right text-primary"></i>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Geteilte Listen */}
-      {sharedLists.length > 0 && (
-        <div className="row">
-          <div className="col-12">
-            <h4 className="mb-3">
-              <i className="bi bi-share me-2"></i>
-              Mit mir geteilte Listen
-            </h4>
-            <div className="row">
-              {sharedLists.map((list) => (
-                <div key={list.id} className="col-md-6 col-lg-4 mb-3">
-                  <Link to={`/list/${list.id}`} className="text-decoration-none">
-                    <div className="amyaro-card p-3 h-100">
-                      <div className="d-flex align-items-center mb-2">
-                        <div 
-                          className="rounded-circle p-2 me-3"
-                          style={{ backgroundColor: list.color + '20', color: list.color }}
-                        >
-                          <i className={`bi ${getListTypeIcon(list.type)}`}></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <h6 className="mb-1">
-                            {list.title}
-                            <span className="badge bg-secondary ms-2">Geteilt</span>
-                          </h6>
-                          <small className="text-muted">
-                            {getListTypeLabel(list.type)}
-                          </small>
-                        </div>
-                      </div>
-                      {list.description && (
-                        <p className="text-muted small mb-2">{list.description}</p>
-                      )}
-                      <div className="d-flex justify-content-between align-items-center">
-                        <small className="text-muted">
-                          <i className="bi bi-share me-1"></i>
-                          Geteilt von einem anderen Benutzer
-                        </small>
-                        <i className="bi bi-arrow-right text-primary"></i>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
+        <div className="col-md-3 mb-3">
+          <div className="card p-3 text-center">
+            <i className="bi bi-share display-6 text-info mb-2"></i>
+            <h5 className="mb-1">{lists.filter(l => l.sharedWith && l.sharedWith.length > 0).length}</h5>
+            <small className="text-muted">Geteilte Listen</small>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Filter */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="btn-group" role="group">
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilter"
+              id="filter-all"
+              checked={filter === 'all'}
+              onChange={() => setFilter('all')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-all">
+              Alle ({totalLists})
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilter"
+              id="filter-shopping"
+              checked={filter === 'shopping'}
+              onChange={() => setFilter('shopping')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-shopping">
+              🛒 Einkaufslisten ({shoppingLists})
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilter"
+              id="filter-gift"
+              checked={filter === 'gift'}
+              onChange={() => setFilter('gift')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-gift">
+              🎁 Geschenkelisten ({giftLists})
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Listen Grid */}
+      <div className="row">
+        <div className="col-12">
+          <ListGrid
+            lists={filteredLists}
+            loading={loading}
+            onListClick={handleListClick}
+          />
+        </div>
+      </div>
+
+      {/* Create List Modal */}
+      <CreateListModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateList}
+      />
     </div>
   );
 };
