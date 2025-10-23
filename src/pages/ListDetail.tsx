@@ -40,18 +40,21 @@ const ListDetail = () => {
     activeItemId: null,
     overId: null
   });
+  
+  // Debounced state für bessere Performance bei schnellen Bewegungen
+  const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
 
-  // Mobile-friendly drag sensors
+  // Mobile-friendly drag sensors - optimiert für schnelle Bewegungen
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Reduziert für bessere Responsiveness
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 150, // Reduziert von 250ms auf 150ms
+        tolerance: 8, // Erhöht für bessere Touch-Performance
       },
     })
   );
@@ -135,15 +138,21 @@ const ListDetail = () => {
     const { active, over } = event;
     
     // Update drag over state für visuelles Feedback
+    const overId = over?.id as string || null;
+    
     setDragOverState({
       activeItemId: active.id as string,
-      overId: over?.id as string || null
+      overId: overId
     });
+    
+    // Speichere die letzte gültige over-Position für Fallback
+    if (overId && items.find(item => item.id === overId)) {
+      setLastValidOverId(overId);
+    }
     
     if (!over || !active) return;
     
     const activeId = active.id as string;
-    const overId = over.id as string;
     
     // Finde active und over items
     const activeItem = items.find(item => item.id === activeId);
@@ -152,7 +161,7 @@ const ListDetail = () => {
     if (!activeItem) return;
     
     const activeContainer = activeItem.categoryId || 'uncategorized';
-    const overContainer = overItem?.categoryId || overId; // overId könnte category sein
+    const overContainer = overItem ? (overItem.categoryId || 'uncategorized') : overId;
     
     console.log('🔄 DragOver:', {
       activeId,
@@ -170,18 +179,31 @@ const ListDetail = () => {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveItem(null);
+    
+    // Reset drag state
     setDragOverState({
       activeItemId: null,
       overId: null
     });
 
-    if (!over) {
+    let finalOverId = over?.id as string;
+    
+    // Fallback: Wenn kein over detected, verwende die letzte gültige Position
+    if (!over && lastValidOverId) {
+      console.log('🔄 Using fallback overId:', lastValidOverId);
+      finalOverId = lastValidOverId;
+    }
+    
+    // Reset lastValidOverId
+    setLastValidOverId(null);
+
+    if (!finalOverId) {
       console.log('❌ No drop target detected');
       return;
     }
 
     const activeId = active.id as string;
-    const overId = over.id as string;
+    const overId = finalOverId;
     
     const activeItem = items.find(item => item.id === activeId);
     const overItem = items.find(item => item.id === overId);
