@@ -84,6 +84,16 @@ const ListDetail = () => {
     const validCategoryIds = categories.map(c => c.id);
     
     items.forEach(item => {
+      // Erledigt Items kommen in spezielle "completed" Kategorie
+      if (item.isCompleted) {
+        if (!groupedItems['completed']) {
+          groupedItems['completed'] = [];
+        }
+        groupedItems['completed'].push(item);
+        return;
+      }
+
+      // Nur aktive Items werden normal kategorisiert
       let categoryId = item.categoryId;
       
       // If item has invalid categoryId, treat as uncategorized
@@ -345,6 +355,27 @@ const ListDetail = () => {
                     onDeleteCategory={handleDeleteCategory}
                   />
                 ))}
+
+                {/* Erledigt Kategorie - nur anzeigen wenn es erledigte Items gibt */}
+                {grouped['completed'] && grouped['completed'].length > 0 && (
+                  <CategorySection
+                    category={{
+                      id: 'completed',
+                      name: 'Erledigt',
+                      color: '#28a745',
+                      listId: id!,
+                      userId: user!.uid,
+                      createdAt: { seconds: 0, nanoseconds: 0 } as any,
+                      updatedAt: { seconds: 0, nanoseconds: 0 } as any,
+                      order: 999999 // Am Ende anzeigen
+                    }}
+                    items={grouped['completed']}
+                    onToggleItem={handleToggleItem}
+                    onQuantityChange={handleQuantityChange}
+                    onDeleteItem={handleDeleteItem}
+                    // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
+                  />
+                )}
 
                 {/* Add Category Button */}
                 <div className="mb-4">

@@ -27,7 +27,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
-  const categoryIcon = category ? '📂' : '📋';
+  const categoryIcon = category?.id === 'completed' ? '✅' : (category ? '📂' : '📋');
   
   const { isOver, setNodeRef } = useDroppable({
     id: categoryId,
