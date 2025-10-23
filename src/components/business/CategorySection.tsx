@@ -29,31 +29,51 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   const categoryName = category?.name || 'Ohne Kategorie';
   const categoryIcon = category?.id === 'completed' ? '✅' : (category ? '📂' : '📋');
   
-  const { isOver, setNodeRef } = useDroppable({
+  // Separate dropzones: header für schnelles Zuweisen, main für Items/leere Kategorien
+  const { isOver: isOverHeader, setNodeRef: setHeaderRef } = useDroppable({
+    id: `${categoryId}-header`,
+  });
+  
+  const { isOver: isOverMain, setNodeRef: setMainRef } = useDroppable({
     id: categoryId,
   });
 
   const completedItems = items.filter(item => item.isCompleted);
   const pendingItems = items.filter(item => !item.isCompleted);
 
-  console.log(`🏷️ CategorySection "${category?.name}":`, {
+    console.log(`🏷️ CategorySection "${category?.name}":`, {
     categoryId: category?.id,
-    dropZoneId: categoryId,
     totalItems: items.length,
     pendingItems: pendingItems.length,
     completedItems: completedItems.length,
-    isOver,
-    dropZoneExists: !!setNodeRef
+    isOverHeader,
+    isOverMain,
+    dropZoneExists: !!setMainRef
   });
 
   return (
     <div className="mb-4">
-      {/* Category Header */}
-      <div className="d-flex align-items-center justify-content-between mb-3">
+      {/* Category Header - Als Dropzone für schnelles Zuweisen */}
+      <div 
+        ref={setHeaderRef}
+        className={`d-flex align-items-center justify-content-between mb-3 p-2 rounded ${
+          isOverHeader ? 'bg-primary bg-opacity-10 border border-primary' : ''
+        }`}
+        style={{ 
+          transition: 'all 0.2s ease',
+          cursor: isOverHeader ? 'copy' : 'default'
+        }}
+      >
         <h5 className="mb-0 d-flex align-items-center">
           <span className="me-2">{categoryIcon}</span>
           <span style={{ color: category?.color }}>{categoryName}</span>
           <span className="badge bg-secondary ms-2">{items.length}</span>
+          {isOverHeader && (
+            <span className="badge bg-primary ms-2">
+              <i className="bi bi-arrow-down me-1"></i>
+              Ablegen
+            </span>
+          )}
         </h5>
         
         {category && (
@@ -102,13 +122,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
       {/* Drop Zone */}
       <div 
-        ref={setNodeRef}
-        className={`list-group ${isOver ? 'border-primary border-2' : ''}`}
+        ref={setMainRef}
+        className={`list-group ${isOverMain ? 'border-primary border-2' : ''}`}
         style={{
           minHeight: '60px', // Always minimum height for drop zone
-          backgroundColor: isOver ? 'rgba(13, 110, 253, 0.1)' : 'transparent',
+          backgroundColor: isOverMain ? 'rgba(13, 110, 253, 0.1)' : 'transparent',
           borderRadius: '0.375rem',
-          transition: 'all 0.2s ease'
+          transition: 'all 0.2s ease',
+          paddingBottom: items.length > 0 ? '8px' : '0' // Extra Platz für Mini-Dropzone
         }}
       >
         {items.length === 0 && (
@@ -120,7 +141,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               fontSize: '0.875rem'
             }}
           >
-            {isOver ? (
+            {isOverMain ? (
               <span className="text-primary">
                 <i className="bi bi-arrow-down me-2"></i>
                 Hier ablegen
@@ -158,10 +179,41 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 onQuantityChange={onQuantityChange}
                 onDelete={onDeleteItem}
                 disabled={true} // Completed items nicht draggable
-                  />
-                ))}
+              />
+            ))}
+          </>
+        )}
+
+        {/* Mini-Dropzone - immer verfügbar wenn Kategorie Items hat */}
+        {items.length > 0 && (
+          <div 
+            className="mt-2 p-3 text-center"
+            style={{
+              border: isOverMain ? '2px solid #0d6efd' : '1px dashed #dee2e6',
+              borderRadius: '0.25rem',
+              fontSize: '0.75rem',
+              backgroundColor: isOverMain ? 'rgba(13, 110, 253, 0.1)' : 'transparent',
+              color: isOverMain ? '#0d6efd' : '#6c757d',
+              transition: 'all 0.2s ease',
+              minHeight: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            {isOverMain ? (
+              <>
+                <i className="bi bi-arrow-down me-1"></i>
+                Hier ablegen
+              </>
+            ) : (
+              <>
+                <i className="bi bi-plus-circle me-1"></i>
+                Weitere Items ablegen...
               </>
             )}
+          </div>
+        )}
       </div>
     </div>
   );

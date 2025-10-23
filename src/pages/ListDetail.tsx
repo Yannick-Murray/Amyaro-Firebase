@@ -130,7 +130,14 @@ const ListDetail = () => {
     if (!over) return;
 
     const itemId = active.id as string;
-    const newCategoryId = over.id === 'uncategorized' ? null : over.id as string;
+    let targetCategoryId = over.id as string;
+    
+    // Handle header dropzones (format: "categoryId-header")
+    if (targetCategoryId.includes('-header')) {
+      targetCategoryId = targetCategoryId.replace('-header', '');
+    }
+    
+    const newCategoryId = targetCategoryId === 'uncategorized' ? null : targetCategoryId;
 
     try {
       // Update in Firebase
