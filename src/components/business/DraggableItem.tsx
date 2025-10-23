@@ -2,6 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { QuantityEditor } from './QuantityEditor';
+import { DropIndicator } from '../ui/DropIndicator';
 import type { Item } from '../../types/todoList';
 
 interface DraggableItemProps {
@@ -10,6 +11,10 @@ interface DraggableItemProps {
   onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onDelete: (itemId: string) => void;
   disabled?: boolean;
+  showDropIndicator?: {
+    position: 'top' | 'bottom';
+    isActive: boolean;
+  };
 }
 
 export const DraggableItem: React.FC<DraggableItemProps> = ({
@@ -17,7 +22,8 @@ export const DraggableItem: React.FC<DraggableItemProps> = ({
   onToggle,
   onQuantityChange,
   onDelete,
-  disabled = false
+  disabled = false,
+  showDropIndicator
 }) => {
   const {
     attributes,
@@ -38,13 +44,22 @@ export const DraggableItem: React.FC<DraggableItemProps> = ({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`list-group-item d-flex align-items-center justify-content-between ${
-        isDragging ? 'shadow-lg' : ''
-      } ${item.isCompleted ? 'opacity-75' : ''}`}
-    >
+    <>
+      {/* Drop Indicator Above */}
+      <DropIndicator 
+        isVisible={showDropIndicator?.position === 'top' && showDropIndicator.isActive}
+        position="top"
+      />
+      
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`list-group-item d-flex align-items-center justify-content-between ${
+          isDragging ? 'shadow-lg border-primary' : ''
+        } ${item.isCompleted ? 'opacity-75' : ''} ${
+          showDropIndicator?.isActive ? 'bg-light' : ''
+        }`}
+      >
       {/* Drag Handle */}
       <div 
         {...attributes} 
@@ -96,6 +111,13 @@ export const DraggableItem: React.FC<DraggableItemProps> = ({
           <i className="bi bi-trash"></i>
         </button>
       </div>
-    </div>
+      </div>
+      
+      {/* Drop Indicator Below */}
+      <DropIndicator 
+        isVisible={showDropIndicator?.position === 'bottom' && showDropIndicator.isActive}
+        position="bottom"
+      />
+    </>
   );
 };

@@ -33,6 +33,13 @@ const ListDetail = () => {
   const [error, setError] = useState('');
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
+  const [dragOverState, setDragOverState] = useState<{
+    activeItemId: string | null;
+    overId: string | null;
+  }>({
+    activeItemId: null,
+    overId: null
+  });
 
   // Mobile-friendly drag sensors
   const sensors = useSensors(
@@ -117,38 +124,148 @@ const ListDetail = () => {
     const { active } = event;
     const item = items.find(i => i.id === active.id);
     setActiveItem(item || null);
+    setDragOverState({
+      activeItemId: active.id as string,
+      overId: null
+    });
+    console.log('🎬 Drag Start:', active.id);
   };
 
-  const handleDragOver = (_event: DragOverEvent) => {
-    // Optional: Visual feedback during drag over
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    // Update drag over state für visuelles Feedback
+    setDragOverState({
+      activeItemId: active.id as string,
+      overId: over?.id as string || null
+    });
+    
+    if (!over || !active) return;
+    
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    
+    // Finde active und over items
+    const activeItem = items.find(item => item.id === activeId);
+    const overItem = items.find(item => item.id === overId);
+    
+    if (!activeItem) return;
+    
+    const activeContainer = activeItem.categoryId || 'uncategorized';
+    const overContainer = overItem?.categoryId || overId; // overId könnte category sein
+    
+    console.log('🔄 DragOver:', {
+      activeId,
+      activeItemName: activeItem.name,
+      overId,
+      overItemName: overItem?.name || 'Container',
+      activeContainer,
+      overContainer,
+      isItemToItem: !!overItem,
+      isItemToContainer: !overItem
+    });
+    // Für jetzt nur logging für debugging
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveItem(null);
+    setDragOverState({
+      activeItemId: null,
+      overId: null
+    });
 
-    if (!over) return;
-
-    const itemId = active.id as string;
-    let targetCategoryId = over.id as string;
-    
-    // Handle header dropzones (format: "categoryId-header")
-    if (targetCategoryId.includes('-header')) {
-      targetCategoryId = targetCategoryId.replace('-header', '');
+    if (!over) {
+      console.log('❌ No drop target detected');
+      return;
     }
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
     
-    const newCategoryId = targetCategoryId === 'uncategorized' ? null : targetCategoryId;
+    const activeItem = items.find(item => item.id === activeId);
+    const overItem = items.find(item => item.id === overId);
+    
+    if (!activeItem) {
+      console.log('❌ Active item not found:', activeId);
+      return;
+    }
+
+    const activeContainer = activeItem.categoryId || 'uncategorized';
+    const overContainer = overItem ? (overItem.categoryId || 'uncategorized') : overId;
+
+    console.log('🎯 Drag End:', {
+      activeId,
+      activeItemName: activeItem.name,
+      overId,
+      overItemName: overItem?.name || 'Container',
+      activeContainer,
+      overContainer,
+      isItemToItem: !!overItem,
+      isSameContainer: activeContainer === overContainer
+    });
 
     try {
-      // Update in Firebase
-      await ItemService.assignItemToCategory(itemId, newCategoryId);
+      // Case 1: Item-to-Item Sorting (innerhalb derselben Kategorie)
+      if (overItem && activeContainer === overContainer && activeId !== overId) {
+        console.log('🔄 Item-to-Item sorting within same container');
+        
+        const containerItems = items
+          .filter(item => (item.categoryId || 'uncategorized') === activeContainer && !item.isCompleted)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+        const activeIndex = containerItems.findIndex(item => item.id === activeId);
+        const overIndex = containerItems.findIndex(item => item.id === overId);
+        
+        console.log('📍 Sorting indices:', { activeIndex, overIndex });
+        
+        if (activeIndex !== -1 && overIndex !== -1) {
+          // Reorder logic
+          const reorderedItems = [...containerItems];
+          const [movedItem] = reorderedItems.splice(activeIndex, 1);
+          reorderedItems.splice(overIndex, 0, movedItem);
+          
+          // Update all affected items with new order
+          for (let i = 0; i < reorderedItems.length; i++) {
+            const newOrder = i * 1000;
+            console.log(`📝 Updating order: ${reorderedItems[i].name} → ${newOrder}`);
+            await ItemService.updateItemOrder(reorderedItems[i].id, newOrder);
+          }
+          
+          console.log('✅ Item-to-Item sorting completed');
+        }
+      }
+      // Case 2: Item-to-Container Transfer
+      else if (!overItem || activeContainer !== overContainer) {
+        console.log('� Item-to-Container transfer');
+        
+        const targetCategoryId = overContainer === 'uncategorized' ? null : overContainer;
+        
+        // Update category assignment
+        await ItemService.assignItemToCategory(activeId, targetCategoryId);
+        
+        // Set order to end of target category
+        const targetItems = items.filter(item => 
+          (item.categoryId || 'uncategorized') === overContainer && !item.isCompleted
+        );
+        const maxOrder = Math.max(0, ...targetItems.map(item => item.order || 0));
+        const newOrder = maxOrder + 1000;
+        
+        console.log(`📝 Setting new order: ${newOrder}`);
+        await ItemService.updateItemOrder(activeId, newOrder);
+        
+        console.log('✅ Item-to-Container transfer completed');
+      }
+      else {
+        console.log('⚠️ No action needed - same item/position');
+      }
       
-      // Reload data to get the correct state
+      console.log('🔄 Reloading data...');
       await loadListData();
       
     } catch (error) {
-      console.error('Fehler beim Verschieben des Items:', error);
-      loadListData();
+      console.error('❌ Error during drag operation:', error);
+      await loadListData();
     }
   };
 
@@ -347,6 +464,7 @@ const ListDetail = () => {
                     onToggleItem={handleToggleItem}
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
+                    dragOverState={dragOverState}
                   />
                 )}
 
@@ -360,6 +478,7 @@ const ListDetail = () => {
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
                     onDeleteCategory={handleDeleteCategory}
+                    dragOverState={dragOverState}
                   />
                 ))}
 
@@ -380,6 +499,7 @@ const ListDetail = () => {
                     onToggleItem={handleToggleItem}
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
+                    dragOverState={dragOverState}
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}

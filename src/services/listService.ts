@@ -492,13 +492,21 @@ export class ItemService {
         throw new Error('Benutzer muss angemeldet sein');
       }
 
+      // Calculate next order value if not provided
+      let orderValue = itemData.order;
+      if (orderValue === undefined) {
+        const existingItems = await this.getListItems(listId);
+        const maxOrder = Math.max(0, ...existingItems.map(item => item.order || 0));
+        orderValue = maxOrder + 1000; // 1000er Schritte für Zwischeneinfügungen
+      }
+
       const now = serverTimestamp();
       const item: Omit<Item, 'id'> = {
         ...itemData,
         listId,
         createdAt: now as any,
         updatedAt: now as any,
-        order: itemData.order || 999 // Default order if not provided
+        order: orderValue
       };
 
       const docRef = await addDoc(collection(db, this.collection), item);
@@ -795,6 +803,26 @@ export class ItemService {
       await Promise.all(promises);
     } catch (error) {
       console.error('Fehler beim Neu-Ordnen der Items:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update order of a single item
+   */
+  static async updateItemOrder(itemId: string, order: number): Promise<void> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      const itemRef = doc(db, this.collection, itemId);
+      await updateDoc(itemRef, {
+        order,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Item-Reihenfolge:', error);
       throw error;
     }
   }

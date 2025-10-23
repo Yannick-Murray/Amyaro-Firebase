@@ -12,6 +12,10 @@ interface CategorySectionProps {
   onDeleteItem: (itemId: string) => void;
   onEditCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
+  dragOverState?: {
+    activeItemId: string | null;
+    overId: string | null;
+  };
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
@@ -21,7 +25,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onQuantityChange,
   onDeleteItem,
   onEditCategory,
-  onDeleteCategory
+  onDeleteCategory,
+  dragOverState
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   
@@ -29,54 +34,46 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   const categoryName = category?.name || 'Ohne Kategorie';
   const categoryIcon = category?.id === 'completed' ? '✅' : (category ? '📂' : '📋');
   
-  // Separate dropzones: header für schnelles Zuweisen, main für Items/leere Kategorien
-  const { isOver: isOverHeader, setNodeRef: setHeaderRef } = useDroppable({
-    id: `${categoryId}-header`,
-  });
-  
-  const { isOver: isOverMain, setNodeRef: setMainRef } = useDroppable({
+  // Nur für Category-Transfer, nicht für Intra-Category Sorting
+  const { isOver, setNodeRef } = useDroppable({
     id: categoryId,
   });
 
   const completedItems = items.filter(item => item.isCompleted);
   const pendingItems = items.filter(item => !item.isCompleted);
 
-    console.log(`🏷️ CategorySection "${category?.name}":`, {
-    categoryId: category?.id,
-    totalItems: items.length,
-    pendingItems: pendingItems.length,
-    completedItems: completedItems.length,
-    isOverHeader,
-    isOverMain,
-    dropZoneExists: !!setMainRef
-  });
+  // Berechne Drop-Indicator für jedes Item
+  const getDropIndicatorForItem = (itemId: string, index: number) => {
+    if (!dragOverState?.activeItemId || !dragOverState?.overId) {
+      return undefined;
+    }
 
-  return (
+    const isDraggedItem = dragOverState.activeItemId === itemId;
+    const isOverThisItem = dragOverState.overId === itemId;
+    
+    if (isDraggedItem || !isOverThisItem) {
+      return undefined;
+    }
+
+    // Bestimme Position basierend auf Drag-Richtung
+    const draggedIndex = pendingItems.findIndex(item => item.id === dragOverState.activeItemId);
+    const targetIndex = index;
+    
+    return {
+      position: draggedIndex < targetIndex ? 'bottom' : 'top',
+      isActive: true
+    } as const;
+  };  return (
     <div className="mb-4">
-      {/* Category Header - Als Dropzone für schnelles Zuweisen */}
-      <div 
-        ref={setHeaderRef}
-        className={`d-flex align-items-center justify-content-between mb-3 p-2 rounded ${
-          isOverHeader ? 'bg-primary bg-opacity-10 border border-primary' : ''
-        }`}
-        style={{ 
-          transition: 'all 0.2s ease',
-          cursor: isOverHeader ? 'copy' : 'default'
-        }}
-      >
+      {/* Category Header - Einfach, ohne Dropzone */}
+      <div className="d-flex align-items-center justify-content-between mb-3">
         <h5 className="mb-0 d-flex align-items-center">
           <span className="me-2">{categoryIcon}</span>
           <span style={{ color: category?.color }}>{categoryName}</span>
           <span className="badge bg-secondary ms-2">{items.length}</span>
-          {isOverHeader && (
-            <span className="badge bg-primary ms-2">
-              <i className="bi bi-arrow-down me-1"></i>
-              Ablegen
-            </span>
-          )}
         </h5>
         
-        {category && (
+        {category && onDeleteCategory && (
           <div className="position-relative">
             <button
               className="btn btn-sm btn-outline-secondary"
@@ -102,46 +99,43 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     Bearbeiten
                   </button>
                 )}
-                {onDeleteCategory && (
-                  <button
-                    className="dropdown-item text-danger"
-                    onClick={() => {
-                      onDeleteCategory(category.id);
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <i className="bi bi-trash me-2"></i>
-                    Löschen
-                  </button>
-                )}
+                <button
+                  className="dropdown-item text-danger"
+                  onClick={() => {
+                    onDeleteCategory(category.id);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <i className="bi bi-trash me-2"></i>
+                  Löschen
+                </button>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Drop Zone */}
+      {/* Drop Zone - nur für Category Transfer */}
       <div 
-        ref={setMainRef}
-        className={`list-group ${isOverMain ? 'border-primary border-2' : ''}`}
+        ref={setNodeRef}
+        className={`${isOver ? 'bg-primary bg-opacity-10 border border-primary rounded' : ''}`}
         style={{
-          minHeight: '60px', // Always minimum height for drop zone
-          backgroundColor: isOverMain ? 'rgba(13, 110, 253, 0.1)' : 'transparent',
-          borderRadius: '0.375rem',
+          minHeight: items.length === 0 ? '80px' : 'auto',
           transition: 'all 0.2s ease',
-          paddingBottom: items.length > 0 ? '8px' : '0' // Extra Platz für Mini-Dropzone
+          padding: isOver ? '8px' : '0'
         }}
       >
+        {/* Empty State */}
         {items.length === 0 && (
           <div 
-            className="d-flex align-items-center justify-content-center text-muted py-3"
+            className="d-flex align-items-center justify-content-center text-muted py-4"
             style={{ 
               border: '2px dashed #dee2e6',
               borderRadius: '0.375rem',
               fontSize: '0.875rem'
             }}
           >
-            {isOverMain ? (
+            {isOver ? (
               <span className="text-primary">
                 <i className="bi bi-arrow-down me-2"></i>
                 Hier ablegen
@@ -152,25 +146,30 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           </div>
         )}
         
-        {/* Pending Items */}
+        {/* Sortable Items List */}
         {pendingItems.length > 0 && (
-          <SortableContext items={pendingItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
-            {pendingItems.map(item => (
-              <DraggableItem
-                key={item.id}
-                item={item}
-                onToggle={onToggleItem}
-                onQuantityChange={onQuantityChange}
-                onDelete={onDeleteItem}
-              />
-            ))}
+          <SortableContext 
+            items={pendingItems.map(item => item.id)} 
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="list-group">
+              {pendingItems.map((item, index) => (
+                <DraggableItem
+                  key={item.id}
+                  item={item}
+                  onToggle={onToggleItem}
+                  onQuantityChange={onQuantityChange}
+                  onDelete={onDeleteItem}
+                  showDropIndicator={getDropIndicatorForItem(item.id, index)}
+                />
+              ))}
+            </div>
           </SortableContext>
         )}
         
         {/* Completed Items - not draggable */}
         {completedItems.length > 0 && (
-          <>
-            {pendingItems.length > 0 && <div className="border-top mt-2 pt-2"></div>}
+          <div className={`${pendingItems.length > 0 ? 'border-top mt-2 pt-2' : ''}`}>
             {completedItems.map(item => (
               <DraggableItem
                 key={item.id}
@@ -181,37 +180,6 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 disabled={true} // Completed items nicht draggable
               />
             ))}
-          </>
-        )}
-
-        {/* Mini-Dropzone - immer verfügbar wenn Kategorie Items hat */}
-        {items.length > 0 && (
-          <div 
-            className="mt-2 p-3 text-center"
-            style={{
-              border: isOverMain ? '2px solid #0d6efd' : '1px dashed #dee2e6',
-              borderRadius: '0.25rem',
-              fontSize: '0.75rem',
-              backgroundColor: isOverMain ? 'rgba(13, 110, 253, 0.1)' : 'transparent',
-              color: isOverMain ? '#0d6efd' : '#6c757d',
-              transition: 'all 0.2s ease',
-              minHeight: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {isOverMain ? (
-              <>
-                <i className="bi bi-arrow-down me-1"></i>
-                Hier ablegen
-              </>
-            ) : (
-              <>
-                <i className="bi bi-plus-circle me-1"></i>
-                Weitere Items ablegen...
-              </>
-            )}
           </div>
         )}
       </div>
