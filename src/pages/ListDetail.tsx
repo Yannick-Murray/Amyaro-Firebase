@@ -377,9 +377,9 @@ const ListDetail = () => {
         <CreateCategoryModal
           isOpen={showCreateCategoryModal}
           onClose={() => setShowCreateCategoryModal(false)}
-          onCreateCategory={async (name: string, _color: string) => {
+          onCreateCategory={async (name: string, color: string) => {
             try {
-              await CategoryService.createCategory(name, id!, user!.uid, list!.type);
+              await CategoryService.createListCategory(id!, name, color);
               setShowCreateCategoryModal(false);
               loadListData();
             } catch (error) {
