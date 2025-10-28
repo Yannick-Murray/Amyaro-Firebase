@@ -210,29 +210,28 @@ export class ListService {
       
       // SCHRITT 2: Einzeln alle Categories löschen
       console.log('🗑️ Step 2: Deleting categories...');
-      const categoriesQuery = query(
-        collection(db, 'categories'),
-        where('listId', '==', listId)
-      );
-      
-      let categoriesSnapshot;
       try {
-        categoriesSnapshot = await getDocs(categoriesQuery);
+        const categoriesQuery = query(
+          collection(db, 'categories'),
+          where('listId', '==', listId)
+        );
+        
+        const categoriesSnapshot = await getDocs(categoriesQuery);
         console.log(`🗑️ Found ${categoriesSnapshot.docs.length} categories to delete`);
-      } catch (error) {
-        console.error('❌ Failed to query categories:', error);
-        throw error;
-      }
-      
-      for (const categoryDoc of categoriesSnapshot.docs) {
-        try {
-          console.log(`🗑️ Attempting to delete category: ${categoryDoc.id}`, categoryDoc.data());
-          await deleteDoc(categoryDoc.ref);
-          console.log(`✅ Deleted category: ${categoryDoc.id}`);
-        } catch (error) {
-          console.error(`❌ Failed to delete category ${categoryDoc.id}:`, error);
-          throw error;
+        
+        for (const categoryDoc of categoriesSnapshot.docs) {
+          try {
+            console.log(`🗑️ Attempting to delete category: ${categoryDoc.id}`, categoryDoc.data());
+            await deleteDoc(categoryDoc.ref);
+            console.log(`✅ Deleted category: ${categoryDoc.id}`);
+          } catch (error) {
+            console.error(`❌ Failed to delete category ${categoryDoc.id}:`, error);
+            // Einzelne Category-Fehler nicht weiterwerfen - Liste trotzdem löschen
+          }
         }
+      } catch (error) {
+        console.warn('⚠️ Categories query failed (collection might not exist):', error);
+        // Collection existiert nicht oder andere Probleme - trotzdem weitermachen
       }
       
       // SCHRITT 3: Liste selbst löschen
