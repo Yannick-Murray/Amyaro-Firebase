@@ -6,15 +6,22 @@ import type { List } from '../../types/todoList';
 export interface ListCardProps {
   list: List;
   onClick?: (list: List) => void;
+  onDelete?: (list: List) => void;
   className?: string;
 }
 
 export const ListCard: React.FC<ListCardProps> = ({
   list,
   onClick,
+  onDelete,
   className
 }) => {
   const handleClick = () => onClick?.(list);
+  
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Verhindert onClick der Card
+    onDelete?.(list);
+  };
 
   const typeIcon = list.type === 'shopping' ? 'cart3' : 'gift';
   const completedCount = list.itemCount?.completed || 0;
@@ -24,11 +31,14 @@ export const ListCard: React.FC<ListCardProps> = ({
   return (
     <Card
       className={cn(
-        'h-100 cursor-pointer',
+        'h-100 cursor-pointer list-card-hover',
         'hover:shadow-lg hover:border-primary',
         className
       )}
       onClick={handleClick}
+      style={{
+        position: 'relative'
+      }}
     >
       <div className="card-header pb-2">
         <div className="d-flex align-items-center justify-content-between">
@@ -36,11 +46,35 @@ export const ListCard: React.FC<ListCardProps> = ({
             <i className={`bi bi-${typeIcon} text-primary`} />
             <h6 className="mb-0 fw-bold text-truncate">{list.name}</h6>
           </div>
-          {list.category && (
-            <span className="badge bg-secondary text-white small">
-              {list.category.name}
-            </span>
-          )}
+          
+          <div className="d-flex align-items-center gap-2">
+            {list.category && (
+              <span className="badge bg-secondary text-white small">
+                {list.category.name}
+              </span>
+            )}
+            
+            {/* Delete Button */}
+            {onDelete && (
+              <button
+                className="btn btn-outline-danger btn-sm delete-btn"
+                onClick={handleDelete}
+                title="Liste löschen"
+                style={{ 
+                  width: '32px', 
+                  height: '32px',
+                  padding: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: '0',
+                  transition: 'opacity 0.2s ease-in-out'
+                }}
+              >
+                <i className="bi bi-trash" style={{ fontSize: '14px' }}></i>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ export interface ListGridProps {
   lists: List[];
   loading?: boolean;
   onListClick?: (list: List) => void;
+  onListDelete?: (list: List) => void;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export const ListGrid: React.FC<ListGridProps> = ({
   lists,
   loading = false,
   onListClick,
+  onListDelete,
   className
 }) => {
   if (loading) {
@@ -57,6 +59,7 @@ export const ListGrid: React.FC<ListGridProps> = ({
           <ListCard
             list={list}
             onClick={onListClick}
+            onDelete={onListDelete}
             className="h-100"
           />
         </div>

@@ -184,13 +184,72 @@ export class ListService {
     }
   }
 
-  // Liste löschen
+  // Liste löschen - mit DEBUG Step-by-Step
   static async deleteList(listId: string): Promise<void> {
     try {
+      console.log('🗑️ Starting deletion process for list:', listId);
+      
+      // SCHRITT 1: Einzeln alle Items löschen
+      console.log('🗑️ Step 1: Deleting items...');
+      const itemsQuery = query(
+        collection(db, 'items'),
+        where('listId', '==', listId)
+      );
+      const itemsSnapshot = await getDocs(itemsQuery);
+      console.log(`🗑️ Found ${itemsSnapshot.docs.length} items to delete`);
+      
+      for (const itemDoc of itemsSnapshot.docs) {
+        try {
+          await deleteDoc(itemDoc.ref);
+          console.log(`✅ Deleted item: ${itemDoc.id}`);
+        } catch (error) {
+          console.error(`❌ Failed to delete item ${itemDoc.id}:`, error);
+          throw error;
+        }
+      }
+      
+      // SCHRITT 2: Einzeln alle Categories löschen
+      console.log('🗑️ Step 2: Deleting categories...');
+      const categoriesQuery = query(
+        collection(db, 'categories'),
+        where('listId', '==', listId)
+      );
+      
+      let categoriesSnapshot;
+      try {
+        categoriesSnapshot = await getDocs(categoriesQuery);
+        console.log(`🗑️ Found ${categoriesSnapshot.docs.length} categories to delete`);
+      } catch (error) {
+        console.error('❌ Failed to query categories:', error);
+        throw error;
+      }
+      
+      for (const categoryDoc of categoriesSnapshot.docs) {
+        try {
+          console.log(`🗑️ Attempting to delete category: ${categoryDoc.id}`, categoryDoc.data());
+          await deleteDoc(categoryDoc.ref);
+          console.log(`✅ Deleted category: ${categoryDoc.id}`);
+        } catch (error) {
+          console.error(`❌ Failed to delete category ${categoryDoc.id}:`, error);
+          throw error;
+        }
+      }
+      
+      // SCHRITT 3: Liste selbst löschen
+      console.log('🗑️ Step 3: Deleting list...');
       const listRef = doc(db, this.COLLECTION, listId);
-      await deleteDoc(listRef);
+      try {
+        await deleteDoc(listRef);
+        console.log(`✅ Deleted list: ${listId}`);
+      } catch (error) {
+        console.error(`❌ Failed to delete list ${listId}:`, error);
+        throw error;
+      }
+      
+      console.log('✅ All deletion steps completed successfully');
+      
     } catch (error) {
-      console.error('Fehler beim Löschen der Liste:', error);
+      console.error('❌ Fehler beim Löschen der Liste:', error);
       throw error;
     }
   }

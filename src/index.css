@@ -244,6 +244,15 @@ body {
   transform: rotate(5deg);
 }
 
+/* ListCard Hover Effects */
+.list-card-hover:hover .delete-btn {
+  opacity: 1 !important;
+}
+
+.list-card-hover .delete-btn {
+  transition: opacity 0.2s ease-in-out;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;

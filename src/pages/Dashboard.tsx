@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
+import { CategoryMigration } from '../utils/categoryMigration';
 import type { List } from '../types/todoList';
 
 const Dashboard = () => {
@@ -136,6 +137,43 @@ const Dashboard = () => {
     navigate(`/list/${list.id}`);
   };
 
+  const handleDeleteList = async (list: List) => {
+    const itemCount = list.itemCount?.total || 0;
+    
+    const confirmed = window.confirm(
+      `Liste "${list.name}" wirklich löschen?\n\n` +
+      `Dies löscht auch alle ${itemCount} Items unwiderruflich!`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await ListService.deleteList(list.id);
+      console.log('✅ Liste erfolgreich gelöscht:', list.name);
+      
+      // Listen neu laden
+      await loadLists();
+      
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen der Liste:', error);
+      alert('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.');
+    }
+  };
+
+  // TEMPORÄRE Migration Function (später entfernen)
+  const runCategoryMigration = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('🔄 Running category migration...');
+      await CategoryMigration.setUserIdForMyCategories(user.uid);
+      alert('✅ Categories erfolgreich migriert!');
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+      alert('❌ Migration fehlgeschlagen. Siehe Console für Details.');
+    }
+  };
+
   const filteredLists = lists.filter(list => {
     if (filter === 'all') return true;
     return list.type === filter;
@@ -157,14 +195,27 @@ const Dashboard = () => {
                 Du hast {totalLists} Listen ({shoppingLists} Einkaufslisten, {giftLists} Geschenkelisten)
               </p>
             </div>
-            <Button
-              variant="primary"
-              onClick={() => setShowCreateModal(true)}
-              className="d-flex align-items-center gap-2"
-            >
-              <i className="bi bi-plus-lg"></i>
-              Neue Liste
-            </Button>
+            <div className="d-flex gap-2">
+              {/* TEMPORÄRER Migration Button */}
+              <Button
+                variant="warning"
+                onClick={runCategoryMigration}
+                className="d-flex align-items-center gap-2"
+                title="Einmalig ausführen: Categories Migration"
+              >
+                <i className="bi bi-wrench"></i>
+                Migrate Categories
+              </Button>
+              
+              <Button
+                variant="primary"
+                onClick={() => setShowCreateModal(true)}
+                className="d-flex align-items-center gap-2"
+              >
+                <i className="bi bi-plus-lg"></i>
+                Neue Liste
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -258,6 +309,7 @@ const Dashboard = () => {
             lists={filteredLists}
             loading={loading}
             onListClick={handleListClick}
+            onListDelete={handleDeleteList}
           />
         </div>
       </div>

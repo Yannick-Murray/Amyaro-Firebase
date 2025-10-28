@@ -33,6 +33,7 @@ const ListDetail = () => {
   const [error, setError] = useState('');
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
+  const [showListDropdown, setShowListDropdown] = useState(false);
   const [dragOverState, setDragOverState] = useState<{
     activeItemId: string | null;
     overId: string | null;
@@ -354,6 +355,31 @@ const ListDetail = () => {
     }
   };
 
+  const handleDeleteList = async () => {
+    if (!list) return;
+    
+    const confirmed = window.confirm(
+      `Liste "${list.name}" wirklich löschen?\n\n` +
+      `Dies löscht auch alle ${items.length} Items und ${categories.length} Kategorien unwiderruflich!`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await ListService.deleteList(list.id);
+      console.log('✅ Liste erfolgreich gelöscht');
+      
+      // Zurück zum Dashboard navigieren
+      navigate('/', { 
+        replace: true,
+        state: { message: `Liste "${list.name}" wurde gelöscht` }
+      });
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen der Liste:', error);
+      alert('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.');
+    }
+  };
+
   const handleBack = () => {
     navigate('/');
   };
@@ -431,6 +457,61 @@ const ListDetail = () => {
               <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
               <h1 className="h3 mb-0">{list.name}</h1>
               <span className="badge bg-secondary">{getListTypeLabel(list.type === 'gift' ? 'gifts' : list.type)}</span>
+              
+              {/* List Actions Dropdown */}
+              <div className="dropdown position-relative">
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  onClick={() => setShowListDropdown(!showListDropdown)}
+                  title="Liste bearbeiten"
+                >
+                  <i className="bi bi-three-dots"></i>
+                </button>
+                
+                {showListDropdown && (
+                  <>
+                    {/* Backdrop zum Schließen */}
+                    <div 
+                      className="position-fixed top-0 start-0 w-100 h-100"
+                      style={{ zIndex: 1000 }}
+                      onClick={() => setShowListDropdown(false)}
+                    />
+                    
+                    {/* Dropdown Menu */}
+                    <ul 
+                      className="dropdown-menu show position-absolute end-0"
+                      style={{ zIndex: 1001 }}
+                    >
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setShowListDropdown(false);
+                            /* TODO: Edit List Modal */
+                          }}
+                        >
+                          <i className="bi bi-pencil me-2"></i>
+                          Liste bearbeiten
+                        </button>
+                      </li>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <button
+                          className="dropdown-item text-danger"
+                          onClick={() => {
+                            setShowListDropdown(false);
+                            handleDeleteList();
+                          }}
+                        >
+                          <i className="bi bi-trash me-2"></i>
+                          Liste löschen
+                        </button>
+                      </li>
+                    </ul>
+                  </>
+                )}
+              </div>
             </div>
             
             {list.description && (

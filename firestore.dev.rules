@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ACHTUNG: Nur für Development!
+    // Erlaubt allen authentifizierten Usern alles
+    match /{document=**} {
+      allow read, write, delete: if request.auth != null;
+    }
+  }
+}
