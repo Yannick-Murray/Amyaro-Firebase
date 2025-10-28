@@ -31,14 +31,6 @@ export class ListService {
     isPrivate: boolean = false
   ): Promise<string> {
     try {
-      // Auth Debug
-      console.log('🔍 Auth Debug:', {
-        authCurrentUser: auth.currentUser,
-        authUid: auth.currentUser?.uid,
-        providedUserId: userId,
-        authMatch: auth.currentUser?.uid === userId
-      });
-
       if (!auth.currentUser) {
         throw new Error('Benutzer ist nicht angemeldet');
       }
@@ -75,14 +67,6 @@ export class ListService {
       if (!isPrivate) {
         listData.sharedWith = [];
       }
-
-      // Debug: Was wird gesendet?
-      console.log('🔍 Firebase createList Debug:', {
-        listData,
-        currentUser: auth.currentUser?.uid,
-        userIdMatch: listData.userId === auth.currentUser?.uid
-      });
-
       const docRef = await addDoc(collection(db, this.COLLECTION), listData);
       return docRef.id;
     } catch (error) {
@@ -184,24 +168,19 @@ export class ListService {
     }
   }
 
-  // Liste löschen - mit DEBUG Step-by-Step
+  // Liste löschen
   static async deleteList(listId: string): Promise<void> {
     try {
-      console.log('🗑️ Starting deletion process for list:', listId);
-      
       // SCHRITT 1: Einzeln alle Items löschen
-      console.log('🗑️ Step 1: Deleting items...');
       const itemsQuery = query(
         collection(db, 'items'),
         where('listId', '==', listId)
       );
       const itemsSnapshot = await getDocs(itemsQuery);
-      console.log(`🗑️ Found ${itemsSnapshot.docs.length} items to delete`);
       
       for (const itemDoc of itemsSnapshot.docs) {
         try {
           await deleteDoc(itemDoc.ref);
-          console.log(`✅ Deleted item: ${itemDoc.id}`);
         } catch (error) {
           console.error(`❌ Failed to delete item ${itemDoc.id}:`, error);
           throw error;
@@ -209,7 +188,6 @@ export class ListService {
       }
       
       // SCHRITT 2: Einzeln alle Categories löschen
-      console.log('🗑️ Step 2: Deleting categories...');
       try {
         const categoriesQuery = query(
           collection(db, 'categories'),
@@ -217,13 +195,10 @@ export class ListService {
         );
         
         const categoriesSnapshot = await getDocs(categoriesQuery);
-        console.log(`🗑️ Found ${categoriesSnapshot.docs.length} categories to delete`);
         
         for (const categoryDoc of categoriesSnapshot.docs) {
           try {
-            console.log(`🗑️ Attempting to delete category: ${categoryDoc.id}`, categoryDoc.data());
             await deleteDoc(categoryDoc.ref);
-            console.log(`✅ Deleted category: ${categoryDoc.id}`);
           } catch (error) {
             console.error(`❌ Failed to delete category ${categoryDoc.id}:`, error);
             // Einzelne Category-Fehler nicht weiterwerfen - Liste trotzdem löschen
@@ -235,17 +210,13 @@ export class ListService {
       }
       
       // SCHRITT 3: Liste selbst löschen
-      console.log('🗑️ Step 3: Deleting list...');
       const listRef = doc(db, this.COLLECTION, listId);
       try {
         await deleteDoc(listRef);
-        console.log(`✅ Deleted list: ${listId}`);
       } catch (error) {
         console.error(`❌ Failed to delete list ${listId}:`, error);
         throw error;
       }
-      
-      console.log('✅ All deletion steps completed successfully');
       
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
@@ -655,33 +626,20 @@ export class ItemService {
         throw new Error('Benutzer muss angemeldet sein');
       }
 
-      console.log('🔧 assignItemToCategory:', { itemId, categoryId });
-
       const itemRef = doc(db, this.collection, itemId);
       
       // Check if item exists first
       const itemDoc = await getDoc(itemRef);
       if (!itemDoc.exists()) {
-        console.error('❌ Item not found:', itemId);
         throw new Error('Item nicht gefunden');
       }
-      
-      console.log('📝 Current item data:', itemDoc.data());
       
       const updateData = {
         categoryId: categoryId,
         updatedAt: serverTimestamp()
       };
       
-      console.log('💾 Update data:', updateData);
-      
       await updateDoc(itemRef, updateData);
-      
-      // Verify the update
-      const updatedDoc = await getDoc(itemRef);
-      console.log('🔍 Updated item data:', updatedDoc.data());
-      
-      console.log('✅ Item updated successfully');
     } catch (error) {
       console.error('❌ Fehler beim Zuweisen zur Kategorie:', error);
       throw error;

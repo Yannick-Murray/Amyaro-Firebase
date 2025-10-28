@@ -367,7 +367,6 @@ const ListDetail = () => {
     
     try {
       await ListService.deleteList(list.id);
-      console.log('✅ Liste erfolgreich gelöscht');
       
       // Zurück zum Dashboard navigieren
       navigate('/', { 

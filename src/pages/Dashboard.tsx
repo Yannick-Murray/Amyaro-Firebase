@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
-import { CategoryMigration } from '../utils/categoryMigration';
 import type { List } from '../types/todoList';
 
 const Dashboard = () => {
@@ -32,69 +31,15 @@ const Dashboard = () => {
     // return () => unsubscribe();
   }, [user]);
 
-  const loadLists = async () => {
-    if (!user) return;
-
-    setLoading(true);
+    const loadLists = async () => {
     try {
-      console.log('Versuche Firebase Listen zu laden...');
-      
-      // Versuche nur User-Listen zu laden (einfacher Index)
-      const userLists = await ListService.getUserLists(user.uid);
-      console.log('Firebase Listen erfolgreich geladen:', userLists.length);
-      
-      // Shared Lists später implementieren wenn Index bereit ist
+      setLoading(true);
+      setError('');
+      const userLists = await ListService.getUserLists(user!.uid);
       setLists(userLists);
-      setError(''); // Clear any previous errors
-      
-    } catch (err: any) {
-      console.warn('Firebase Fehler, verwende Mock-Daten:', err.message);
-      
-      // Fallback auf Mock-Daten nur wenn wirklich nötig
-      if (err.message.includes('index') || err.message.includes('permissions')) {
-        const mockLists: List[] = [
-          {
-            id: '1',
-            name: 'Demo Einkaufsliste',
-            description: 'Beispiel-Liste (Mock-Daten)',
-            type: 'shopping',
-            userId: user.uid,
-            isPrivate: false,
-            createdAt: {
-              toDate: () => new Date()
-            } as any,
-            updatedAt: {
-              toDate: () => new Date()
-            } as any,
-            itemCount: {
-              total: 3,
-              completed: 1
-            }
-          },
-          {
-            id: '2',
-            name: 'Demo Geschenkeliste',
-            description: 'Beispiel-Liste (Mock-Daten)',
-            type: 'gift',
-            userId: user.uid,
-            isPrivate: true,
-            createdAt: {
-              toDate: () => new Date()
-            } as any,
-            updatedAt: {
-              toDate: () => new Date()
-            } as any,
-            itemCount: {
-              total: 2,
-              completed: 0
-            }
-          }
-        ];
-        setLists(mockLists);
-        setError('Demo-Modus: Firebase Index wird erstellt...');
-      } else {
-        setError('Fehler beim Laden der Listen');
-      }
+    } catch (err) {
+      console.error('Fehler beim Laden der Listen:', err);
+      setError('Fehler beim Laden der Listen');
     } finally {
       setLoading(false);
     }
@@ -137,40 +82,19 @@ const Dashboard = () => {
     navigate(`/list/${list.id}`);
   };
 
-  const handleDeleteList = async (list: List) => {
-    const itemCount = list.itemCount?.total || 0;
-    
-    const confirmed = window.confirm(
-      `Liste "${list.name}" wirklich löschen?\n\n` +
-      `Dies löscht auch alle ${itemCount} Items unwiderruflich!`
-    );
-    
-    if (!confirmed) return;
-    
+    const handleDeleteList = async (list: List) => {
+    if (!window.confirm(`Möchtest du die Liste "${list.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+      return;
+    }
+
     try {
       await ListService.deleteList(list.id);
-      console.log('✅ Liste erfolgreich gelöscht:', list.name);
       
       // Listen neu laden
       await loadLists();
-      
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
-      alert('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.');
-    }
-  };
-
-  // TEMPORÄRE Migration Function (später entfernen)
-  const runCategoryMigration = async () => {
-    if (!user) return;
-    
-    try {
-      console.log('🔄 Running category migration...');
-      await CategoryMigration.setUserIdForMyCategories(user.uid);
-      alert('✅ Categories erfolgreich migriert!');
-    } catch (error) {
-      console.error('❌ Migration failed:', error);
-      alert('❌ Migration fehlgeschlagen. Siehe Console für Details.');
+      alert('Fehler beim Löschen der Liste. Bitte versuche es erneut.');
     }
   };
 
@@ -196,17 +120,6 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="d-flex gap-2">
-              {/* TEMPORÄRER Migration Button */}
-              <Button
-                variant="warning"
-                onClick={runCategoryMigration}
-                className="d-flex align-items-center gap-2"
-                title="Einmalig ausführen: Categories Migration"
-              >
-                <i className="bi bi-wrench"></i>
-                Migrate Categories
-              </Button>
-              
               <Button
                 variant="primary"
                 onClick={() => setShowCreateModal(true)}
