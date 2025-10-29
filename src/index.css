@@ -17,6 +17,18 @@
   --amyaro-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
+/* Global Animations */
+@keyframes fadeInSharedBanner {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Bootstrap Overrides */
 .btn-primary {
   background-color: var(--amyaro-primary);

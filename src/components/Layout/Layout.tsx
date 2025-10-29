@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
+import { useInvitations } from '../../hooks/useInvitations';
+import { InvitationsModal } from '../business/InvitationsModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,6 +11,15 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+  
+  const { 
+    invitations, 
+    loading: invitationsLoading, 
+    unreadCount, 
+    acceptInvitation, 
+    declineInvitation 
+  } = useInvitations();
 
   const handleLogout = async () => {
     try {
@@ -28,6 +39,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setIsUserDropdownOpen(false);
   };
 
+  const openInvitationsModal = () => {
+    setIsInvitationsModalOpen(true);
+    setIsUserDropdownOpen(false);
+  };
+
   return (
     <div className="min-vh-100 d-flex flex-column">
       {/* Navigation */}
@@ -42,13 +58,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {user && (
             <div className="position-relative">
               <button
-                className="btn btn-link text-decoration-none border-0 bg-transparent text-secondary p-2"
+                className="btn btn-link text-decoration-none border-0 bg-transparent text-secondary p-2 position-relative"
                 type="button"
                 onClick={toggleUserDropdown}
                 aria-expanded={isUserDropdownOpen}
                 style={{ fontSize: '1.25rem' }}
               >
                 <i className="bi bi-person-circle"></i>
+                {/* Notification Bubble */}
+                {unreadCount > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', minWidth: '1.2rem', height: '1.2rem' }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                    <span className="visually-hidden">Neue Einladungen</span>
+                  </span>
+                )}
               </button>
               
               {/* User Dropdown Menu */}
@@ -57,6 +80,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="dropdown-header">
                     <small className="text-muted">{user.displayName || user.email}</small>
                   </div>
+                  <div className="dropdown-divider"></div>
+                  
+                  {/* Einladungen Menüpunkt */}
+                  <button 
+                    className={`dropdown-item d-flex align-items-center justify-content-between ${unreadCount > 0 ? 'bg-light' : ''}`}
+                    type="button"
+                    onClick={openInvitationsModal}
+                  >
+                    <span>
+                      <i className="bi bi-envelope me-2"></i>
+                      Einladungen
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="badge bg-primary rounded-pill">{unreadCount}</span>
+                    )}
+                  </button>
+                  
                   <div className="dropdown-divider"></div>
                   <Link className="dropdown-item" to="/profile" onClick={closeDropdown}>
                     <i className="bi bi-person me-2"></i>
@@ -91,6 +131,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="flex-grow-1">
         {children}
       </main>
+
+      {/* Einladungen Modal */}
+      <InvitationsModal
+        isOpen={isInvitationsModalOpen}
+        onClose={() => setIsInvitationsModalOpen(false)}
+        invitations={invitations}
+        loading={invitationsLoading}
+        onAccept={acceptInvitation}
+        onDecline={declineInvitation}
+      />
 
       {/* Footer */}
               <footer className="text-center text-muted mt-5 py-4 border-top border-light">

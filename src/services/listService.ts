@@ -75,20 +75,50 @@ export class ListService {
     }
   }
 
-  // Listen des Users abrufen (Temporär ohne orderBy)
+  // Listen des Users abrufen (eigene + geteilte Listen)
   static async getUserLists(userId: string): Promise<List[]> {
     try {
-      // Temporär: Einfache Query ohne orderBy bis Index fertig ist
-      const q = query(
+      // 1. Eigene Listen laden
+      const ownListsQuery = query(
         collection(db, this.COLLECTION),
         where('userId', '==', userId)
       );
       
-      const querySnapshot = await getDocs(q);
-      const lists = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as List));
+      // 2. Geteilte Listen laden (wo User in sharedWith Array ist)
+      const sharedListsQuery = query(
+        collection(db, this.COLLECTION),
+        where('sharedWith', 'array-contains', userId)
+      );
+      
+      // Beide Queries parallel ausführen
+      const [ownListsSnapshot, sharedListsSnapshot] = await Promise.all([
+        getDocs(ownListsQuery),
+        getDocs(sharedListsQuery)
+      ]);
+      
+      // Listen zusammenführen und Duplikate entfernen
+      const allListsMap = new Map<string, List>();
+      
+      // Eigene Listen hinzufügen
+      ownListsSnapshot.docs.forEach(doc => {
+        allListsMap.set(doc.id, {
+          id: doc.id,
+          ...doc.data()
+        } as List);
+      });
+      
+      // Geteilte Listen hinzufügen (überschreibt Duplikate nicht)
+      sharedListsSnapshot.docs.forEach(doc => {
+        if (!allListsMap.has(doc.id)) {
+          allListsMap.set(doc.id, {
+            id: doc.id,
+            ...doc.data()
+          } as List);
+        }
+      });
+      
+      // Zu Array konvertieren und sortieren
+      const lists = Array.from(allListsMap.values());
       
       // Manuell sortieren bis Index fertig ist
       return lists.sort((a, b) => {

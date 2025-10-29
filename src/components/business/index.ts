@@ -18,6 +18,8 @@ export { CategorySection } from './CategorySection';
 export { CreateCategoryModal } from './CreateCategoryModal';
 export { ShareListModal } from './ShareListModal';
 export { InvitationsBanner } from './InvitationsBanner';
+export { InvitationsModal } from './InvitationsModal';
+export { SharedListBanner } from './SharedListBanner';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

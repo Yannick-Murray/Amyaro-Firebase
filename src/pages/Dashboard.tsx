@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
-import { ListGrid, CreateListModal, InvitationsBanner, type CreateListData } from '../components/business';
+import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
 import type { List } from '../types/todoList';
 
@@ -109,11 +109,18 @@ const Dashboard = () => {
   const shoppingLists = lists.filter(l => l.type === 'shopping').length;
   // const giftLists = lists.filter(l => l.type === 'gift').length;
 
+  // Geteilte Listen: Listen die der User erstellt und geteilt hat ODER Listen die mit dem User geteilt wurden
+  const sharedLists = lists.filter(list => {
+    // Listen die der User erstellt und mit anderen geteilt hat
+    const isOwnerAndShared = list.userId === user?.uid && list.sharedWith && list.sharedWith.length > 0;
+    // Listen die mit dem User geteilt wurden (User ist nicht der ursprüngliche Ersteller)
+    const isSharedWithUser = list.userId !== user?.uid && list.sharedWith && list.sharedWith.includes(user?.uid || '');
+    
+    return isOwnerAndShared || isSharedWithUser;
+  }).length;
+
   return (
     <div className="container-fluid py-4">
-      {/* Einladungen Banner */}
-      <InvitationsBanner />
-
       {/* Header */}
       <div className="row mb-4">
         <div className="col-12">
@@ -170,7 +177,7 @@ const Dashboard = () => {
         <div className="col-md-3 mb-3">
           <div className="card p-3 text-center">
             <i className="bi bi-share display-6 text-info mb-2"></i>
-            <h5 className="mb-1">{lists.filter(l => l.sharedWith && l.sharedWith.length > 0).length}</h5>
+            <h5 className="mb-1">{sharedLists}</h5>
             <small className="text-muted">Geteilte Listen</small>
           </div>
         </div>
@@ -228,6 +235,7 @@ const Dashboard = () => {
             loading={loading}
             onListClick={handleListClick}
             onListDelete={handleDeleteList}
+            currentUserId={user?.uid}
           />
         </div>
       </div>

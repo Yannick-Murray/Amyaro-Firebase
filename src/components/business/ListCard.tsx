@@ -8,13 +8,15 @@ export interface ListCardProps {
   onClick?: (list: List) => void;
   onDelete?: (list: List) => void;
   className?: string;
+  currentUserId?: string;
 }
 
 export const ListCard: React.FC<ListCardProps> = ({
   list,
   onClick,
   onDelete,
-  className
+  className,
+  currentUserId
 }) => {
   const handleClick = () => onClick?.(list);
   
@@ -27,6 +29,11 @@ export const ListCard: React.FC<ListCardProps> = ({
   const completedCount = list.itemCount?.completed || 0;
   const totalCount = list.itemCount?.total || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  
+  // Prüfe ob die Liste mit dem aktuellen User geteilt wurde (User ist nicht der ursprüngliche Ersteller)
+  const isSharedWithUser = currentUserId && list.userId !== currentUserId && list.sharedWith?.includes(currentUserId);
+  // Prüfe ob der User die Liste erstellt und mit anderen geteilt hat
+  const isSharedByUser = currentUserId && list.userId === currentUserId && list.sharedWith && list.sharedWith.length > 0;
 
   return (
     <Card
@@ -42,12 +49,26 @@ export const ListCard: React.FC<ListCardProps> = ({
     >
       <div className="card-header pb-2">
         <div className="d-flex align-items-center justify-content-between">
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
             <i className={`bi bi-${typeIcon} text-primary`} />
             <h6 className="mb-0 fw-bold text-truncate">{list.name}</h6>
+            
+            {/* Shared Indicator */}
+            {isSharedWithUser && (
+              <div className="d-flex align-items-center">
+                <i className="bi bi-person-check text-info me-1" title="Mit Ihnen geteilt"></i>
+                <small className="text-info">Geteilt</small>
+              </div>
+            )}
+            {isSharedByUser && (
+              <div className="d-flex align-items-center">
+                <i className="bi bi-share text-success me-1" title="Von Ihnen geteilt"></i>
+                <small className="text-success">{list.sharedWith?.length}</small>
+              </div>
+            )}
           </div>
           
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-shrink-0">
             {list.category && (
               <span className="badge bg-secondary text-white small">
                 {list.category.name}

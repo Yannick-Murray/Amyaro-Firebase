@@ -8,6 +8,7 @@ import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
 import { ShareListModal } from '../components/business/ShareListModal';
+import { SharedListBanner } from '../components/business/SharedListBanner';
 import { 
   DndContext, 
   DragOverlay,
@@ -524,6 +525,9 @@ const ListDetail = () => {
             )}
           </div>
         </div>
+
+        {/* Shared List Banner */}
+        <SharedListBanner list={list} currentUserId={user?.uid} />
 
         {/* Quick Add Input */}
         <QuickAddInput

@@ -9,6 +9,7 @@ export interface ListGridProps {
   onListClick?: (list: List) => void;
   onListDelete?: (list: List) => void;
   className?: string;
+  currentUserId?: string;
 }
 
 export const ListGrid: React.FC<ListGridProps> = ({
@@ -16,7 +17,8 @@ export const ListGrid: React.FC<ListGridProps> = ({
   loading = false,
   onListClick,
   onListDelete,
-  className
+  className,
+  currentUserId
 }) => {
   if (loading) {
     return (
@@ -61,6 +63,7 @@ export const ListGrid: React.FC<ListGridProps> = ({
             onClick={onListClick}
             onDelete={onListDelete}
             className="h-100"
+            currentUserId={currentUserId}
           />
         </div>
       ))}
