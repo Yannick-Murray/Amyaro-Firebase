@@ -328,15 +328,6 @@ const ListDetail = () => {
     }
   };
 
-  const handleQuantityChange = async (itemId: string, quantity: number) => {
-    try {
-      await ItemService.updateItem(itemId, { quantity });
-      loadListData();
-    } catch (error) {
-      console.error('Fehler beim Aktualisieren der Menge:', error);
-    }
-  };
-
   const handleDeleteItem = async (itemId: string) => {
     if (!confirm('Item wirklich löschen?')) return;
     
@@ -568,8 +559,8 @@ const ListDetail = () => {
                     category={null}
                     items={grouped['uncategorized']}
                     onToggleItem={handleToggleItem}
-                    onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
+                    onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 )}
 
@@ -580,9 +571,9 @@ const ListDetail = () => {
                     category={category}
                     items={grouped[category.id] || []}
                     onToggleItem={handleToggleItem}
-                    onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
                     onDeleteCategory={handleDeleteCategory}
+                    onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 ))}
 
@@ -601,8 +592,8 @@ const ListDetail = () => {
                     }}
                     items={grouped['completed']}
                     onToggleItem={handleToggleItem}
-                    onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
+                    onReorderItems={() => {}} // Completed items nicht reorderbar
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}
@@ -628,7 +619,6 @@ const ListDetail = () => {
             <MobileItem
               item={activeItem}
               onToggle={() => {}}
-              onQuantityChange={async () => {}}
               onDelete={() => {}}
             />
           ) : null}

@@ -1,13 +1,14 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MobileItem } from './MobileItem';
+import { ContextMenu, useContextMenu } from '../ui';
+import { useLongPress } from '../../hooks';
+import { cn } from '../../utils/cn';
 import type { Item } from '../../types/todoList';
 
 export interface DraggableMobileItemProps {
   item: Item;
   onToggle: (itemId: string, completed: boolean) => void;
-  onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onDelete: (itemId: string) => void;
   onEdit?: (itemId: string) => void;
   onDuplicate?: (itemId: string) => void;
@@ -19,7 +20,6 @@ export interface DraggableMobileItemProps {
 export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
   item,
   onToggle,
-  onQuantityChange,
   onDelete,
   onEdit,
   onDuplicate,
@@ -27,6 +27,49 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
   disabled = false,
   className = ''
 }) => {
+  const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
+
+  // Context Menu Aktionen definieren
+  const contextMenuActions = [
+    {
+      id: 'edit',
+      label: 'Bearbeiten',
+      icon: 'bi bi-pencil',
+      onClick: () => onEdit?.(item.id),
+      disabled: !onEdit
+    },
+    {
+      id: 'duplicate',
+      label: 'Duplizieren',
+      icon: 'bi bi-copy',
+      onClick: () => onDuplicate?.(item.id),
+      disabled: !onDuplicate
+    },
+    {
+      id: 'move',
+      label: 'Kategorie ändern',
+      icon: 'bi bi-arrow-right',
+      onClick: () => onMoveToCategory?.(item.id),
+      disabled: !onMoveToCategory
+    },
+    {
+      id: 'delete',
+      label: 'Löschen',
+      icon: 'bi bi-trash',
+      variant: 'danger' as const,
+      onClick: () => onDelete(item.id)
+    }
+  ].filter(action => !action.disabled || action.id === 'delete'); // Immer delete anzeigen
+
+  // Long Press Handler - nur für den Text-Bereich
+  const longPressProps = useLongPress({
+    onLongPress: (event) => {
+      showContextMenu(event, contextMenuActions);
+    },
+    delay: 500,
+    shouldPreventDefault: false
+  });
+
   const {
     attributes,
     listeners,
@@ -49,68 +92,104 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={className}
+      className={cn(
+        // Einfache Listen-Zeile ohne Card-Design
+        'border-bottom border-light',
+        'hover:bg-gray-50 transition-colors duration-200',
+        className
+      )}
     >
-      <div
-        className="position-relative"
-        {...attributes}
+      {/* Einzeilige kompakte Layout: Drag-Handle + Checkbox + Text */}
+      <div 
+        className={cn(
+          // Horizontal Layout in einer Zeile
+          'd-flex align-items-center w-100',
+          'px-3 py-2', // Seitlicher und vertikaler Abstand
+          
+          // States
+          item.isCompleted && 'opacity-75',
+          disabled && 'pe-none opacity-40',
+          
+          // Smooth Transitions
+          'transition-all duration-200 ease-in-out'
+        )}
+        style={{ 
+          minHeight: '44px' // Touch-friendly
+        }}
       >
-        {/* Drag Handle - sichtbar auf Tablet/Desktop */}
+        {/* Drag Handle ganz links */}
         <div
+          {...attributes}
           {...listeners}
-          className="position-absolute start-0 top-0 h-100 d-none d-sm-flex align-items-center justify-content-center bg-light border-end"
+          className="d-flex align-items-center justify-content-center me-3"
           style={{ 
-            width: '30px', 
+            width: '20px',
+            height: '20px',
             cursor: isDragging ? 'grabbing' : 'grab',
             touchAction: 'none',
-            zIndex: 1
+            flexShrink: 0
           }}
         >
-          <i className="bi bi-grip-vertical text-muted"></i>
+          <i className="bi bi-grip-vertical text-muted" style={{ fontSize: '12px' }}></i>
         </div>
 
-        {/* MobileItem mit Padding für Drag Handle - Desktop */}
-        <div style={{ paddingLeft: '30px' }} className="d-none d-sm-block">
-          <MobileItem
-            item={item}
-            onToggle={onToggle}
-            onQuantityChange={onQuantityChange}
-            onDelete={onDelete}
-            onEdit={onEdit}
-            onDuplicate={onDuplicate}
-            onMoveToCategory={onMoveToCategory}
-            disabled={disabled}
-          />
-        </div>
+        {/* Checkbox */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onToggle(item.id, !item.isCompleted);
+          }}
+          disabled={disabled}
+          className={cn(
+            'btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center me-3',
+            'shadow-sm transition-all duration-200 ease-in-out',
+            item.isCompleted
+              ? 'btn-success text-white'
+              : 'btn-outline-secondary',
+          )}
+          style={{ 
+            width: '20px', 
+            height: '20px',
+            minWidth: '20px',
+            minHeight: '20px',
+            flexShrink: 0
+          }}
+          aria-label={item.isCompleted ? 'Als unerledigt markieren' : 'Als erledigt markieren'}
+        >
+          {item.isCompleted && (
+            <i className="bi bi-check fw-bold" style={{ fontSize: '10px' }} />
+          )}
+        </button>
 
-        {/* Mobile: Drag-Handle rechts */}
-        <div className="d-block d-sm-none position-relative">
-          <MobileItem
-            item={item}
-            onToggle={onToggle}
-            onQuantityChange={onQuantityChange}
-            onDelete={onDelete}
-            onEdit={onEdit}
-            onDuplicate={onDuplicate}
-            onMoveToCategory={onMoveToCategory}
-            disabled={disabled}
-          />
-          
-          {/* Mobile Drag Handle - rechts positioniert */}
-          <div
-            {...listeners}
-            className="position-absolute end-0 top-0 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-75 border-start"
+        {/* Text - nimmt verfügbaren Platz */}
+        <div 
+          {...longPressProps}
+          className="flex-grow-1" 
+          style={{ minWidth: 0, cursor: 'pointer' }}
+        >
+          <span 
+            className={cn(
+              'fw-normal',
+              item.isCompleted && 'text-decoration-line-through text-muted'
+            )}
             style={{ 
-              width: '40px',
-              touchAction: 'none',
-              cursor: 'grab',
-              zIndex: 2
+              fontSize: '15px',
+              lineHeight: '1.3'
             }}
           >
-            <i className="bi bi-grip-vertical text-muted"></i>
-          </div>
+            {item.name}
+          </span>
         </div>
       </div>
+      
+      {/* Context Menu für Long-Press */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        actions={contextMenu.actions}
+        onClose={hideContextMenu}
+      />
     </div>
   );
 };

@@ -5,30 +5,39 @@ import { MobileItem } from './MobileItem';
 import { DraggableMobileItem } from './DraggableMobileItem';
 import type { Category, Item } from '../../types/todoList';
 
-interface CategorySectionProps {
-  category: Category | null; // null = "Ohne Kategorie"
+export interface CategorySectionProps {
+  category: Category | null;
   items: Item[];
   onToggleItem: (itemId: string, completed: boolean) => void;
-  onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onDeleteItem: (itemId: string) => void;
+  onEditItem?: (itemId: string) => void;
+  onDuplicateItem?: (itemId: string) => void;
+  onMoveItem?: (itemId: string) => void;
+  onReorderItems: (itemIds: string[]) => void;
   onEditCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
+  onToggleExpanded?: () => void;
+  disabled?: boolean;
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
   category,
   items,
   onToggleItem,
-  onQuantityChange,
   onDeleteItem,
+  onEditItem,
+  onDuplicateItem,
+  onMoveItem,
+  onReorderItems,
   onEditCategory,
-  onDeleteCategory
+  onDeleteCategory,
+  onToggleExpanded,
+  disabled = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
-  const categoryIcon = category?.id === 'completed' ? '✅' : (category ? '📂' : '📋');
   
   // Nur für Category-Transfer, nicht für Intra-Category Sorting
   const { isOver, setNodeRef } = useDroppable({
@@ -40,12 +49,13 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
   return (
     <div className="mb-4">
-      {/* Category Header - Einfach, ohne Dropzone */}
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h5 className="mb-0 d-flex align-items-center">
-          <span className="me-2">{categoryIcon}</span>
-          <span style={{ color: category?.color }}>{categoryName}</span>
-          <span className="badge bg-secondary ms-2">{items.length}</span>
+      {/* Modern Category Header */}
+      <div className="d-flex align-items-center justify-content-between mb-3 px-2">
+        <h5 className="mb-0 d-flex align-items-center fw-semibold text-body-emphasis">
+          <span className="text-truncate">{categoryName}</span>
+          <span className="badge bg-secondary bg-opacity-25 text-secondary ms-2 rounded-pill fs-7">
+            {items.length}
+          </span>
         </h5>
         
         {category && onDeleteCategory && (
@@ -127,14 +137,16 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
             items={pendingItems.map(item => item.id)} 
             strategy={verticalListSortingStrategy}
           >
-            <div className="list-group">
+            <div className="list-group list-group-flush">
               {pendingItems.map(item => (
                 <DraggableMobileItem
                   key={item.id}
                   item={item}
                   onToggle={onToggleItem}
-                  onQuantityChange={onQuantityChange}
                   onDelete={onDeleteItem}
+                  onEdit={onEditItem}
+                  onDuplicate={onDuplicateItem}
+                  onMoveToCategory={onMoveItem}
                 />
               ))}
             </div>
@@ -149,9 +161,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 key={item.id}
                 item={item}
                 onToggle={onToggleItem}
-                onQuantityChange={onQuantityChange}
                 onDelete={onDeleteItem}
-                // completed items sind anklickbar aber nicht draggable
+                onEdit={onEditItem}
+                onDuplicate={onDuplicateItem}
+                onMoveToCategory={onMoveItem}
               />
             ))}
           </div>

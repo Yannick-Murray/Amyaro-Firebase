@@ -1,6 +1,5 @@
 import React from 'react';
-import { SwipeableItem, ContextMenu, useContextMenu } from '../ui';
-import { QuantityEditor } from './QuantityEditor';
+import { ContextMenu, useContextMenu } from '../ui';
 import { useLongPress } from '../../hooks';
 import { cn } from '../../utils/cn';
 import type { Item } from '../../types/todoList';
@@ -8,7 +7,6 @@ import type { Item } from '../../types/todoList';
 export interface MobileItemProps {
   item: Item;
   onToggle: (itemId: string, completed: boolean) => void;
-  onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onDelete: (itemId: string) => void;
   onEdit?: (itemId: string) => void;
   onDuplicate?: (itemId: string) => void;
@@ -20,7 +18,6 @@ export interface MobileItemProps {
 export const MobileItem: React.FC<MobileItemProps> = ({
   item,
   onToggle,
-  onQuantityChange,
   onDelete,
   onEdit,
   onDuplicate,
@@ -75,107 +72,80 @@ export const MobileItem: React.FC<MobileItemProps> = ({
     onToggle(item.id, !item.isCompleted);
   };
 
-  const handleDelete = () => {
-    onDelete(item.id);
-  };
-
-  const handleEdit = () => {
-    onEdit?.(item.id);
-  };
-
   return (
-    <SwipeableItem
-      onDelete={handleDelete}
-      onEdit={onEdit ? handleEdit : undefined}
-      disabled={disabled}
-      className={cn('list-group-item border-0 border-bottom', className)}
+    <div
+      className={cn(
+        // Einfache Listen-Zeile ohne Card-Design
+        'border-bottom border-light',
+        'hover:bg-gray-50 transition-colors duration-200',
+        className
+      )}
     >
-      {/* Mobile-First Bootstrap Layout */}
+      {/* Einzeilige kompakte Layout: Checkbox + Text + Drag-Handle */}
       <div 
         className={cn(
-          // Bootstrap Grid Layout
-          'd-flex align-items-center justify-content-between',
-          'py-2 px-3', // Padding wie im Original
+          // Horizontal Layout in einer Zeile
+          'd-flex align-items-center w-100',
+          'px-3 py-2', // Seitlicher und vertikaler Abstand
           
           // States
           item.isCompleted && 'opacity-75',
-          disabled && 'pe-none opacity-50'
+          disabled && 'pe-none opacity-40',
+          
+          // Smooth Transitions
+          'transition-all duration-200 ease-in-out'
         )}
-        style={{ minHeight: '44px' }} // Touch-Target Mindestgröße
+        style={{ 
+          minHeight: '44px' // Touch-friendly
+        }}
       >
-        {/* Left: Checkbox + Text */}
-        <div className="d-flex align-items-center flex-grow-1 me-2">
-          {/* Checkbox Container - Touch-optimiert */}
-          <div 
-            className="d-flex align-items-center justify-content-center me-3"
-            style={{ minWidth: '44px', minHeight: '44px' }} // Touch-Target Area
-          >
-                        <button
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleToggle();
-              }}
-              onTouchEnd={(e) => {
-                e.stopPropagation();
-              }}
-              disabled={disabled}
-              className={cn(
-                'btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center',
-                item.isCompleted
-                  ? 'btn-success text-white'
-                  : 'btn-outline-secondary',
-              )}
-              style={{ 
-                width: '24px', 
-                height: '24px',
-                minWidth: '24px',
-                minHeight: '24px',
-                zIndex: 10
-              }}
-              aria-label={item.isCompleted ? 'Als unerledigt markieren' : 'Als erledigt markieren'}
-            >
-              {item.isCompleted && (
-                <i className="bi bi-check" style={{ fontSize: '14px' }} />
-              )}
-            </button>
-          </div>
+        {/* Checkbox */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleToggle();
+          }}
+          disabled={disabled}
+          className={cn(
+            'btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center me-3',
+            'shadow-sm transition-all duration-200 ease-in-out',
+            item.isCompleted
+              ? 'btn-success text-white'
+              : 'btn-outline-secondary',
+          )}
+          style={{ 
+            width: '20px', 
+            height: '20px',
+            minWidth: '20px',
+            minHeight: '20px',
+            flexShrink: 0
+          }}
+          aria-label={item.isCompleted ? 'Als unerledigt markieren' : 'Als erledigt markieren'}
+        >
+          {item.isCompleted && (
+            <i className="bi bi-check fw-bold" style={{ fontSize: '10px' }} />
+          )}
+        </button>
 
-          {/* Item Text - mit Long Press für Context Menu */}
-          <div 
-            {...longPressProps}
-            className="flex-grow-1" 
-            style={{ minWidth: 0, cursor: 'pointer' }}
+        {/* Text - nimmt verfügbaren Platz */}
+        <div 
+          {...longPressProps}
+          className="flex-grow-1" 
+          style={{ minWidth: 0, cursor: 'pointer' }}
+        >
+          <span 
+            className={cn(
+              'fw-normal',
+              item.isCompleted && 'text-decoration-line-through text-muted'
+            )}
+            style={{ 
+              fontSize: '15px',
+              lineHeight: '1.3'
+            }}
           >
-            <span 
-              className={cn(
-                'text-truncate d-block',
-                item.isCompleted && 'text-decoration-line-through text-muted'
-              )}
-              title={item.name}
-            >
-              {item.name}
-            </span>
-            
-            {/* Mobile: Quantity Badge */}
-            <div className="d-block d-sm-none">
-              {(item.quantity ?? 1) > 1 && (
-                <small className="badge bg-light text-dark border">
-                  {item.quantity}x
-                </small>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Quantity Editor (Desktop) */}
-        <div className="d-none d-sm-block me-2">
-          <QuantityEditor
-            quantity={item.quantity ?? 1}
-            onQuantityChange={(newQuantity: number) => onQuantityChange(item.id, newQuantity)}
-            disabled={disabled || item.isCompleted}
-            size="sm"
-          />
+            {item.name}
+          </span>
         </div>
       </div>
       
@@ -186,7 +156,7 @@ export const MobileItem: React.FC<MobileItemProps> = ({
         actions={contextMenu.actions}
         onClose={hideContextMenu}
       />
-    </SwipeableItem>
+    </div>
   );
 };
 
