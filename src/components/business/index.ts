@@ -16,3 +16,10 @@ export { QuantityEditor } from './QuantityEditor';
 export { DraggableItem } from './DraggableItem';
 export { CategorySection } from './CategorySection';
 export { CreateCategoryModal } from './CreateCategoryModal';
+
+// Mobile Components
+export { MobileItem } from './MobileItem';
+export type { MobileItemProps } from './MobileItem';
+
+export { DraggableMobileItem } from './DraggableMobileItem';
+export type { DraggableMobileItemProps } from './DraggableMobileItem';

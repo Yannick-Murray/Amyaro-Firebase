@@ -13,7 +13,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { TodoItem, ListType } from '../types';
+import type { TodoItem, ListType } from '../types/todoList';
 import { CategoryService } from './listService';
 
 // TodoItem Services
@@ -24,34 +24,24 @@ export class TodoItemService {
   static async createItem(
     listId: string,
     title: string,
-    userId: string,
-    categoryId?: string,
     additionalData?: Partial<TodoItem>
   ): Promise<string> {
     try {
       const itemData: Omit<TodoItem, 'id'> = {
         listId,
-        categoryId,
-        title,
+        name: title,
         description: additionalData?.description,
-        completed: false,
-        quantity: additionalData?.quantity,
-        unit: additionalData?.unit,
+        categoryId: additionalData?.categoryId,
+        isCompleted: false,
+        quantity: additionalData?.quantity ?? 1,
+        priority: (additionalData?.priority as 'low' | 'medium' | 'high') ?? 'medium',
         price: additionalData?.price,
-        currency: additionalData?.currency || 'EUR',
-        productUrl: additionalData?.productUrl,
-        priority: additionalData?.priority,
-        createdBy: userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        order: Date.now()
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        order: additionalData?.order ?? 0
       };
 
-      const docRef = await addDoc(collection(db, this.COLLECTION), {
-        ...itemData,
-        createdAt: Timestamp.fromDate(itemData.createdAt),
-        updatedAt: Timestamp.fromDate(itemData.updatedAt)
-      });
+      const docRef = await addDoc(collection(db, this.COLLECTION), itemData);
 
       return docRef.id;
     } catch (error) {
@@ -145,11 +135,11 @@ export class TodoItemService {
       if (completed) {
         // Item als erledigt markieren und in entsprechende Kategorie verschieben
         if (listType === 'shopping') {
-          // Einkaufsliste: In "Erledigt"-Kategorie verschieben
-          targetCategoryId = await CategoryService.createCompletedCategory(listId);
-        } else if (listType === 'gifts') {
-          // Geschenkeliste: In Benutzer-spezifische Kategorie verschieben
-          targetCategoryId = await CategoryService.createUserCategory(listId, userId, userName);
+          // Für Shopping-Listen: "Erledigte Items" Kategorie
+          targetCategoryId = await CategoryService.createListCategory(listId, 'Erledigte Items', '#28a745');
+        } else if (listType === 'gift') {
+          // Für Geschenke-Listen: "Von [UserName]" Kategorie
+          targetCategoryId = await CategoryService.createCategory(`Von ${userName}`, '#17a2b8', userId, 'gift');
         }
 
         batch.update(itemRef, {
@@ -278,7 +268,7 @@ export class TodoItemService {
     try {
       const items = await this.getListItems(listId);
       const totalItems = items.length;
-      const completedItems = items.filter(item => item.completed).length;
+      const completedItems = items.filter(item => item.isCompleted).length;
       const completionRate = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
       return {

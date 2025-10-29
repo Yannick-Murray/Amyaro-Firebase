@@ -19,7 +19,7 @@ import {
   type DragOverEvent,
   type DragEndEvent
 } from '@dnd-kit/core';
-import { DraggableItem } from '../components/business/DraggableItem';
+import { MobileItem } from '../components/business/MobileItem';
 
 const ListDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -310,17 +310,33 @@ const ListDetail = () => {
     }
   };
 
-  const handleToggleItem = async (itemId: string) => {
+  const handleToggleItem = async (itemId: string, completed?: boolean) => {
+    console.log('🔄 ListDetail.handleToggleItem called');
+    console.log('ItemId:', itemId);
+    console.log('Completed param:', completed);
+    
     try {
       const item = items.find(i => i.id === itemId);
-      if (!item) return;
+      if (!item) {
+        console.error('❌ Item not found:', itemId);
+        return;
+      }
+
+      console.log('Current item.isCompleted:', item.isCompleted);
+      
+      // Verwende den completed Parameter falls vorhanden, sonst toggle
+      const newCompletedState = completed !== undefined ? completed : !item.isCompleted;
+      console.log('Setting isCompleted to:', newCompletedState);
 
       await ItemService.updateItem(itemId, {
-        isCompleted: !item.isCompleted
+        isCompleted: newCompletedState
       });
-      loadListData();
+      
+      console.log('✅ ItemService.updateItem called successfully');
+      await loadListData();
+      console.log('✅ Data reloaded');
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Items:', error);
+      console.error('❌ Fehler beim Aktualisieren des Items:', error);
     }
   };
 
@@ -566,7 +582,6 @@ const ListDetail = () => {
                     onToggleItem={handleToggleItem}
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
-                    dragOverState={dragOverState}
                   />
                 )}
 
@@ -580,7 +595,6 @@ const ListDetail = () => {
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
                     onDeleteCategory={handleDeleteCategory}
-                    dragOverState={dragOverState}
                   />
                 ))}
 
@@ -601,7 +615,6 @@ const ListDetail = () => {
                     onToggleItem={handleToggleItem}
                     onQuantityChange={handleQuantityChange}
                     onDeleteItem={handleDeleteItem}
-                    dragOverState={dragOverState}
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}
@@ -624,7 +637,7 @@ const ListDetail = () => {
         {/* Drag Overlay */}
         <DragOverlay>
           {activeItem ? (
-            <DraggableItem
+            <MobileItem
               item={activeItem}
               onToggle={() => {}}
               onQuantityChange={async () => {}}

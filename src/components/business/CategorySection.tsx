@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { DraggableItem } from './DraggableItem';
+import { MobileItem } from './MobileItem';
+import { DraggableMobileItem } from './DraggableMobileItem';
 import type { Category, Item } from '../../types/todoList';
 
 interface CategorySectionProps {
@@ -12,10 +13,6 @@ interface CategorySectionProps {
   onDeleteItem: (itemId: string) => void;
   onEditCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
-  dragOverState?: {
-    activeItemId: string | null;
-    overId: string | null;
-  };
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
@@ -25,10 +22,24 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onQuantityChange,
   onDeleteItem,
   onEditCategory,
-  onDeleteCategory,
-  dragOverState
+  onDeleteCategory
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // Debug wrapper für onToggle
+  const handleToggleWithDebug = (itemId: string, completed: boolean) => {
+    console.log('🔄 CategorySection.onToggle called');
+    console.log('ItemId:', itemId);
+    console.log('Completed:', completed);
+    console.log('onToggleItem function:', typeof onToggleItem);
+    
+    try {
+      onToggleItem(itemId, completed);
+      console.log('✅ CategorySection.onToggleItem called successfully');
+    } catch (error) {
+      console.error('❌ Error in CategorySection.onToggleItem:', error);
+    }
+  };
   
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
@@ -42,28 +53,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   const completedItems = items.filter(item => item.isCompleted);
   const pendingItems = items.filter(item => !item.isCompleted);
 
-  // Berechne Drop-Indicator für jedes Item
-  const getDropIndicatorForItem = (itemId: string, index: number) => {
-    if (!dragOverState?.activeItemId || !dragOverState?.overId) {
-      return undefined;
-    }
-
-    const isDraggedItem = dragOverState.activeItemId === itemId;
-    const isOverThisItem = dragOverState.overId === itemId;
-    
-    if (isDraggedItem || !isOverThisItem) {
-      return undefined;
-    }
-
-    // Bestimme Position basierend auf Drag-Richtung
-    const draggedIndex = pendingItems.findIndex(item => item.id === dragOverState.activeItemId);
-    const targetIndex = index;
-    
-    return {
-      position: draggedIndex < targetIndex ? 'bottom' : 'top',
-      isActive: true
-    } as const;
-  };  return (
+  return (
     <div className="mb-4">
       {/* Category Header - Einfach, ohne Dropzone */}
       <div className="d-flex align-items-center justify-content-between mb-3">
@@ -153,14 +143,13 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
             strategy={verticalListSortingStrategy}
           >
             <div className="list-group">
-              {pendingItems.map((item, index) => (
-                <DraggableItem
+              {pendingItems.map(item => (
+                <DraggableMobileItem
                   key={item.id}
                   item={item}
-                  onToggle={onToggleItem}
+                  onToggle={handleToggleWithDebug}
                   onQuantityChange={onQuantityChange}
                   onDelete={onDeleteItem}
-                  showDropIndicator={getDropIndicatorForItem(item.id, index)}
                 />
               ))}
             </div>
@@ -171,13 +160,13 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {completedItems.length > 0 && (
           <div className={`${pendingItems.length > 0 ? 'border-top mt-2 pt-2' : ''}`}>
             {completedItems.map(item => (
-              <DraggableItem
+              <MobileItem
                 key={item.id}
                 item={item}
-                onToggle={onToggleItem}
+                onToggle={handleToggleWithDebug}
                 onQuantityChange={onQuantityChange}
                 onDelete={onDeleteItem}
-                disabled={true} // Completed items nicht draggable
+                // disabled={true} entfernt - completed items sollen anklickbar sein!
               />
             ))}
           </div>
