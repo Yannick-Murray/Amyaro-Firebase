@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ListService, CategoryService, ItemService } from '../services/listService';
 import type { List, Category, Item } from '../types/todoList';
-import { getListTypeIcon, getListTypeLabel } from '../utils/helpers';
+import { getListTypeIcon } from '../utils/helpers';
 import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
@@ -450,7 +450,6 @@ const ListDetail = () => {
             <div className="d-flex align-items-center gap-2">
               <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
               <h1 className="h3 mb-0">{list.name}</h1>
-              <span className="badge bg-secondary">{getListTypeLabel(list.type === 'gift' ? 'gifts' : list.type)}</span>
               
               {/* List Actions Dropdown */}
               <div className="dropdown position-relative">
@@ -511,12 +510,6 @@ const ListDetail = () => {
             {list.description && (
               <p className="text-muted mt-2">{list.description}</p>
             )}
-          </div>
-
-          <div className="text-end">
-            <small className="text-muted">
-              {items.length} Items • {completedItems.length} erledigt
-            </small>
           </div>
         </div>
 
