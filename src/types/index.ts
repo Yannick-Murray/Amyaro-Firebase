@@ -4,6 +4,7 @@ export interface User {
   email: string;
   displayName?: string;
   photoURL?: string;
+  emailVerified?: boolean;
   createdAt: Date;
 }
 
@@ -100,6 +101,7 @@ export interface AuthContextType {
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  resendEmailVerification: () => Promise<void>;
 }
 
 // Firestore Collection Typen

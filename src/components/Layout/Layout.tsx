@@ -45,7 +45,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
+    <>
       {/* Navigation */}
       <nav className="navbar amyaro-navbar">
         <div className="container-fluid">
@@ -148,7 +148,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             © 2025 Amyaro - Deine persönliche Listen App
           </div>
         </footer>
-    </div>
+    </>
   );
 };
 

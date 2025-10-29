@@ -17,6 +17,7 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,7 +62,8 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
 
     try {
       await register(formData.email, formData.password, formData.displayName.trim());
-      // Weiterleitung erfolgt automatisch durch AuthContext
+      // Nach erfolgreicher Registrierung Bestätigungsmeldung anzeigen
+      setShowVerificationMessage(true);
     } catch (err: any) {
       setError(err.message || 'Fehler bei der Registrierung');
     } finally {
@@ -83,6 +85,15 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
             <div className="alert alert-danger" role="alert">
               <i className="bi bi-exclamation-triangle me-2"></i>
               {error}
+            </div>
+          )}
+
+          {showVerificationMessage && (
+            <div className="alert alert-success" role="alert">
+              <i className="bi bi-envelope-check me-2"></i>
+              <strong>Registrierung erfolgreich!</strong><br />
+              Wir haben dir eine E-Mail zur Bestätigung deiner E-Mail-Adresse gesendet. 
+              Bitte überprüfe dein Postfach und klicke auf den Link in der E-Mail.
             </div>
           )}
 

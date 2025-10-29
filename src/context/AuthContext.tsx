@@ -6,6 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -34,6 +35,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (email: string, password: string, displayName?: string) => {
     try {
       const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // E-Mail-Verifizierung senden
+      await sendEmailVerification(firebaseUser);
       
       // Profil aktualisieren
       if (displayName) {
@@ -104,6 +108,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // E-Mail-Verifizierung erneut senden
+  const resendEmailVerification = async () => {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+      } else {
+        throw new Error('Kein Benutzer angemeldet');
+      }
+    } catch (error: any) {
+      console.error('Resend email verification error:', error);
+      throw new Error(getErrorMessage(error.code));
+    }
+  };
+
   // Auth State Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -116,6 +134,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             const userData = userDoc.data() as UserType;
             setUser({
               ...userData,
+              emailVerified: firebaseUser.emailVerified,
               createdAt: userData.createdAt instanceof Date ? userData.createdAt : new Date()
             });
           } else {
@@ -125,6 +144,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               email: firebaseUser.email!,
               displayName: firebaseUser.displayName || '',
               photoURL: firebaseUser.photoURL || '',
+              emailVerified: firebaseUser.emailVerified,
               createdAt: new Date()
             };
             setUser(userData);
@@ -171,7 +191,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     login,
     register,
     logout,
-    resetPassword
+    resetPassword,
+    resendEmailVerification
   };
 
   return (
