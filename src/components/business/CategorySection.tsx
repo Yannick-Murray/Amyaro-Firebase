@@ -26,21 +26,6 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   
-  // Debug wrapper für onToggle
-  const handleToggleWithDebug = (itemId: string, completed: boolean) => {
-    console.log('🔄 CategorySection.onToggle called');
-    console.log('ItemId:', itemId);
-    console.log('Completed:', completed);
-    console.log('onToggleItem function:', typeof onToggleItem);
-    
-    try {
-      onToggleItem(itemId, completed);
-      console.log('✅ CategorySection.onToggleItem called successfully');
-    } catch (error) {
-      console.error('❌ Error in CategorySection.onToggleItem:', error);
-    }
-  };
-  
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
   const categoryIcon = category?.id === 'completed' ? '✅' : (category ? '📂' : '📋');
@@ -147,7 +132,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 <DraggableMobileItem
                   key={item.id}
                   item={item}
-                  onToggle={handleToggleWithDebug}
+                  onToggle={onToggleItem}
                   onQuantityChange={onQuantityChange}
                   onDelete={onDeleteItem}
                 />
@@ -163,10 +148,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               <MobileItem
                 key={item.id}
                 item={item}
-                onToggle={handleToggleWithDebug}
+                onToggle={onToggleItem}
                 onQuantityChange={onQuantityChange}
                 onDelete={onDeleteItem}
-                // disabled={true} entfernt - completed items sollen anklickbar sein!
+                // completed items sind anklickbar aber nicht draggable
               />
             ))}
           </div>

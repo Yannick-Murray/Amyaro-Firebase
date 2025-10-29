@@ -72,21 +72,7 @@ export const MobileItem: React.FC<MobileItemProps> = ({
   });
 
   const handleToggle = () => {
-    console.log('=== TOGGLE DEBUG ===');
-    console.log('Item ID:', item.id);
-    console.log('Item Name:', item.name);
-    console.log('Current isCompleted:', item.isCompleted);
-    console.log('Will set to:', !item.isCompleted);
-    console.log('Disabled prop:', disabled);
-    console.log('onToggle function:', typeof onToggle);
-    console.log('==================');
-    
-    try {
-      onToggle(item.id, !item.isCompleted);
-      console.log('✅ onToggle called successfully');
-    } catch (error) {
-      console.error('❌ Error in onToggle:', error);
-    }
+    onToggle(item.id, !item.isCompleted);
   };
 
   const handleDelete = () => {
@@ -124,27 +110,16 @@ export const MobileItem: React.FC<MobileItemProps> = ({
             className="d-flex align-items-center justify-content-center me-3"
             style={{ minWidth: '44px', minHeight: '44px' }} // Touch-Target Area
           >
-            <button
+                        <button
               onClick={(e) => {
-                console.log('🖱️ Button onClick event triggered');
-                console.log('Event target:', e.target);
-                console.log('Event currentTarget:', e.currentTarget);
-                console.log('Button disabled:', e.currentTarget.disabled);
-                
                 e.stopPropagation();
                 e.preventDefault();
-                
-                console.log('Calling handleToggle...');
                 handleToggle();
               }}
               onTouchEnd={(e) => {
-                console.log('👆 Button onTouchEnd event triggered');
                 e.stopPropagation();
               }}
-              onMouseDown={() => {
-                console.log('🖱️ Button onMouseDown event triggered');
-              }}
-              disabled={disabled} // Nur disabled wenn das ganze Item disabled ist
+              disabled={disabled}
               className={cn(
                 'btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center',
                 item.isCompleted
@@ -153,7 +128,7 @@ export const MobileItem: React.FC<MobileItemProps> = ({
               )}
               style={{ 
                 width: '24px', 
-                height: '24px', // Perfekter Kreis
+                height: '24px',
                 minWidth: '24px',
                 minHeight: '24px',
                 zIndex: 10

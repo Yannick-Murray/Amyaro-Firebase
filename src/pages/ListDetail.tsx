@@ -45,17 +45,17 @@ const ListDetail = () => {
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
 
-  // Mobile-friendly drag sensors - optimiert für schnelle Bewegungen
+  // Mobile-optimized drag sensors 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Reduziert für bessere Responsiveness
+        distance: 3, // Sehr niedrig für sofortige Aktivierung
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150, // Reduziert von 250ms auf 150ms
-        tolerance: 8, // Erhöht für bessere Touch-Performance
+        delay: 100, // Kurzer Delay um Touch von Scroll zu unterscheiden
+        tolerance: 10, // Mehr Toleranz für Touch-Bewegungen
       },
     })
   );
@@ -311,32 +311,20 @@ const ListDetail = () => {
   };
 
   const handleToggleItem = async (itemId: string, completed?: boolean) => {
-    console.log('🔄 ListDetail.handleToggleItem called');
-    console.log('ItemId:', itemId);
-    console.log('Completed param:', completed);
-    
     try {
       const item = items.find(i => i.id === itemId);
-      if (!item) {
-        console.error('❌ Item not found:', itemId);
-        return;
-      }
+      if (!item) return;
 
-      console.log('Current item.isCompleted:', item.isCompleted);
-      
       // Verwende den completed Parameter falls vorhanden, sonst toggle
       const newCompletedState = completed !== undefined ? completed : !item.isCompleted;
-      console.log('Setting isCompleted to:', newCompletedState);
 
       await ItemService.updateItem(itemId, {
         isCompleted: newCompletedState
       });
       
-      console.log('✅ ItemService.updateItem called successfully');
       await loadListData();
-      console.log('✅ Data reloaded');
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren des Items:', error);
+      console.error('Fehler beim Aktualisieren des Items:', error);
     }
   };
 

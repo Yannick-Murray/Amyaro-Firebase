@@ -55,10 +55,10 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
         className="position-relative"
         {...attributes}
       >
-        {/* Drag Handle - nur sichtbar auf Desktop */}
+        {/* Drag Handle - sichtbar auf Tablet/Desktop */}
         <div
           {...listeners}
-          className="position-absolute start-0 top-0 h-100 d-none d-md-flex align-items-center justify-content-center bg-light border-end"
+          className="position-absolute start-0 top-0 h-100 d-none d-sm-flex align-items-center justify-content-center bg-light border-end"
           style={{ 
             width: '30px', 
             cursor: isDragging ? 'grabbing' : 'grab',
@@ -69,8 +69,8 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
           <i className="bi bi-grip-vertical text-muted"></i>
         </div>
 
-        {/* MobileItem mit Padding für Drag Handle */}
-        <div style={{ paddingLeft: '30px' }} className="d-none d-md-block">
+        {/* MobileItem mit Padding für Drag Handle - Desktop */}
+        <div style={{ paddingLeft: '30px' }} className="d-none d-sm-block">
           <MobileItem
             item={item}
             onToggle={onToggle}
@@ -83,8 +83,8 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
           />
         </div>
 
-        {/* Mobile: Ohne Drag Handle */}
-        <div className="d-block d-md-none">
+        {/* Mobile: Drag-Handle rechts */}
+        <div className="d-block d-sm-none position-relative">
           <MobileItem
             item={item}
             onToggle={onToggle}
@@ -95,6 +95,20 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
             onMoveToCategory={onMoveToCategory}
             disabled={disabled}
           />
+          
+          {/* Mobile Drag Handle - rechts positioniert */}
+          <div
+            {...listeners}
+            className="position-absolute end-0 top-0 h-100 d-flex align-items-center justify-content-center bg-light bg-opacity-75 border-start"
+            style={{ 
+              width: '40px',
+              touchAction: 'none',
+              cursor: 'grab',
+              zIndex: 2
+            }}
+          >
+            <i className="bi bi-grip-vertical text-muted"></i>
+          </div>
         </div>
       </div>
     </div>
