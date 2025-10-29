@@ -867,3 +867,84 @@ export class ItemService {
     });
   }
 }
+
+// Share Service
+export class ShareService {
+  private static readonly COLLECTION = 'listShares';
+
+  /**
+   * Shares a list with another user by email
+   */
+  static async shareList(
+    listId: string, 
+    email: string, 
+    permission: 'read' | 'write' = 'write'
+  ): Promise<string> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      // Check if already shared with this email
+      const existingShareQuery = query(
+        collection(db, this.COLLECTION),
+        where('listId', '==', listId),
+        where('sharedWithEmail', '==', email.toLowerCase())
+      );
+      
+      const existingShares = await getDocs(existingShareQuery);
+      if (!existingShares.empty) {
+        throw new Error('Liste wurde bereits mit dieser E-Mail-Adresse geteilt');
+      }
+
+      const shareData = {
+        listId,
+        ownerId: auth.currentUser.uid,
+        sharedWithEmail: email.toLowerCase(),
+        permission,
+        sharedAt: serverTimestamp(),
+        sharedBy: auth.currentUser.uid,
+        status: 'pending'
+      };
+
+      const docRef = await addDoc(collection(db, this.COLLECTION), shareData);
+      return docRef.id;
+    } catch (error) {
+      console.error('Fehler beim Teilen der Liste:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets all shares for a specific list
+   */
+  static async getListShares(listId: string): Promise<any[]> {
+    try {
+      const q = query(
+        collection(db, this.COLLECTION),
+        where('listId', '==', listId)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Fehler beim Laden der geteilten Listen:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Removes a share
+   */
+  static async removeShare(shareId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.COLLECTION, shareId));
+    } catch (error) {
+      console.error('Fehler beim Entfernen der Freigabe:', error);
+      throw error;
+    }
+  }
+}

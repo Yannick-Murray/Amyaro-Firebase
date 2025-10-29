@@ -7,6 +7,7 @@ import { getListTypeIcon } from '../utils/helpers';
 import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
+import { ShareListModal } from '../components/business/ShareListModal';
 import { 
   DndContext, 
   DragOverlay,
@@ -32,6 +33,7 @@ const ListDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [dragOverState, setDragOverState] = useState<{
@@ -451,6 +453,16 @@ const ListDetail = () => {
               <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
               <h1 className="h3 mb-0">{list.name}</h1>
               
+              {/* Share Button */}
+              <button
+                className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                onClick={() => setShowShareModal(true)}
+                title="Liste teilen"
+              >
+                <i className="bi bi-share"></i>
+                <span className="d-none d-sm-inline">Teilen</span>
+              </button>
+              
               {/* List Actions Dropdown */}
               <div className="dropdown position-relative">
                 <button
@@ -631,6 +643,14 @@ const ListDetail = () => {
               setError('Fehler beim Erstellen der Kategorie');
             }
           }}
+        />
+
+        {/* Share List Modal */}
+        <ShareListModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          listId={id!}
+          listName={list.name}
         />
       </div>
     </DndContext>

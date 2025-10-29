@@ -16,6 +16,7 @@ export { QuantityEditor } from './QuantityEditor';
 export { DraggableItem } from './DraggableItem';
 export { CategorySection } from './CategorySection';
 export { CreateCategoryModal } from './CreateCategoryModal';
+export { ShareListModal } from './ShareListModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';
