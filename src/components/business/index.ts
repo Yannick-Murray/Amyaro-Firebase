@@ -20,6 +20,7 @@ export { ShareListModal } from './ShareListModal';
 export { InvitationsBanner } from './InvitationsBanner';
 export { InvitationsModal } from './InvitationsModal';
 export { SharedListBanner } from './SharedListBanner';
+export { SharedInfoModal } from './SharedInfoModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

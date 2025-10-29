@@ -9,7 +9,7 @@ interface QuickAddInputProps {
 
 export const QuickAddInput: React.FC<QuickAddInputProps> = ({
   onAddItems,
-  placeholder = "Milch, Brot, Butter...",
+  placeholder = "Neue Items",
   disabled = false
 }) => {
   const [input, setInput] = useState('');
@@ -88,8 +88,7 @@ export const QuickAddInput: React.FC<QuickAddInputProps> = ({
         
         {/* Mobile-optimierter Hinweis */}
         <div className="mt-2 px-1">
-          <small className="text-muted d-flex align-items-center">
-            <i className="bi bi-lightbulb me-1" style={{ fontSize: '12px' }}></i>
+          <small className="text-muted">
             Mehrere Items mit Komma trennen: "Milch, Brot, Butter"
           </small>
         </div>

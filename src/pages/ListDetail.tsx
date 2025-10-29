@@ -8,7 +8,7 @@ import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
 import { ShareListModal } from '../components/business/ShareListModal';
-import { SharedListBanner } from '../components/business/SharedListBanner';
+import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { 
   DndContext, 
   DragOverlay,
@@ -35,8 +35,10 @@ const ListDetail = () => {
   const [error, setError] = useState('');
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showSharedInfoModal, setShowSharedInfoModal] = useState(false); // Für geteilte Listen Info
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
   const [dragOverState, setDragOverState] = useState<{
     activeItemId: string | null;
     overId: string | null;
@@ -126,6 +128,9 @@ const ListDetail = () => {
   }, [items, categories]);
 
   const completedItems = items.filter(item => item.isCompleted);
+  
+  // Prüfe ob die Liste mit dem aktuellen User geteilt wurde (User ist nicht der ursprüngliche Ersteller)
+  const isSharedWithUser = user && list && list.userId !== user.uid && list.sharedWith?.includes(user.uid);
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -433,47 +438,89 @@ const ListDetail = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="container mt-4">
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <nav aria-label="breadcrumb">
-              <ol className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <button 
-                    className="btn btn-link p-0" 
-                    onClick={handleBack}
+        {/* Focus Mode Header - Kompakt */}
+        {isFocusMode ? (
+          <div className="mb-3">
+            <div 
+              className="d-flex align-items-center justify-content-between py-2 px-3 bg-primary text-white rounded cursor-pointer"
+              onClick={() => setIsFocusMode(false)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="d-flex align-items-center gap-2">
+                <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)}`}></i>
+                <span className="fw-medium">{list.name}</span>
+              </div>
+              
+              <div className="d-flex align-items-center gap-3">
+                <div className="d-flex align-items-center gap-1">
+                  <small className="opacity-75">{completedItems.length}/{items.length}</small>
+                  <div 
+                    className="bg-white bg-opacity-25 rounded"
+                    style={{ width: '60px', height: '4px' }}
                   >
-                    Listen
+                    <div 
+                      className="bg-white rounded h-100"
+                      style={{ 
+                        width: `${items.length > 0 ? (completedItems.length / items.length) * 100 : 0}%`,
+                        transition: 'width 0.3s ease'
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                <i className="bi bi-chevron-up"></i>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Normal Header */
+          <>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <nav aria-label="breadcrumb">
+                  <ol className="breadcrumb">
+                    <li className="breadcrumb-item">
+                      <button 
+                        className="btn btn-link p-0" 
+                        onClick={handleBack}
+                      >
+                        Listen
+                      </button>
+                    </li>
+                    <li className="breadcrumb-item active">{list.name}</li>
+                  </ol>
+                </nav>
+                
+                <div className="d-flex align-items-center gap-2">
+                  <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
+                  <h1 className="h3 mb-0">{list.name}</h1>
+                  
+                  {/* Share Button - Conditional Behavior */}
+                  <button
+                    className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                    onClick={() => {
+                      if (isSharedWithUser) {
+                        setShowSharedInfoModal(true);
+                      } else {
+                        setShowShareModal(true);
+                      }
+                    }}
+                    title={isSharedWithUser ? "Geteilte Liste Info" : "Liste teilen"}
+                  >
+                    <i className={isSharedWithUser ? "bi bi-info-circle" : "bi bi-share"}></i>
+                    <span className="d-none d-sm-inline">{isSharedWithUser ? "Info" : "Teilen"}</span>
                   </button>
-                </li>
-                <li className="breadcrumb-item active">{list.name}</li>
-              </ol>
-            </nav>
-            
-            <div className="d-flex align-items-center gap-2">
-              <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
-              <h1 className="h3 mb-0">{list.name}</h1>
-              
-              {/* Share Button */}
-              <button
-                className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
-                onClick={() => setShowShareModal(true)}
-                title="Liste teilen"
-              >
-                <i className="bi bi-share"></i>
-                <span className="d-none d-sm-inline">Teilen</span>
-              </button>
-              
-              {/* List Actions Dropdown */}
-              <div className="dropdown position-relative">
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  type="button"
-                  onClick={() => setShowListDropdown(!showListDropdown)}
-                  title="Liste bearbeiten"
-                >
-                  <i className="bi bi-three-dots"></i>
-                </button>
+                  
+                  {/* List Actions Dropdown */}
+                  <div className="dropdown position-relative">
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      onClick={() => setShowListDropdown(!showListDropdown)}
+                      title="Liste bearbeiten"
+                    >
+                      <i className="bi bi-three-dots"></i>
+                    </button>
                 
                 {showListDropdown && (
                   <>
@@ -519,36 +566,46 @@ const ListDetail = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
             
             {list.description && (
               <p className="text-muted mt-2">{list.description}</p>
             )}
-          </div>
-        </div>
 
-        {/* Shared List Banner */}
-        <SharedListBanner list={list} currentUserId={user?.uid} />
-
-        {/* Quick Add Input */}
-        <QuickAddInput
-          onAddItems={handleAddItems}
-          placeholder="Neue Items hinzufügen (Milch, Brot, Butter...)"
-        />
-
-        {/* Progress */}
-        {items.length > 0 && (
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-muted">Fortschritt</span>
-              <small>{completedItems.length} von {items.length}</small>
+            {/* Focus Mode Button - Replaces SharedListBanner */}
+            <div className="mb-3">
+              <button
+                className="btn btn-outline-secondary w-100 d-flex align-items-center gap-2"
+                onClick={() => setIsFocusMode(true)}
+              >
+                <i className="bi bi-arrow-up-circle text-primary"></i>
+                <span className="fw-medium">Listenansicht</span>
+              </button>
             </div>
-            <div className="progress">
-              <div 
-                className="progress-bar" 
-                style={{ width: `${(completedItems.length / items.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
+
+            {/* Quick Add Input - nur in Normal Mode */}
+            <QuickAddInput
+              onAddItems={handleAddItems}
+              placeholder="Neue Items"
+            />
+
+            {/* Progress - nur in Normal Mode */}
+            {items.length > 0 && (
+              <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted">Fortschritt</span>
+                  <small>{completedItems.length} von {items.length}</small>
+                </div>
+                <div className="progress">
+                  <div 
+                    className="progress-bar" 
+                    style={{ width: `${(completedItems.length / items.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Categories */}
@@ -655,6 +712,14 @@ const ListDetail = () => {
           onClose={() => setShowShareModal(false)}
           listId={id!}
           listName={list.name}
+        />
+
+        {/* Shared Info Modal */}
+        <SharedInfoModal
+          isOpen={showSharedInfoModal}
+          onClose={() => setShowSharedInfoModal(false)}
+          listName={list.name}
+          originalCreatorId={list.userId}
         />
       </div>
     </DndContext>
