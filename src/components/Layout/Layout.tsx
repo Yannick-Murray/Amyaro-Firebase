@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,85 +8,84 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
       await logout();
+      setIsUserDropdownOpen(false);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  const isActive = (path: string) => {
-    return location.pathname === path ? 'nav-link active' : 'nav-link';
+  const toggleUserDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsUserDropdownOpen(!isUserDropdownOpen);
+  };
+
+  const closeDropdown = () => {
+    setIsUserDropdownOpen(false);
   };
 
   return (
     <div className="min-vh-100 d-flex flex-column">
       {/* Navigation */}
-      <nav className="navbar navbar-expand-lg amyaro-navbar">
+      <nav className="navbar amyaro-navbar">
         <div className="container-fluid">
-          <Link className="navbar-brand fw-bold text-primary" to="/">
+          <Link className="navbar-brand fw-bold text-primary" to="/" onClick={closeDropdown}>
             <i className="bi bi-check2-square me-2"></i>
             Amyaro
           </Link>
-          <button
-            className="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarNav"
-          >
-            <span className="navbar-toggler-icon"></span>
-          </button>
-          <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav ms-auto">
-              {user && (
-                <>
-                  <li className="nav-item">
-                    <Link className={isActive('/')} to="/">
-                      <i className="bi bi-house me-1"></i>
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li className="nav-item dropdown">
-                    <a
-                      className="nav-link dropdown-toggle"
-                      href="#"
-                      role="button"
-                      data-bs-toggle="dropdown"
-                    >
-                      <i className="bi bi-person-circle me-1"></i>
-                      {user.displayName || user.email}
-                    </a>
-                    <ul className="dropdown-menu">
-                      <li>
-                        <Link className="dropdown-item" to="/profile">
-                          <i className="bi bi-person me-2"></i>
-                          Profil
-                        </Link>
-                      </li>
-                      <li>
-                        <hr className="dropdown-divider" />
-                      </li>
-                      <li>
-                        <button 
-                          className="dropdown-item" 
-                          type="button"
-                          onClick={handleLogout}
-                        >
-                          <i className="bi bi-box-arrow-right me-2"></i>
-                          Abmelden
-                        </button>
-                      </li>
-                    </ul>
-                  </li>
-                </>
+          
+          {/* Account Icon */}
+          {user && (
+            <div className="position-relative">
+              <button
+                className="btn btn-link text-decoration-none border-0 bg-transparent text-secondary p-2"
+                type="button"
+                onClick={toggleUserDropdown}
+                aria-expanded={isUserDropdownOpen}
+                style={{ fontSize: '1.25rem' }}
+              >
+                <i className="bi bi-person-circle"></i>
+              </button>
+              
+              {/* User Dropdown Menu */}
+              {isUserDropdownOpen && (
+                <div className="dropdown-menu show position-absolute end-0" style={{ zIndex: 1050, minWidth: '200px' }}>
+                  <div className="dropdown-header">
+                    <small className="text-muted">{user.displayName || user.email}</small>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  <Link className="dropdown-item" to="/profile" onClick={closeDropdown}>
+                    <i className="bi bi-person me-2"></i>
+                    Profil
+                  </Link>
+                  <div className="dropdown-divider"></div>
+                  <button 
+                    className="dropdown-item" 
+                    type="button"
+                    onClick={handleLogout}
+                  >
+                    <i className="bi bi-box-arrow-right me-2"></i>
+                    Abmelden
+                  </button>
+                </div>
               )}
-            </ul>
-          </div>
+            </div>
+          )}
         </div>
       </nav>
+
+      {/* Backdrop für User-Dropdown */}
+      {isUserDropdownOpen && (
+        <div 
+          className="position-fixed top-0 start-0 w-100 h-100"
+          style={{ zIndex: 1040 }}
+          onClick={closeDropdown}
+        ></div>
+      )}
 
       {/* Main Content */}
       <main className="flex-grow-1">

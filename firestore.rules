@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // VEREINFACHTE REGELN FÜR DEVELOPMENT
+    // In Production sollten diese restriktiver sein!
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Erlaube anderen Users, User-Daten zu lesen (für Email-Suche beim Teilen)
+      allow read: if request.auth != null;
+    }
+    
+    // Lists collection
+    match /lists/{listId} {
+      allow read, write, create, delete: if request.auth != null;
+      allow list: if request.auth != null;
+    }
+    
+    // Items collection  
+    match /items/{itemId} {
+      allow read, write, create, delete: if request.auth != null;
+      allow list: if request.auth != null;
+    }
+    
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read, write, create, delete: if request.auth != null;
+      allow list: if request.auth != null;
+    }
+    
+    // List invitations collection
+    match /listInvitations/{invitationId} {
+      allow read, write, create, delete: if request.auth != null;
+      allow list: if request.auth != null;
+    }
+    
+    // Alle anderen Dokumente verweigern
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

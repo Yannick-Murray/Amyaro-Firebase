@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
-import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
+import { ListGrid, CreateListModal, InvitationsBanner, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
 import type { List } from '../types/todoList';
 
@@ -100,24 +100,26 @@ const Dashboard = () => {
 
   const filteredLists = lists.filter(list => {
     if (filter === 'all') return true;
+    // Temporarily disable gift lists
+    if (filter === 'gift') return false;
     return list.type === filter;
   });
 
   const totalLists = lists.length;
   const shoppingLists = lists.filter(l => l.type === 'shopping').length;
-  const giftLists = lists.filter(l => l.type === 'gift').length;
+  // const giftLists = lists.filter(l => l.type === 'gift').length;
 
   return (
     <div className="container-fluid py-4">
+      {/* Einladungen Banner */}
+      <InvitationsBanner />
+
       {/* Header */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h1 className="h2 mb-1">Meine Listen</h1>
-              <p className="text-muted mb-0">
-                Du hast {totalLists} Listen ({shoppingLists} Einkaufslisten, {giftLists} Geschenkelisten)
-              </p>
+              <h1 className="h2 mb-0">Meine Listen</h1>
             </div>
             <div className="d-flex gap-2">
               <Button
@@ -157,9 +159,11 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="col-md-3 mb-3">
-          <div className="card p-3 text-center">
-            <i className="bi bi-gift display-6 text-danger mb-2"></i>
-            <h5 className="mb-1">{giftLists}</h5>
+          <div className="card p-3 text-center border-dashed bg-light">
+            <i className="bi bi-gift display-6 text-muted mb-2"></i>
+            <h5 className="mb-1 text-muted">
+              <small className="badge bg-warning text-dark">Bald verfügbar</small>
+            </h5>
             <small className="text-muted">Geschenkelisten</small>
           </div>
         </div>
@@ -207,9 +211,10 @@ const Dashboard = () => {
               id="filter-gift"
               checked={filter === 'gift'}
               onChange={() => setFilter('gift')}
+              disabled
             />
-            <label className="btn btn-outline-primary" htmlFor="filter-gift">
-              🎁 Geschenkelisten ({giftLists})
+            <label className="btn btn-outline-secondary" htmlFor="filter-gift" style={{ cursor: 'not-allowed' }}>
+              🎁 Geschenkelisten <small className="badge bg-warning text-dark ms-1">Bald</small>
             </label>
           </div>
         </div>

@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Custom styles for disabled gift lists */
+.border-dashed {
+  border-style: dashed !important;
+}

@@ -76,6 +76,22 @@ export interface ListShare {
   sharedBy: string; // User-ID der Person, die geteilt hat
 }
 
+// Listen-Einladungen
+export interface ListInvitation {
+  id: string;
+  listId: string;
+  listName: string;
+  fromUserId: string; // Wer hat eingeladen
+  fromUserName: string; // Name des Einladenden
+  toEmail: string; // Email des Eingeladenen
+  toUserId?: string; // User-ID falls der User existiert
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  permission: 'read' | 'write';
+  createdAt: Date;
+  expiresAt: Date;
+  respondedAt?: Date;
+}
+
 // Auth Context Typen
 export interface AuthContextType {
   user: User | null;

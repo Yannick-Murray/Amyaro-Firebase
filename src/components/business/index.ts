@@ -17,6 +17,7 @@ export { DraggableItem } from './DraggableItem';
 export { CategorySection } from './CategorySection';
 export { CreateCategoryModal } from './CreateCategoryModal';
 export { ShareListModal } from './ShareListModal';
+export { InvitationsBanner } from './InvitationsBanner';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

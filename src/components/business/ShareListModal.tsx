@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { ShareService } from '../../services/listService';
-import { auth } from '../../config/firebase';
+import { InvitationService } from '../../services/invitationService';
+import { useAuth } from '../../context/AuthContext';
 
 interface ShareListModalProps {
   isOpen: boolean;
@@ -17,6 +17,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
   listId,
   listName
 }) => {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -30,7 +31,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) return;
+    if (!email.trim() || !user) return;
     
     if (!validateEmail(email)) {
       setMessage('Bitte geben Sie eine gültige E-Mail-Adresse ein');
@@ -38,20 +39,28 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
       return;
     }
 
-    if (email.toLowerCase() === auth.currentUser?.email?.toLowerCase()) {
+    if (email.toLowerCase() === user.email?.toLowerCase()) {
       setMessage('Sie können die Liste nicht mit sich selbst teilen');
       setMessageType('error');
       return;
     }
 
     setIsLoading(true);
-    setMessage('');
+    setMessage('Wir prüfen Ihre Teilen-Anfrage...');
+    setMessageType('');
 
     try {
-      await ShareService.shareList(listId, email, 'write');
+      await InvitationService.sendInvitation(
+        listId,
+        listName,
+        user.uid,
+        user.displayName || user.email || 'Unbekannt',
+        email,
+        'write'
+      );
 
       // Success message
-      setMessage(`Liste "${listName}" wird mit ${email} geteilt`);
+      setMessage(`✅ Einladung gesendet! ${email} erhält eine Benachrichtigung und kann die Liste nach der Bestätigung bearbeiten.`);
       setMessageType('success');
       
       // Reset form after delay
@@ -60,11 +69,11 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
         setMessage('');
         setMessageType('');
         onClose();
-      }, 2000);
+      }, 3000);
 
     } catch (error: any) {
-      console.error('Error sharing list:', error);
-      setMessage(error.message || 'Fehler beim Teilen der Liste. Bitte versuchen Sie es erneut.');
+      console.error('Error sending invitation:', error);
+      setMessage(error.message || 'Fehler beim Senden der Einladung. Bitte versuchen Sie es erneut.');
       setMessageType('error');
     } finally {
       setIsLoading(false);
@@ -101,13 +110,13 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
             }}
           />
           <small className="text-muted mt-1">
-            Die Person erhält eine Einladung zur gemeinsamen Bearbeitung der Liste.
+            Die Person erhält eine Einladung und muss diese bestätigen, bevor sie Zugriff erhält.
           </small>
         </div>
 
         {message && (
-          <div className={`alert alert-${messageType === 'success' ? 'success' : 'danger'} mb-3`}>
-            <i className={`bi bi-${messageType === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2`}></i>
+          <div className={`alert ${messageType === 'success' ? 'alert-success' : messageType === 'error' ? 'alert-danger' : 'alert-info'} mb-3`}>
+            <i className={`bi bi-${messageType === 'success' ? 'check-circle' : messageType === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2`}></i>
             {message}
           </div>
         )}
@@ -127,7 +136,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
             disabled={isLoading || !email.trim()}
             isLoading={isLoading}
           >
-            {isLoading ? 'Wird geteilt...' : 'Liste teilen'}
+            {isLoading ? 'Sende Einladung...' : 'Einladung senden'}
           </Button>
         </div>
       </form>

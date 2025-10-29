@@ -51,8 +51,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       await setDoc(doc(db, 'users', firebaseUser.uid), userData);
       
-      // Standard Todo-Liste erstellen
-      await createDefaultTodoList(firebaseUser.uid);
+      // Standard-Liste erstellen
+      try {
+        const ListService = await import('../services/listService').then(m => m.ListService);
+        
+        await ListService.createList(
+          firebaseUser.uid,
+          'Meine erste Einkaufsliste',
+          'shopping',
+          'Willkommen bei Amyaro! Das ist deine erste Einkaufsliste.',
+          undefined, // no category
+          false // not private
+        );
+      } catch (listError) {
+        console.error('Error creating default list:', listError);
+        // Don't throw error to prevent registration from failing
+      }
       
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -87,27 +101,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error: any) {
       console.error('Password reset error:', error);
       throw new Error(getErrorMessage(error.code));
-    }
-  };
-
-  // Standard Todo-Liste erstellen
-  const createDefaultTodoList = async (userId: string) => {
-    try {
-      const defaultList = {
-        id: 'default',
-        title: 'Meine Aufgaben',
-        description: 'Deine erste Todo-Liste',
-        color: '#3b82f6',
-        userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        order: 0,
-        isDefault: true
-      };
-
-      await setDoc(doc(db, 'todoLists', `${userId}_default`), defaultList);
-    } catch (error) {
-      console.error('Error creating default todo list:', error);
     }
   };
 
