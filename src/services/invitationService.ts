@@ -80,11 +80,25 @@ export class InvitationService {
         expiresAt,
       };
 
-      const docRef = await addDoc(collection(db, 'listInvitations'), {
-        ...invitation,
+      // Filter undefined values before saving to Firestore
+      const invitationData: any = {
+        listId: invitation.listId,
+        listName: invitation.listName,
+        fromUserId: invitation.fromUserId,
+        fromUserName: invitation.fromUserName,
+        toEmail: invitation.toEmail,
+        status: invitation.status,
+        permission: invitation.permission,
         createdAt: Timestamp.fromDate(invitation.createdAt),
         expiresAt: Timestamp.fromDate(invitation.expiresAt),
-      });
+      };
+
+      // Only add toUserId if it's not undefined
+      if (invitation.toUserId) {
+        invitationData.toUserId = invitation.toUserId;
+      }
+
+      const docRef = await addDoc(collection(db, 'listInvitations'), invitationData);
 
       return docRef.id;
     } catch (error) {

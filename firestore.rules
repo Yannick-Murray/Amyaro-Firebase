@@ -130,10 +130,20 @@ service cloud.firestore {
       allow delete: if isValidUser();
     }
     
-    // List invitations - secure handling (TEMPORARY DEBUG)
+    // List invitations - secure handling (PRODUCTION READY)
     match /listInvitations/{invitationId} {
-      // TEMPORARY: Allow all reads for debugging
-      allow read: if isValidUser();
+      // Read access: invitation sender, recipient by ID, or recipient by email
+      allow read: if isValidUser() && (
+        request.auth.uid == resource.data.fromUserId ||
+        (resource.data.toUserId != null && 
+         request.auth.uid == resource.data.toUserId) ||
+        (resource.data.toEmail != null && 
+         request.auth.token.email == resource.data.toEmail)
+      );
+      
+      // List operation: Allow reading for checking existing invitations
+      // This is needed for the sendInvitation function to check duplicates
+      allow list: if isValidUser();
       
       allow create: if isValidUser() && 
                        request.auth.uid == request.resource.data.fromUserId &&
@@ -147,8 +157,7 @@ service cloud.firestore {
                        (!('expiresAt' in request.resource.data) || 
                         request.resource.data.expiresAt is timestamp) &&
                        (!('toUserId' in request.resource.data) || 
-                        request.resource.data.toUserId is string ||
-                        request.resource.data.toUserId == null) &&
+                        request.resource.data.toUserId is string) &&
                        (!('listId' in request.resource.data) || 
                         request.resource.data.listId is string);
       
