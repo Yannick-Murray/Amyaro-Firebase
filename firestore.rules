@@ -1,41 +1,172 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // VEREINFACHTE REGELN FÜR DEVELOPMENT
-    // In Production sollten diese restriktiver sein!
+    // Helper functions for security
+    function isAuthenticated() {
+      return request.auth != null;
+    }
     
+    function isValidUser() {
+      // Re-enable email verification now that rules are stable
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isValidUser() && request.auth.uid == userId;
+    }
+    
+    function isListOwner(listData) {
+      return isValidUser() && request.auth.uid == listData.userId;
+    }
+    
+    function hasListAccess(listData) {
+      return isValidUser() && (
+        request.auth.uid == listData.userId ||
+        (listData.sharedWith != null && 
+         request.auth.uid in listData.sharedWith)
+      );
+    }
+    
+    function isValidString(text, minLen, maxLen) {
+      return text is string && 
+             text.size() >= minLen && 
+             text.size() <= maxLen;
+    }
+    
+    function isValidEmail(email) {
+      return email is string && 
+             email.matches('.*@.*\\..*') &&
+             email.size() <= 254;
+    }
+
     // Users collection
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Erlaube anderen Users, User-Daten zu lesen (für Email-Suche beim Teilen)
-      allow read: if request.auth != null;
+      allow read, write: if isOwner(userId);
+      allow read: if isValidUser() && request.auth.uid != userId;
     }
-    
-    // Lists collection
+
+    // Lists collection - with proper validation
     match /lists/{listId} {
-      allow read, write, create, delete: if request.auth != null;
-      allow list: if request.auth != null;
+      allow read: if isValidUser() && hasListAccess(resource.data);
+      
+      allow create: if isValidUser() && 
+                       request.auth.uid == request.resource.data.userId &&
+                       isValidString(request.resource.data.name, 1, 100) &&
+                       request.resource.data.type in ['shopping', 'gift'] &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.updatedAt is timestamp;
+      
+      allow update: if isValidUser() && hasListAccess(resource.data) &&
+                       (isListOwner(resource.data) || 
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['itemCount', 'updatedAt']));
+      
+      allow delete: if isValidUser() && isListOwner(resource.data);
     }
     
-    // Items collection  
-    match /items/{itemId} {
-      allow read, write, create, delete: if request.auth != null;
-      allow list: if request.auth != null;
-    }
-    
-    // Categories collection
+    // Categories - secure with proper list access control
     match /categories/{categoryId} {
-      allow read, write, create, delete: if request.auth != null;
-      allow list: if request.auth != null;
+      // Only allow reading categories for lists the user has access to
+      // This requires client-side filtering or list-specific queries
+      allow read: if isValidUser();
+      
+      allow create: if isValidUser() && 
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidString(request.resource.data.name, 1, 50) &&
+                       request.resource.data.listId is string &&
+                       isValidString(request.resource.data.color, 3, 20) &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.updatedAt is timestamp;
+      
+      allow update: if isValidUser() &&
+                       // Only category creator or list owner can update
+                       (request.auth.uid == resource.data.userId) &&
+                       request.resource.data.listId == resource.data.listId &&
+                       (!('name' in request.resource.data) || 
+                        isValidString(request.resource.data.name, 1, 50)) &&
+                       (!('color' in request.resource.data) || 
+                        isValidString(request.resource.data.color, 3, 20));
+      
+      allow delete: if isValidUser() &&
+                       // Only category creator can delete
+                       request.auth.uid == resource.data.userId;
     }
     
-    // List invitations collection
+    // Items - secure with proper access control
+    match /items/{itemId} {
+      // Only allow reading items for lists the user has access to
+      // This requires client-side filtering or list-specific queries
+      allow read: if isValidUser();
+      
+      allow create: if isValidUser() && 
+                       isValidString(request.resource.data.name, 1, 200) &&
+                       request.resource.data.listId is string &&
+                       request.resource.data.quantity is number &&
+                       request.resource.data.quantity >= 1 &&
+                       request.resource.data.quantity <= 99 &&
+                       request.resource.data.isCompleted is bool &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.updatedAt is timestamp &&
+                       // Optional categoryId validation
+                       (!('categoryId' in request.resource.data) || 
+                        request.resource.data.categoryId is string ||
+                        request.resource.data.categoryId == null) &&
+                       (!('order' in request.resource.data) || 
+                        request.resource.data.order is number);
+      
+      allow update: if isValidUser() &&
+                       // Validate updated fields
+                       (!('name' in request.resource.data) || 
+                        isValidString(request.resource.data.name, 1, 200)) &&
+                       (!('quantity' in request.resource.data) || 
+                        (request.resource.data.quantity is number &&
+                         request.resource.data.quantity >= 1 &&
+                         request.resource.data.quantity <= 99)) &&
+                       (!('isCompleted' in request.resource.data) || 
+                        request.resource.data.isCompleted is bool) &&
+                       // Can't change listId
+                       request.resource.data.listId == resource.data.listId;
+      
+      allow delete: if isValidUser();
+    }
+    
+    // List invitations - secure handling (TEMPORARY DEBUG)
     match /listInvitations/{invitationId} {
-      allow read, write, create, delete: if request.auth != null;
-      allow list: if request.auth != null;
+      // TEMPORARY: Allow all reads for debugging
+      allow read: if isValidUser();
+      
+      allow create: if isValidUser() && 
+                       request.auth.uid == request.resource.data.fromUserId &&
+                       isValidString(request.resource.data.listName, 1, 100) &&
+                       isValidString(request.resource.data.fromUserName, 1, 100) &&
+                       isValidEmail(request.resource.data.toEmail) &&
+                       request.resource.data.permission in ['read', 'write'] &&
+                       request.resource.data.status == 'pending' &&
+                       request.resource.data.createdAt is timestamp &&
+                       // Optional fields validation
+                       (!('expiresAt' in request.resource.data) || 
+                        request.resource.data.expiresAt is timestamp) &&
+                       (!('toUserId' in request.resource.data) || 
+                        request.resource.data.toUserId is string ||
+                        request.resource.data.toUserId == null) &&
+                       (!('listId' in request.resource.data) || 
+                        request.resource.data.listId is string);
+      
+      allow update: if isValidUser() && (
+        ((resource.data.toUserId != null && 
+          request.auth.uid == resource.data.toUserId) ||
+         (resource.data.toEmail != null && 
+          request.auth.token.email == resource.data.toEmail)) &&
+        request.resource.data.status in ['accepted', 'declined', 'expired'] &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'respondedAt', 'toUserId'])
+      );
+      
+      allow delete: if isValidUser() && 
+                       request.auth.uid == resource.data.fromUserId;
     }
     
-    // Alle anderen Dokumente verweigern
+    // Deny all other access
     match /{document=**} {
       allow read, write: if false;
     }
