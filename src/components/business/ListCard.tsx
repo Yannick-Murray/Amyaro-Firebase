@@ -87,9 +87,7 @@ export const ListCard: React.FC<ListCardProps> = ({
                   padding: '0',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: '0',
-                  transition: 'opacity 0.2s ease-in-out'
+                  justifyContent: 'center'
                 }}
               >
                 <i className="bi bi-trash" style={{ fontSize: '14px' }}></i>

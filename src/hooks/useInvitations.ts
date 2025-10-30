@@ -40,7 +40,10 @@ export const useInvitations = () => {
     
     try {
       await InvitationService.acceptInvitation(invitationId, user.uid);
-      await loadInvitations(); // Neu laden
+      await loadInvitations(); // Einladungen neu laden
+      
+      // Event für das Dashboard triggern
+      window.dispatchEvent(new CustomEvent('listsChanged'));
     } catch (error: any) {
       console.error('Fehler beim Annehmen der Einladung:', error);
       throw error;

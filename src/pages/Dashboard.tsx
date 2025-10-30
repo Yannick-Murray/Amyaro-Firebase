@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useListsContext } from '../context/ListsContext';
 import { Button } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
@@ -9,68 +10,18 @@ import type { List } from '../types/todoList';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [lists, setLists] = useState<List[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { lists, loading, error, refreshLists } = useListsContext();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
 
-  useEffect(() => {
-    if (!user) return;
-    
-    // Initial listen laden
-    loadLists();
-    
-    // Real-time Listener temporär deaktiviert bis Index erstellt ist
-    // const unsubscribe = ListService.subscribeToUserLists(user.uid, (updatedLists) => {
-    //   console.log('Real-time update: Listen geändert', updatedLists.length);
-    //   setLists(updatedLists);
-    //   setLoading(false);
-    // });
-
-    // return () => unsubscribe();
-  }, [user]);
-
-    const loadLists = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const userLists = await ListService.getUserLists(user!.uid);
-      setLists(userLists);
-    } catch (err) {
-      console.error('Fehler beim Laden der Listen:', err);
-      setError('Fehler beim Laden der Listen');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreateList = async (data: CreateListData) => {
+  const handleCreateList = async (_data: CreateListData) => {
     if (!user) return;
 
     try {
-      // Liste wurde bereits im Modal erstellt, jetzt optimistisch zur lokalen Liste hinzufügen
-      const newList: List = {
-        id: `temp-${Date.now()}`, // Temporäre ID bis echte ID geladen wird
-        name: data.name,
-        description: data.description,
-        type: data.type,
-        userId: user.uid,
-        isPrivate: data.isPrivate,
-        createdAt: { toDate: () => new Date() } as any,
-        updatedAt: { toDate: () => new Date() } as any,
-        itemCount: {
-          total: 0,
-          completed: 0
-        }
-      };
-
-      // Liste zur aktuellen Liste hinzufügen
-      setLists(prev => [newList, ...prev]);
       setShowCreateModal(false);
 
       // Listen neu laden um echte Daten zu bekommen
-      setTimeout(() => loadLists(), 500);
+      setTimeout(() => refreshLists(), 500);
       
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Listen:', error);
@@ -82,7 +33,7 @@ const Dashboard = () => {
     navigate(`/list/${list.id}`);
   };
 
-    const handleDeleteList = async (list: List) => {
+  const handleDeleteList = async (list: List) => {
     if (!window.confirm(`Möchtest du die Liste "${list.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
       return;
     }
@@ -91,7 +42,7 @@ const Dashboard = () => {
       await ListService.deleteList(list.id);
       
       // Listen neu laden
-      await loadLists();
+      await refreshLists();
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
       alert('Fehler beim Löschen der Liste. Bitte versuche es erneut.');

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ListsProvider } from './context/ListsContext';
 import Layout from './components/Layout/Layout';
 import Loading from './components/Layout/Loading';
 import AuthWrapper from './components/Auth/AuthWrapper';
@@ -68,11 +69,13 @@ const AppContent = () => {
   );
 };
 
-// App Component mit AuthProvider
+// App Component mit AuthProvider und ListsProvider
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ListsProvider>
+        <AppContent />
+      </ListsProvider>
     </AuthProvider>
   );
 }
