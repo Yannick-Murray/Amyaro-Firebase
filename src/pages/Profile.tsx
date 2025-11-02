@@ -76,6 +76,34 @@ const Profile = () => {
                 Passwort ändern (Coming Soon)
               </button>
               <hr />
+              
+              {/* 🔒 GDPR: Account Deletion */}
+              <div className="mb-3">
+                <h6 className="text-danger">Gefährliche Aktionen</h6>
+                <p className="text-muted small">
+                  Diese Aktionen können nicht rückgängig gemacht werden.
+                </p>
+                <button 
+                  className="btn btn-outline-danger"
+                  onClick={() => {
+                    if (window.confirm(
+                      'Account wirklich löschen?\n\n' +
+                      'WARNUNG: Diese Aktion kann nicht rückgängig gemacht werden!\n' +
+                      '• Alle Ihre Listen und Items werden gelöscht\n' +
+                      '• Alle geteilten Listen werden für Sie entfernt\n' +
+                      '• Ihre persönlichen Daten werden permanent gelöscht\n\n' +
+                      'Klicken Sie OK um fortzufahren.'
+                    )) {
+                      alert('Account-Löschung wird implementiert. Kontaktieren Sie support@amyaro.com für manuelle Löschung.');
+                    }
+                  }}
+                >
+                  <i className="bi bi-trash me-2"></i>
+                  Account permanent löschen
+                </button>
+              </div>
+              
+              <hr />
               <button 
                 className="btn btn-danger"
                 onClick={handleLogout}

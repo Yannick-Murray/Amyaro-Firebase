@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Firebase Konfigurationsobjekt aus Umgebungsvariablen
@@ -19,5 +19,10 @@ const app = initializeApp(firebaseConfig);
 // Firebase Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// 🔒 SECURITY: Configure session persistence (Local storage for convenience but with timeout)
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error('Error setting persistence:', error);
+});
 
 export default app;

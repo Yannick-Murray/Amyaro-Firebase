@@ -3,6 +3,26 @@ import { v4 as uuidv4 } from 'uuid';
 // ID-Generierung
 export const generateId = (): string => uuidv4();
 
+// 🔒 SECURITY: Input Sanitization
+export const sanitizeString = (input: string): string => {
+  if (typeof input !== 'string') return '';
+  
+  return input
+    .trim()
+    .replace(/[<>\"']/g, '') // Remove potential HTML/JS chars
+    .substring(0, 1000); // Max length protection
+};
+
+export const sanitizeEmail = (email: string): string => {
+  if (typeof email !== 'string') return '';
+  
+  return email
+    .trim()
+    .toLowerCase()
+    .replace(/[<>\"']/g, '')
+    .substring(0, 254); // RFC limit
+};
+
 // Datum Formatierung
 export const formatDate = (date: Date): string => {
   return new Intl.DateTimeFormat('de-DE', {

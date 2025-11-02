@@ -36,6 +36,36 @@ export class InvitationService {
         throw new Error('User ID stimmt nicht überein');
       }
 
+      // 🔒 SECURITY: Rate limiting - Check recent invitations from this user
+      const oneHourAgo = new Date();
+      oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+      
+      const recentInvitationsQuery = query(
+        collection(db, 'listInvitations'),
+        where('fromUserId', '==', fromUserId),
+        where('createdAt', '>=', Timestamp.fromDate(oneHourAgo))
+      );
+      
+      const recentInvitations = await getDocs(recentInvitationsQuery);
+      if (recentInvitations.size >= 5) {
+        throw new Error('Rate limit erreicht: Maximal 5 Einladungen pro Stunde erlaubt.');
+      }
+
+      // 🔒 SECURITY: Check invitations to same email in last 24h
+      const oneDayAgo = new Date();
+      oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+      
+      const emailInvitationsQuery = query(
+        collection(db, 'listInvitations'),
+        where('toEmail', '==', toEmail.toLowerCase()),
+        where('createdAt', '>=', Timestamp.fromDate(oneDayAgo))
+      );
+      
+      const emailInvitations = await getDocs(emailInvitationsQuery);
+      if (emailInvitations.size >= 3) {
+        throw new Error('Rate limit erreicht: Maximal 3 Einladungen pro E-Mail-Adresse pro Tag.');
+      }
+
       // Prüfe ob bereits eine pending Einladung existiert
       const existingQuery = query(
         collection(db, 'listInvitations'),

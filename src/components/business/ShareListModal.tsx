@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { InvitationService } from '../../services/invitationService';
 import { useAuth } from '../../context/AuthContext';
+import { isValidEmail } from '../../utils/helpers';
 
 interface ShareListModalProps {
   isOpen: boolean;
@@ -23,17 +24,13 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.trim() || !user) return;
     
-    if (!validateEmail(email)) {
+    // 🔒 SECURITY: Use robust email validation
+    if (!isValidEmail(email)) {
       setMessage('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       setMessageType('error');
       return;

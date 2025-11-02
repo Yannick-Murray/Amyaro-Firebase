@@ -9,7 +9,24 @@ import type { List } from '../types/todoList';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { lists, loading, error, refreshLists } = useListsContext();
+  
+  // 🔧 DEBUG: Safe context access with fallback
+  let lists: List[] = [];
+  let loading = false;
+  let error = null;
+  let refreshLists = () => {};
+  
+  try {
+    const context = useListsContext();
+    lists = context.lists;
+    loading = context.loading;
+    error = context.error;
+    refreshLists = context.refreshLists;
+  } catch (contextError) {
+    console.error('ListsContext not available:', contextError);
+    // Fallback to empty state
+  }
+  
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
 

@@ -50,9 +50,9 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     
     setCategoriesLoading(true);
     try {
-      // Echte Firebase Categories laden
-      const userCategories = await CategoryService.getUserCategories(user.uid, formData.type);
-      setCategories(userCategories);
+      // 🔒 SECURITY FIX: CreateListModal braucht keine existierenden Kategorien
+      // Kategorien werden nach Listenerstellung list-spezifisch erstellt
+      setCategories([]);
     } catch (error) {
       console.error('Fehler beim Laden der Kategorien:', error);
       // Fallback auf leere Liste
@@ -65,7 +65,18 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 🔒 SECURITY: Enhanced Input Validation
     if (!formData.name.trim()) {
+      return;
+    }
+
+    if (formData.name.trim().length > 100) {
+      console.error('Name darf maximal 100 Zeichen haben');
+      return;
+    }
+
+    if (formData.description.trim().length > 500) {
+      console.error('Beschreibung darf maximal 500 Zeichen haben');
       return;
     }
 

@@ -688,9 +688,27 @@ export class ItemService {
         throw new Error('Benutzer muss angemeldet sein');
       }
 
-      // Find all items with this categoryId
+      // 🔒 SECURITY FIX: Get category first to find the listId
+      const categoryRef = doc(db, 'categories', categoryId);
+      const categoryDoc = await getDoc(categoryRef);
+      
+      if (!categoryDoc.exists()) {
+        console.warn('Category not found:', categoryId);
+        return;
+      }
+      
+      const categoryData = categoryDoc.data();
+      const listId = categoryData.listId;
+      
+      if (!listId) {
+        console.warn('Category has no listId:', categoryId);
+        return;
+      }
+
+      // Now find items within this specific list
       const q = query(
         collection(db, this.collection),
+        where('listId', '==', listId),
         where('categoryId', '==', categoryId)
       );
 

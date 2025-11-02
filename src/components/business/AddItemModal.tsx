@@ -38,8 +38,44 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded }: AddItemModalProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !formData.name.trim()) {
+    // 🔒 SECURITY: Enhanced Input Validation
+    if (!user) {
+      setError('Benutzer ist nicht angemeldet');
+      return;
+    }
+
+    // Name validation
+    if (!formData.name.trim()) {
       setError('Name ist erforderlich');
+      return;
+    }
+
+    if (formData.name.trim().length > 200) {
+      setError('Name darf maximal 200 Zeichen haben');
+      return;
+    }
+
+    // Description validation
+    if (formData.description.trim().length > 500) {
+      setError('Beschreibung darf maximal 500 Zeichen haben');
+      return;
+    }
+
+    // Quantity validation
+    if (formData.quantity < 1 || formData.quantity > 99 || !Number.isInteger(formData.quantity)) {
+      setError('Menge muss eine ganze Zahl zwischen 1 und 99 sein');
+      return;
+    }
+
+    // Price validation
+    if (formData.price && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0 || parseFloat(formData.price) > 99999)) {
+      setError('Preis muss eine gültige Zahl zwischen 0 und 99999 sein');
+      return;
+    }
+
+    // Notes validation
+    if (formData.notes.trim().length > 1000) {
+      setError('Notizen dürfen maximal 1000 Zeichen haben');
       return;
     }
 

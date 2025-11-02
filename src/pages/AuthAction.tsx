@@ -53,6 +53,14 @@ const AuthAction = () => {
         setStatus('success');
         setMessage('E-Mail erfolgreich verifiziert! Du wirst zur Anmeldung weitergeleitet...');
 
+        // 🔒 SECURITY: Automatischer Logout nach Email-Verifizierung für Token-Refresh
+        try {
+          await signOut(auth);
+          console.log('✅ Logout nach Email-Verifizierung erfolgreich');
+        } catch (logoutError: any) {
+          console.error('Logout-Fehler nach Verifizierung:', logoutError);
+        }
+
         setTimeout(() => {
           navigate('/auth', { replace: true });
         }, 3000);      } catch (error: any) {
