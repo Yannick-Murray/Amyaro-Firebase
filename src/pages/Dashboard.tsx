@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
 import { Button } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
-import { ListService } from '../services/listService';
 import type { List } from '../types/todoList';
 
 const Dashboard = () => {
@@ -31,22 +30,6 @@ const Dashboard = () => {
 
   const handleListClick = (list: List) => {
     navigate(`/list/${list.id}`);
-  };
-
-  const handleDeleteList = async (list: List) => {
-    if (!window.confirm(`Möchtest du die Liste "${list.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
-      return;
-    }
-
-    try {
-      await ListService.deleteList(list.id);
-      
-      // Listen neu laden
-      await refreshLists();
-    } catch (error) {
-      console.error('❌ Fehler beim Löschen der Liste:', error);
-      alert('Fehler beim Löschen der Liste. Bitte versuche es erneut.');
-    }
   };
 
   const filteredLists = lists.filter(list => {
@@ -100,41 +83,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Statistiken */}
-      <div className="row mb-4">
-        <div className="col-md-3 mb-3">
-          <div className="card p-3 text-center">
-            <i className="bi bi-list-ul display-6 text-primary mb-2"></i>
-            <h5 className="mb-1">{totalLists}</h5>
-            <small className="text-muted">Alle Listen</small>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card p-3 text-center">
-            <i className="bi bi-cart display-6 text-success mb-2"></i>
-            <h5 className="mb-1">{shoppingLists}</h5>
-            <small className="text-muted">Einkaufslisten</small>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card p-3 text-center border-dashed bg-light">
-            <i className="bi bi-gift display-6 text-muted mb-2"></i>
-            <h5 className="mb-1 text-muted">
-              <small className="badge bg-warning text-dark">Bald verfügbar</small>
-            </h5>
-            <small className="text-muted">Geschenkelisten</small>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card p-3 text-center">
-            <i className="bi bi-share display-6 text-info mb-2"></i>
-            <h5 className="mb-1">{sharedLists}</h5>
-            <small className="text-muted">Geteilte Listen</small>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter */}
+      {/* Filter - direkt nach Header */}
       <div className="row mb-4">
         <div className="col-12">
           <div className="btn-group" role="group">
@@ -178,16 +127,51 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Listen Grid */}
+      {/* Listen Grid - jetzt direkt nach Filter */}
       <div className="row">
         <div className="col-12">
           <ListGrid
             lists={filteredLists}
             loading={loading}
             onListClick={handleListClick}
-            onListDelete={handleDeleteList}
-            currentUserId={user?.uid}
           />
+        </div>
+      </div>
+
+      {/* Kompakte Statistiken - am Ende */}
+      <div className="row mt-5">
+        <div className="col-12">
+          <h5 className="text-muted mb-3">Übersicht</h5>
+        </div>
+        <div className="col-6 col-md-3 mb-3">
+          <div className="card p-2 text-center">
+            <i className="bi bi-list-ul text-primary mb-1"></i>
+            <h6 className="mb-0">{totalLists}</h6>
+            <small className="text-muted">Alle Listen</small>
+          </div>
+        </div>
+        <div className="col-6 col-md-3 mb-3">
+          <div className="card p-2 text-center">
+            <i className="bi bi-cart text-success mb-1"></i>
+            <h6 className="mb-0">{shoppingLists}</h6>
+            <small className="text-muted">Einkaufslisten</small>
+          </div>
+        </div>
+        <div className="col-6 col-md-3 mb-3">
+          <div className="card p-2 text-center border-dashed bg-light">
+            <i className="bi bi-gift text-muted mb-1"></i>
+            <h6 className="mb-0 text-muted">
+              <small className="badge bg-warning text-dark">Bald</small>
+            </h6>
+            <small className="text-muted">Geschenkelisten</small>
+          </div>
+        </div>
+        <div className="col-6 col-md-3 mb-3">
+          <div className="card p-2 text-center">
+            <i className="bi bi-share text-info mb-1"></i>
+            <h6 className="mb-0">{sharedLists}</h6>
+            <small className="text-muted">Geteilte Listen</small>
+          </div>
         </div>
       </div>
 
