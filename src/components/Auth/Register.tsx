@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { isValidEmail, isValidPassword } from '../../utils/helpers';
+import { isValidEmail, isValidPassword, validatePasswordRequirements, getPasswordStrength } from '../../utils/helpers';
 import type { RegisterFormData } from '../../types';
 
 interface RegisterProps {
@@ -18,6 +18,8 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState<Array<{ met: boolean; text: string }>>([]);
+  const [passwordStrength, setPasswordStrength] = useState<{ score: number; label: string; color: string }>({ score: 0, label: '', color: '' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -26,6 +28,13 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
       [name]: value
     }));
     setError(''); // Reset error when user types
+    
+    // Update password validation in real-time
+    if (name === 'password') {
+      const requirements = validatePasswordRequirements(value);
+      setPasswordRequirements(requirements.requirements);
+      setPasswordStrength(getPasswordStrength(value));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +53,7 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
     }
 
     if (!isValidPassword(formData.password)) {
-      setError('Passwort muss mindestens 6 Zeichen haben');
+      setError('Das Passwort erfüllt nicht alle Sicherheitsanforderungen');
       return;
     }
 
@@ -157,11 +166,42 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Mindestens 6 Zeichen"
+                  placeholder="Starkes Passwort eingeben"
                   required
                   disabled={loading}
                 />
               </div>
+              
+              {/* Password Strength Indicator */}
+              {formData.password && (
+                <div className="mt-2">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <small className="text-muted">Passwort-Stärke:</small>
+                    <small className={`text-${passwordStrength.color}`}>
+                      {passwordStrength.label}
+                    </small>
+                  </div>
+                  <div className="progress" style={{ height: '4px' }}>
+                    <div 
+                      className={`progress-bar bg-${passwordStrength.color}`}
+                      style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Password Requirements */}
+              {formData.password && passwordRequirements.length > 0 && (
+                <div className="mt-2">
+                  <small className="text-muted d-block mb-1">Passwort-Anforderungen:</small>
+                  {passwordRequirements.map((req, index) => (
+                    <div key={index} className="d-flex align-items-center">
+                      <i className={`bi ${req.met ? 'bi-check-circle text-success' : 'bi-x-circle text-danger'} me-2`}></i>
+                      <small className={req.met ? 'text-success' : 'text-muted'}>{req.text}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="mb-3">

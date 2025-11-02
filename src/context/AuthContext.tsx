@@ -31,6 +31,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to refresh user data from Firestore
+  const refreshUserData = async () => {
+    if (!auth.currentUser) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as UserType;
+        setUser({
+          ...userData,
+          // Use Firestore emailVerified value if it exists, otherwise fall back to Firebase Auth
+          emailVerified: userData.emailVerified !== undefined ? userData.emailVerified : auth.currentUser.emailVerified,
+          createdAt: userData.createdAt instanceof Date ? userData.createdAt : new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
   // Benutzer registrieren
   const register = async (email: string, password: string, displayName?: string) => {
     try {
@@ -50,30 +74,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email: firebaseUser.email!,
         displayName: displayName || firebaseUser.displayName || '',
         photoURL: firebaseUser.photoURL || '',
+        emailVerified: false, // Explicitly set to false initially
         createdAt: new Date()
       };
 
       await setDoc(doc(db, 'users', firebaseUser.uid), userData);
       
-      // Standard-Liste erstellen
-      try {
-        const ListService = await import('../services/listService').then(m => m.ListService);
-        
-        await ListService.createList(
-          firebaseUser.uid,
-          'Meine erste Einkaufsliste',
-          'shopping',
-          'Willkommen bei Amyaro! Das ist deine erste Einkaufsliste.',
-          undefined, // no category
-          false // not private
-        );
-      } catch (listError) {
-        console.error('Error creating default list:', listError);
-        // Don't throw error to prevent registration from failing
-      }
+      // No default list creation - users can create their own lists after verification
       
     } catch (error: any) {
-      console.error('Registration error:', error);
+      // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
+      if (error.code !== 'permission-denied') {
+        console.error('Registration error:', error);
+      }
       throw new Error(getErrorMessage(error.code));
     }
   };
@@ -122,35 +135,81 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Check email verification status (refresh user)
+  const checkEmailVerification = async (): Promise<boolean> => {
+    try {
+      if (auth.currentUser) {
+        // Force reload user data from Firebase to get latest emailVerified status
+        await auth.currentUser.reload();
+        
+        // Get fresh user object after reload
+        const refreshedUser = auth.currentUser;
+        const isVerified = refreshedUser.emailVerified;
+        
+        if (isVerified) {
+          // Update Firestore user document with verification status
+          try {
+            await setDoc(doc(db, 'users', refreshedUser.uid), {
+              emailVerified: true,
+              updatedAt: new Date()
+            }, { merge: true });
+          } catch (firestoreError) {
+            console.log('Note: Could not update Firestore (this is expected during verification)');
+          }
+        }
+        
+        // Update user state with new verification status
+        setUser(prevUser => prevUser ? { ...prevUser, emailVerified: isVerified } : null);
+        
+        return isVerified;
+      }
+      return false;
+    } catch (error: any) {
+      console.error('Error checking email verification:', error);
+      return false;
+    }
+  };
+
   // Auth State Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
+          // CRITICAL: Always reload to get latest emailVerified status
+          await firebaseUser.reload();
+          const refreshedUser = auth.currentUser;
+          
+          if (!refreshedUser) {
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          
           // Benutzer-Daten aus Firestore laden
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const userDoc = await getDoc(doc(db, 'users', refreshedUser.uid));
           
           if (userDoc.exists()) {
             const userData = userDoc.data() as UserType;
             setUser({
               ...userData,
-              emailVerified: firebaseUser.emailVerified,
+              // Use Firestore emailVerified value if it exists, otherwise fall back to Firebase Auth
+              emailVerified: userData.emailVerified !== undefined ? userData.emailVerified : refreshedUser.emailVerified,
               createdAt: userData.createdAt instanceof Date ? userData.createdAt : new Date()
             });
           } else {
             // Fallback: Benutzer-Objekt aus Firebase Auth erstellen
             const userData: UserType = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email!,
-              displayName: firebaseUser.displayName || '',
-              photoURL: firebaseUser.photoURL || '',
-              emailVerified: firebaseUser.emailVerified,
+              uid: refreshedUser.uid,
+              email: refreshedUser.email!,
+              displayName: refreshedUser.displayName || '',
+              photoURL: refreshedUser.photoURL || '',
+              emailVerified: refreshedUser.emailVerified,
               createdAt: new Date()
             };
             setUser(userData);
             
             // Benutzer in Firestore speichern
-            await setDoc(doc(db, 'users', firebaseUser.uid), userData);
+            await setDoc(doc(db, 'users', refreshedUser.uid), userData);
           }
         } catch (error) {
           console.error('Error loading user data:', error);
@@ -165,25 +224,88 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
-  // Error Message Helper
+  // Listen for user data updates (e.g., after email verification)
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      refreshUserData();
+    };
+
+    window.addEventListener('userDataUpdated', handleUserDataUpdate);
+    
+    return () => {
+      window.removeEventListener('userDataUpdated', handleUserDataUpdate);
+    };
+  }, []);
+
+// Enhanced Error Message Helper with Security Features
   const getErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
       case 'auth/user-not-found':
-        return 'Benutzer nicht gefunden';
+        return 'E-Mail oder Passwort ist falsch'; // Don't reveal if user exists
       case 'auth/wrong-password':
-        return 'Falsches Passwort';
+        return 'E-Mail oder Passwort ist falsch'; // Don't reveal which is wrong
       case 'auth/email-already-in-use':
         return 'E-Mail-Adresse wird bereits verwendet';
       case 'auth/weak-password':
-        return 'Passwort ist zu schwach (mindestens 6 Zeichen)';
+        return 'Passwort erfüllt nicht die Sicherheitsanforderungen';
       case 'auth/invalid-email':
         return 'Ungültige E-Mail-Adresse';
       case 'auth/too-many-requests':
-        return 'Zu viele Anmeldeversuche. Versuche es später erneut.';
+        return 'Zu viele Anmeldeversuche. Konto temporär gesperrt. Versuche es in 15 Minuten erneut.';
+      case 'auth/network-request-failed':
+        return 'Netzwerkfehler. Bitte überprüfe deine Internetverbindung.';
+      case 'auth/user-disabled':
+        return 'Dieses Konto wurde deaktiviert. Kontaktiere den Support.';
+      case 'auth/operation-not-allowed':
+        return 'Diese Anmeldemethode ist nicht erlaubt.';
+      case 'auth/invalid-credential':
+        return 'E-Mail oder Passwort ist falsch';
       default:
-        return 'Ein unbekannter Fehler ist aufgetreten';
+        console.error('Unknown auth error:', errorCode); // Log for debugging
+        return 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
     }
   };
+
+  // Session timeout configuration
+  useEffect(() => {
+    let timeoutId: number;
+    
+    const resetTimeout = () => {
+      clearTimeout(timeoutId);
+      // Set session timeout to 24 hours of inactivity
+      timeoutId = window.setTimeout(() => {
+        if (auth.currentUser) {
+          logout();
+          // You could show a session expired message here
+          console.log('Session expired due to inactivity');
+        }
+      }, 24 * 60 * 60 * 1000); // 24 hours
+    };
+
+    // Reset timeout on user activity
+    const handleActivity = () => {
+      if (auth.currentUser) {
+        resetTimeout();
+      }
+    };
+
+    // Listen for user activity
+    document.addEventListener('mousedown', handleActivity);
+    document.addEventListener('keypress', handleActivity);
+    document.addEventListener('scroll', handleActivity);
+    
+    // Start timeout if user is logged in
+    if (auth.currentUser) {
+      resetTimeout();
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleActivity);
+      document.removeEventListener('keypress', handleActivity);
+      document.removeEventListener('scroll', handleActivity);
+    };
+  }, [user]);
 
   const value: AuthContextType = {
     user,
@@ -192,7 +314,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     register,
     logout,
     resetPassword,
-    resendEmailVerification
+    resendEmailVerification,
+    checkEmailVerification,
+    refreshUserData
   };
 
   return (

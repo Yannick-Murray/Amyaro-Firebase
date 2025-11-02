@@ -49,14 +49,70 @@ export const getPriorityLabel = (priority: 'low' | 'medium' | 'high'): string =>
   }
 };
 
-// Validierungen
+// Enhanced Email Validation
 export const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return emailRegex.test(email) && email.length <= 254; // RFC 5321 limit
 };
 
+// Enhanced Password Validation with Security Requirements
 export const isValidPassword = (password: string): boolean => {
-  return password.length >= 6;
+  // Minimum 8 characters
+  if (password.length < 8) return false;
+  
+  // Must contain at least one uppercase letter
+  if (!/[A-Z]/.test(password)) return false;
+  
+  // Must contain at least one lowercase letter
+  if (!/[a-z]/.test(password)) return false;
+  
+  // Must contain at least one number
+  if (!/\d/.test(password)) return false;
+  
+  // Must contain at least one special character
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
+  
+  return true;
+};
+
+// Password strength indicator
+export const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+  let score = 0;
+  
+  // Length check
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  
+  // Character variety checks
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score++;
+  
+  // Common patterns penalty
+  if (/(.)\1{2,}/.test(password)) score--; // Repeated characters
+  if (/123456|654321|qwerty|password|admin/.test(password.toLowerCase())) score--; // Common passwords
+  
+  if (score <= 2) return { score, label: 'Schwach', color: 'danger' };
+  if (score <= 4) return { score, label: 'Mittel', color: 'warning' };
+  return { score, label: 'Stark', color: 'success' };
+};
+
+// Validate password requirements with detailed feedback
+export const validatePasswordRequirements = (password: string): { 
+  isValid: boolean; 
+  requirements: Array<{ met: boolean; text: string }> 
+} => {
+  const requirements = [
+    { met: password.length >= 8, text: 'Mindestens 8 Zeichen' },
+    { met: /[A-Z]/.test(password), text: 'Mindestens 1 Großbuchstabe' },
+    { met: /[a-z]/.test(password), text: 'Mindestens 1 Kleinbuchstabe' },
+    { met: /\d/.test(password), text: 'Mindestens 1 Zahl' },
+    { met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password), text: 'Mindestens 1 Sonderzeichen' }
+  ];
+  
+  const isValid = requirements.every(req => req.met);
+  return { isValid, requirements };
 };
 
 // Array Helpers

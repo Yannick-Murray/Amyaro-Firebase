@@ -5,6 +5,7 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  getDoc,
   query,
   where,
   orderBy,
@@ -12,9 +13,9 @@ import {
   Timestamp,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import type { TodoItem, ListType } from '../types/todoList';
-import { CategoryService } from './listService';
+import { CategoryService, ListService } from './listService';
 
 // TodoItem Services
 export class TodoItemService {
@@ -27,6 +28,26 @@ export class TodoItemService {
     additionalData?: Partial<TodoItem>
   ): Promise<string> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: List-Access-Check
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       const itemData: Omit<TodoItem, 'id'> = {
         listId,
         name: title,
@@ -53,6 +74,26 @@ export class TodoItemService {
   // Items einer Liste abrufen
   static async getListItems(listId: string): Promise<TodoItem[]> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: List-Access-Check
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       const q = query(
         collection(db, this.COLLECTION),
         where('listId', '==', listId),
@@ -76,6 +117,26 @@ export class TodoItemService {
   // Items einer Kategorie abrufen
   static async getCategoryItems(listId: string, categoryId: string): Promise<TodoItem[]> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: List-Access-Check
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       const q = query(
         collection(db, this.COLLECTION),
         where('listId', '==', listId),
@@ -100,6 +161,35 @@ export class TodoItemService {
   // Item aktualisieren
   static async updateItem(itemId: string, updates: Partial<TodoItem>): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Item-Access-Check
+      const itemDoc = await getDoc(doc(db, this.COLLECTION, itemId));
+      if (!itemDoc.exists()) {
+        throw new Error('Item nicht gefunden');
+      }
+
+      const itemData = itemDoc.data();
+      const listId = itemData.listId;
+
+      // Prüfe Liste-Zugriff
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       const updateData: any = {
         ...updates,
         updatedAt: Timestamp.fromDate(new Date())
@@ -127,6 +217,31 @@ export class TodoItemService {
     completed: boolean
   ): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Verify userId matches current user
+      if (auth.currentUser.uid !== userId) {
+        throw new Error('User ID stimmt nicht überein');
+      }
+
+      // 🔒 SECURITY: List-Access-Check
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       const batch = writeBatch(db);
       const itemRef = doc(db, this.COLLECTION, itemId);
 
@@ -173,6 +288,35 @@ export class TodoItemService {
     newCategoryId: string | null
   ): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Item-Access-Check
+      const itemDoc = await getDoc(doc(db, this.COLLECTION, itemId));
+      if (!itemDoc.exists()) {
+        throw new Error('Item nicht gefunden');
+      }
+
+      const itemData = itemDoc.data();
+      const listId = itemData.listId;
+
+      // Prüfe Liste-Zugriff
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       await updateDoc(doc(db, this.COLLECTION, itemId), {
         categoryId: newCategoryId,
         updatedAt: Timestamp.fromDate(new Date())
@@ -186,6 +330,35 @@ export class TodoItemService {
   // Item-Reihenfolge aktualisieren
   static async updateItemOrder(itemId: string, newOrder: number): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Item-Access-Check
+      const itemDoc = await getDoc(doc(db, this.COLLECTION, itemId));
+      if (!itemDoc.exists()) {
+        throw new Error('Item nicht gefunden');
+      }
+
+      const itemData = itemDoc.data();
+      const listId = itemData.listId;
+
+      // Prüfe Liste-Zugriff
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       await updateDoc(doc(db, this.COLLECTION, itemId), {
         order: newOrder,
         updatedAt: Timestamp.fromDate(new Date())
@@ -199,6 +372,35 @@ export class TodoItemService {
   // Item löschen
   static async deleteItem(itemId: string): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Item-Access-Check
+      const itemDoc = await getDoc(doc(db, this.COLLECTION, itemId));
+      if (!itemDoc.exists()) {
+        throw new Error('Item nicht gefunden');
+      }
+
+      const itemData = itemDoc.data();
+      const listId = itemData.listId;
+
+      // Prüfe Liste-Zugriff
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
       await deleteDoc(doc(db, this.COLLECTION, itemId));
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -211,6 +413,10 @@ export class TodoItemService {
     listId: string,
     callback: (items: TodoItem[]) => void
   ): () => void {
+    // 🔒 SECURITY: Auth-Check wird im Frontend vor dem Aufruf gemacht
+    // Real-time listeners können nicht direkt auth-gecheckt werden
+    // TODO: Auth-Validation sollte in Firestore Rules sein
+    
     const q = query(
       collection(db, this.COLLECTION),
       where('listId', '==', listId),
@@ -235,6 +441,36 @@ export class TodoItemService {
     updates: Array<{ itemId: string; order: number; categoryId?: string }>
   ): Promise<void> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Validate access to all items
+      for (const update of updates) {
+        const itemDoc = await getDoc(doc(db, this.COLLECTION, update.itemId));
+        if (!itemDoc.exists()) {
+          throw new Error(`Item ${update.itemId} nicht gefunden`);
+        }
+
+        const itemData = itemDoc.data();
+        const listId = itemData.listId;
+
+        // Prüfe Liste-Zugriff für jedes Item
+        const listDoc = await getDoc(doc(db, 'lists', listId));
+        if (!listDoc.exists()) {
+          throw new Error(`Liste ${listId} nicht gefunden`);
+        }
+
+        const listData = listDoc.data();
+        const currentUserId = auth.currentUser.uid;
+        
+        // Prüfe ob User Zugriff auf die Liste hat
+        if (listData.userId !== currentUserId && 
+            (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+          throw new Error(`Keine Berechtigung für Liste ${listId}`);
+        }
+      }
       const batch = writeBatch(db);
       const now = Timestamp.fromDate(new Date());
 

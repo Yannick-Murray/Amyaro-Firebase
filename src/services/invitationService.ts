@@ -9,9 +9,10 @@ import {
   deleteDoc,
   limit,
   getDoc,
-  Timestamp
+  Timestamp,
+  runTransaction
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 import type { ListInvitation } from '../types';
 
 export class InvitationService {
@@ -25,6 +26,16 @@ export class InvitationService {
     permission: 'read' | 'write' = 'write'
   ): Promise<string> {
     try {
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: Verify fromUserId matches current user
+      if (auth.currentUser.uid !== fromUserId) {
+        throw new Error('User ID stimmt nicht überein');
+      }
+
       // Prüfe ob bereits eine pending Einladung existiert
       const existingQuery = query(
         collection(db, 'listInvitations'),
@@ -141,8 +152,11 @@ export class InvitationService {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Nach Datum sortieren
 
       return invitations;
-    } catch (error) {
-      console.error('Fehler beim Laden der Einladungen:', error);
+    } catch (error: any) {
+      // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
+      if (error.code !== 'permission-denied' || auth.currentUser?.emailVerified) {
+        console.error('Fehler beim Laden der Einladungen:', error);
+      }
       return [];
     }
   }
@@ -150,49 +164,129 @@ export class InvitationService {
   // Einladung annehmen
   static async acceptInvitation(invitationId: string, userId: string): Promise<void> {
     try {
+      console.log('🔍 DEBUG: Starting acceptInvitation', { invitationId, userId });
+      
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        console.error('❌ DEBUG: No authenticated user');
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+      console.log('✅ DEBUG: User authenticated', auth.currentUser.uid);
+
+      // 🔒 SECURITY: Verify userId matches current user
+      if (auth.currentUser.uid !== userId) {
+        console.error('❌ DEBUG: User ID mismatch', { 
+          currentUser: auth.currentUser.uid, 
+          providedUserId: userId 
+        });
+        throw new Error('User ID stimmt nicht überein');
+      }
+      console.log('✅ DEBUG: User ID verified');
+
+      console.log('🔍 DEBUG: Fetching invitation document...');
       const invitationRef = doc(db, 'listInvitations', invitationId);
       const invitationDoc = await getDoc(invitationRef);
       
       if (!invitationDoc.exists()) {
+        console.error('❌ DEBUG: Invitation document not found');
         throw new Error('Einladung nicht gefunden.');
       }
+      console.log('✅ DEBUG: Invitation document found');
 
       const invitation = invitationDoc.data() as ListInvitation;
+      console.log('🔍 DEBUG: Invitation data', {
+        status: invitation.status,
+        toEmail: invitation.toEmail,
+        toUserId: invitation.toUserId,
+        listId: invitation.listId,
+        fromUserId: invitation.fromUserId,
+        expiresAt: invitation.expiresAt
+      });
+      
+      // 🔒 SECURITY: Verify user is authorized to accept this invitation
+      if (invitation.toUserId && invitation.toUserId !== userId) {
+        console.error('❌ DEBUG: Invitation not for this user (toUserId mismatch)', {
+          invitationToUserId: invitation.toUserId,
+          currentUserId: userId
+        });
+        throw new Error('Diese Einladung ist nicht für Sie bestimmt.');
+      }
+      
+      if (invitation.toEmail && auth.currentUser.email !== invitation.toEmail) {
+        console.error('❌ DEBUG: Invitation not for this email', {
+          invitationToEmail: invitation.toEmail,
+          currentUserEmail: auth.currentUser.email
+        });
+        throw new Error('Diese Einladung ist nicht für Ihre E-Mail-Adresse bestimmt.');
+      }
+      console.log('✅ DEBUG: User authorized for this invitation');
       
       // Prüfe ob Einladung noch gültig ist
       if (invitation.status !== 'pending') {
+        console.error('❌ DEBUG: Invitation not pending', { status: invitation.status });
         throw new Error('Diese Einladung ist nicht mehr gültig.');
       }
 
       if (new Date(invitation.expiresAt) < new Date()) {
+        console.error('❌ DEBUG: Invitation expired', { 
+          expiresAt: invitation.expiresAt,
+          now: new Date().toISOString()
+        });
         throw new Error('Diese Einladung ist abgelaufen.');
       }
+      console.log('✅ DEBUG: Invitation is valid and pending');
 
-      // Füge User zur Liste hinzu
-      const listRef = doc(db, 'lists', invitation.listId);
-      const listDoc = await getDoc(listRef);
-      
-      if (!listDoc.exists()) {
-        throw new Error('Liste nicht gefunden.');
-      }
+      console.log('🔍 DEBUG: Starting transaction (without pre-reading list)...');
+      // 🔒 Use Transaction for atomic updates
+      await runTransaction(db, async (transaction) => {
+        console.log('🔍 DEBUG: Inside transaction');
+        
+        // Read list document inside transaction
+        console.log('🔍 DEBUG: Reading list document inside transaction...', invitation.listId);
+        const listRef = doc(db, 'lists', invitation.listId);
+        const listDoc = await transaction.get(listRef);
+        
+        if (!listDoc.exists()) {
+          console.error('❌ DEBUG: List document not found in transaction', invitation.listId);
+          throw new Error('Liste nicht gefunden.');
+        }
+        console.log('✅ DEBUG: List document found in transaction');
 
-      const listData = listDoc.data();
-      const currentSharedWith = listData.sharedWith || [];
-      
-      if (!currentSharedWith.includes(userId)) {
-        await updateDoc(listRef, {
-          sharedWith: [...currentSharedWith, userId],
-          updatedAt: Timestamp.fromDate(new Date())
+        const listData = listDoc.data();
+        const currentSharedWith = listData.sharedWith || [];
+        console.log('🔍 DEBUG: Current list data in transaction', {
+          listId: invitation.listId,
+          listName: listData.name,
+          userId: listData.userId,
+          currentSharedWith: currentSharedWith,
+          userAlreadyShared: currentSharedWith.includes(userId)
         });
-      }
+        
+        // Nur hinzufügen wenn User noch nicht in der Liste ist
+        if (!currentSharedWith.includes(userId)) {
+          console.log('🔍 DEBUG: Adding user to sharedWith array');
+          transaction.update(listRef, {
+            sharedWith: [...currentSharedWith, userId],
+            updatedAt: Timestamp.fromDate(new Date())
+          });
+        } else {
+          console.log('🔍 DEBUG: User already in sharedWith array, skipping list update');
+        }
 
-      // Markiere Einladung als angenommen
-      await updateDoc(invitationRef, {
-        status: 'accepted',
-        respondedAt: Timestamp.fromDate(new Date()),
-        toUserId: userId
+        console.log('🔍 DEBUG: Updating invitation status');
+        // Markiere Einladung als angenommen
+        transaction.update(invitationRef, {
+          status: 'accepted',
+          respondedAt: Timestamp.fromDate(new Date()),
+          toUserId: userId
+        });
+        
+        console.log('✅ DEBUG: Transaction updates prepared');
       });
+      
+      console.log('✅ DEBUG: Transaction completed successfully');
     } catch (error) {
+      console.error('❌ DEBUG: Error in acceptInvitation:', error);
       console.error('Fehler beim Annehmen der Einladung:', error);
       throw error;
     }

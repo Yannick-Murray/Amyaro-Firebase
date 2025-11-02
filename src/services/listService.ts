@@ -126,8 +126,11 @@ export class ListService {
         const bTime = b.updatedAt?.toDate?.() || new Date(0);
         return bTime.getTime() - aTime.getTime();
       });
-    } catch (error) {
-      console.error('Fehler beim Laden der Listen:', error);
+    } catch (error: any) {
+      // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
+      if (error.code !== 'permission-denied' || auth.currentUser?.emailVerified) {
+        console.error('Fehler beim Laden der Listen:', error);
+      }
       throw error;
     }
   }

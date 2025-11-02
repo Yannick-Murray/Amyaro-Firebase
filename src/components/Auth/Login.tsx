@@ -16,6 +16,8 @@ const Login = ({ onSwitchToRegister, onSwitchToPasswordReset }: LoginProps) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutTime, setLockoutTime] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,6 +32,13 @@ const Login = ({ onSwitchToRegister, onSwitchToPasswordReset }: LoginProps) => {
     e.preventDefault();
     setError('');
 
+    // Check if account is locked
+    if (lockoutTime && Date.now() < lockoutTime) {
+      const remainingTime = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
+      setError(`Konto ist gesperrt. Versuche es in ${remainingTime} Minuten erneut.`);
+      return;
+    }
+
     // Validierung
     if (!formData.email || !formData.password) {
       setError('Bitte alle Felder ausfüllen');
@@ -42,7 +51,7 @@ const Login = ({ onSwitchToRegister, onSwitchToPasswordReset }: LoginProps) => {
     }
 
     if (!isValidPassword(formData.password)) {
-      setError('Passwort muss mindestens 6 Zeichen haben');
+      setError('Passwort erfüllt nicht die Sicherheitsanforderungen');
       return;
     }
 
@@ -50,9 +59,22 @@ const Login = ({ onSwitchToRegister, onSwitchToPasswordReset }: LoginProps) => {
 
     try {
       await login(formData.email, formData.password);
+      // Reset failed attempts on successful login
+      setFailedAttempts(0);
+      setLockoutTime(null);
       // Weiterleitung erfolgt automatisch durch AuthContext
     } catch (err: any) {
-      setError(err.message || 'Fehler beim Anmelden');
+      const newFailedAttempts = failedAttempts + 1;
+      setFailedAttempts(newFailedAttempts);
+      
+      // Implement progressive lockout
+      if (newFailedAttempts >= 5) {
+        const lockoutDuration = Math.min(15 * Math.pow(2, newFailedAttempts - 5), 60); // Max 60 minutes
+        setLockoutTime(Date.now() + lockoutDuration * 60 * 1000);
+        setError(`Zu viele fehlgeschlagene Versuche. Konto gesperrt für ${lockoutDuration} Minuten.`);
+      } else {
+        setError(err.message || 'Fehler beim Anmelden');
+      }
     } finally {
       setLoading(false);
     }

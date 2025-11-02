@@ -102,6 +102,8 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   resendEmailVerification: () => Promise<void>;
+  checkEmailVerification: () => Promise<boolean>;
+  refreshUserData: () => Promise<void>;
 }
 
 // Firestore Collection Typen

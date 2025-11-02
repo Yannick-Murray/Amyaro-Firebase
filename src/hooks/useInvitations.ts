@@ -22,8 +22,11 @@ export const useInvitations = () => {
       const userInvitations = await InvitationService.getUserInvitations(user.uid);
       setInvitations(userInvitations);
       setUnreadCount(userInvitations.length);
-    } catch (error) {
-      console.error('Fehler beim Laden der Einladungen:', error);
+    } catch (error: any) {
+      // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
+      if (error.code !== 'permission-denied' || user.emailVerified) {
+        console.error('Fehler beim Laden der Einladungen:', error);
+      }
       setInvitations([]);
       setUnreadCount(0);
     } finally {

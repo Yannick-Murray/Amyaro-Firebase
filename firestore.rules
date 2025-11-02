@@ -7,7 +7,7 @@ service cloud.firestore {
     }
     
     function isValidUser() {
-      // Re-enable email verification now that rules are stable
+      // Require email verification for all operations (except initial user creation)
       return isAuthenticated() && request.auth.token.email_verified == true;
     }
 
@@ -27,6 +27,12 @@ service cloud.firestore {
       );
     }
     
+    function hasPendingInvitationForList(listId) {
+      return isValidUser() && 
+             exists(/databases/$(database)/documents/listInvitations/$(listId + '_' + request.auth.uid)) ||
+             exists(/databases/$(database)/documents/listInvitations/$(listId + '_' + request.auth.token.email));
+    }
+    
     function isValidString(text, minLen, maxLen) {
       return text is string && 
              text.size() >= minLen && 
@@ -41,13 +47,33 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      // Self-write: Allow users to create their own user document (during registration)
+      // and update it later (only when email is verified OR during verification process)
+      allow write: if isAuthenticated() && request.auth.uid == userId && (
+        // During registration: allow creating user document even without email verification
+        (resource == null) ||
+        // After registration: require email verification for updates
+        (resource != null && request.auth.token.email_verified == true) ||
+        // Special case: Allow setting emailVerified field during verification process
+        (resource != null && 
+         request.resource.data.emailVerified == true &&
+         (!('emailVerified' in resource.data) || resource.data.emailVerified == false))
+      );
+      
+      // Self-read: Always allow users to read their own data (even if not verified)
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Other users: Allow reading basic info only if email verified
       allow read: if isValidUser() && request.auth.uid != userId;
     }
 
     // Lists collection - with proper validation
     match /lists/{listId} {
       allow read: if isValidUser() && hasListAccess(resource.data);
+      
+      // Special case: Allow single document read (get) for invitation acceptance
+      // This allows reading a list document during invitation acceptance process
+      allow get: if isValidUser() && request.auth.token.email != null;
       
       allow create: if isValidUser() && 
                        request.auth.uid == request.resource.data.userId &&
@@ -56,10 +82,19 @@ service cloud.firestore {
                        request.resource.data.createdAt is timestamp &&
                        request.resource.data.updatedAt is timestamp;
       
-      allow update: if isValidUser() && hasListAccess(resource.data) &&
-                       (isListOwner(resource.data) || 
+      allow update: if isValidUser() && (
+                       // List owner can update anything
+                       isListOwner(resource.data) ||
+                       // Shared users can update limited fields
+                       (hasListAccess(resource.data) && 
                         request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['itemCount', 'updatedAt']));
+                          .hasOnly(['itemCount', 'updatedAt'])) ||
+                       // Special case: Allow user to add themselves to sharedWith (invitation acceptance)
+                       (request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['sharedWith', 'updatedAt']) &&
+                        request.auth.uid in request.resource.data.sharedWith &&
+                        (resource.data.sharedWith == null || !(request.auth.uid in resource.data.sharedWith)))
+                     );
       
       allow delete: if isValidUser() && isListOwner(resource.data);
     }

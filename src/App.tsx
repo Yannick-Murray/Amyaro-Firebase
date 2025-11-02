@@ -8,6 +8,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import ListDetail from './pages/ListDetail';
 import Profile from './pages/Profile';
+import AuthAction from './pages/AuthAction';
 import './App.css';
 
 // Auth-Route Component (für Login/Register)
@@ -34,6 +35,9 @@ const AppContent = () => {
   return (
     <Router>
       <Routes>
+        {/* Auth Action Route - für Email Verification Links */}
+        <Route path="/__/auth/action" element={<AuthAction />} />
+        
         {/* Auth Route - Login/Register */}
         <Route path="/auth" element={<AuthRoute />} />
         

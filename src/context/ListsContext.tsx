@@ -35,6 +35,11 @@ export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
 
   const refreshLists = async () => {
     if (!user) {
+      return;
+    }
+
+    // Don't load lists if email is not verified to avoid permission errors
+    if (!user.emailVerified) {
       setLists([]);
       setLoading(false);
       return;
@@ -45,9 +50,15 @@ export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
       setError('');
       const userLists = await ListService.getUserLists(user.uid);
       setLists(userLists);
-    } catch (err) {
-      console.error('Fehler beim Laden der Listen:', err);
-      setError('Fehler beim Laden der Listen');
+    } catch (err: any) {
+      // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
+      if (err.code !== 'permission-denied' || user.emailVerified) {
+        console.error('Fehler beim Laden der Listen:', err);
+      }
+      // Für unverifizierte Benutzer keine Fehlermeldung anzeigen
+      if (err.code !== 'permission-denied' || user.emailVerified) {
+        setError('Fehler beim Laden der Listen');
+      }
     } finally {
       setLoading(false);
     }

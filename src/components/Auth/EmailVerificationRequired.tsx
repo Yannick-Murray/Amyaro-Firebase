@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const EmailVerificationRequired = () => {
-  const { user, resendEmailVerification, logout } = useAuth();
+  const { user, resendEmailVerification, checkEmailVerification, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState('');
 
   const handleResendEmail = async () => {
@@ -17,6 +18,25 @@ const EmailVerificationRequired = () => {
       setMessage(error.message || 'Fehler beim Senden der E-Mail');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCheckVerification = async () => {
+    setChecking(true);
+    setMessage('');
+    
+    try {
+      const isVerified = await checkEmailVerification();
+      if (isVerified) {
+        setMessage('E-Mail erfolgreich verifiziert! Die Seite wird neu geladen...');
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        setMessage('E-Mail ist noch nicht verifiziert. Bitte klicke auf den Link in der E-Mail.');
+      }
+    } catch (error: any) {
+      setMessage(error.message || 'Fehler beim Überprüfen der Verifizierung');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -96,10 +116,20 @@ const EmailVerificationRequired = () => {
                 <button
                   type="button"
                   className="btn btn-outline-primary"
-                  onClick={() => window.location.href = window.location.href}
+                  onClick={handleCheckVerification}
+                  disabled={checking}
                 >
-                  <i className="bi bi-arrow-clockwise me-2"></i>
-                  Ich habe den Link geklickt
+                  {checking ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Überprüfe...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-arrow-clockwise me-2"></i>
+                      Ich habe den Link geklickt
+                    </>
+                  )}
                 </button>
               </div>
 
