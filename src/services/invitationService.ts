@@ -211,10 +211,7 @@ export class InvitationService {
 
       // 🔒 SECURITY: Verify userId matches current user
       if (auth.currentUser.uid !== userId) {
-        console.error('❌ DEBUG: User ID mismatch', { 
-          currentUser: auth.currentUser.uid, 
-          providedUserId: userId 
-        });
+        console.error('❌ DEBUG: User ID mismatch');
         throw new Error('User ID stimmt nicht überein');
       }
       console.log('✅ DEBUG: User ID verified');
