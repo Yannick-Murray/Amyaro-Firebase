@@ -15,6 +15,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
+import { logger } from '../utils/logger';
 import type { List, Category, ListType, Item } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
@@ -264,7 +265,7 @@ export class ListService {
       console.log(`✅ Liste ${listId} vollständig gelöscht (atomic)`);
       
     } catch (error) {
-      console.error('❌ Fehler beim Löschen der Liste:', error);
+      logger.error('❌ Fehler beim Löschen der Liste:', error);
       throw error;
     }
   }

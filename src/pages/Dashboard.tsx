@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
-import { Button } from '../components/ui';
+import { Button, Toast } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
 import { ListService } from '../services/listService';
+import { logger } from '../utils/logger';
 import type { List } from '../types/todoList';
 
 const Dashboard = () => {
@@ -30,6 +31,25 @@ const Dashboard = () => {
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
+  
+  // Toast state
+  const [toast, setToast] = useState<{
+    isVisible: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    isVisible: false,
+    message: '',
+    type: 'info'
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   const handleCreateList = async (_data: CreateListData) => {
     if (!user) return;
@@ -55,9 +75,16 @@ const Dashboard = () => {
       await ListService.deleteList(list.id);
       // Liste aus dem Context entfernen / neu laden
       refreshLists();
+      showToast(`Liste "${list.name}" wurde gelöscht`, 'success');
     } catch (error) {
-      console.error('Fehler beim Löschen der Liste:', error);
-      // Hier könntest du eine Toast-Benachrichtigung anzeigen
+      logger.error('Fehler beim Löschen der Liste:', error);
+      
+      // Spezifische Meldung für fehlende Berechtigung
+      if (error instanceof Error && error.message.includes('Keine Berechtigung')) {
+        showToast('Diese Liste kann nur vom Ersteller der Liste gelöscht werden.', 'error');
+      } else {
+        showToast('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.', 'error');
+      }
     }
   };
 
@@ -211,6 +238,14 @@ const Dashboard = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateList}
+      />
+      
+      {/* Toast Notifications */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
       />
     </div>
   );

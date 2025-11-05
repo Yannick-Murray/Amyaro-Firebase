@@ -338,6 +338,13 @@ const ListDetail = () => {
   const handleDeleteList = async () => {
     if (!list) return;
     
+    // Prüfe ob der aktuelle Benutzer berechtigt ist, die Liste zu löschen
+    if (isSharedWithUser) {
+      console.log('🚫 Geteilter Benutzer versucht Liste zu löschen - zeige Meldung');
+      window.alert('Diese Liste kann nur vom Ersteller der Liste gelöscht werden.');
+      return;
+    }
+    
     const confirmed = window.confirm(
       `Liste "${list.name}" wirklich löschen?\n\n` +
       `Dies löscht auch alle ${items.length} Items und ${categories.length} Kategorien unwiderruflich!`

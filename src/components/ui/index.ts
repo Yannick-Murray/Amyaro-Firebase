@@ -11,6 +11,8 @@ export type { BadgeProps } from './Badge';
 export { Modal, ModalHeader, ModalBody, ModalFooter } from './Modal';
 export type { ModalProps } from './Modal';
 
+export { Toast } from './Toast';
+
 export { SwipeableItem } from './SwipeableItem';
 export type { SwipeableItemProps } from './SwipeableItem';
 
