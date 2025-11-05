@@ -392,11 +392,26 @@ export class CategoryService {
         throw new Error('Benutzer muss angemeldet sein');
       }
 
-      // Einfache Query ohne Index-Bedarf - sortieren wir client-seitig
+      // 🔒 SECURITY: List-Access-Check first
+      const listDoc = await getDoc(doc(db, 'lists', listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Prüfe ob User Zugriff auf die Liste hat
+      if (listData.userId !== currentUserId && 
+          (!listData.sharedWith || !listData.sharedWith.includes(currentUserId))) {
+        throw new Error('Keine Berechtigung für diese Liste');
+      }
+
+      // 🔥 FIX: Alle Kategorien der Liste laden (nicht nur eigene!)
       const q = query(
         collection(db, this.COLLECTION),
-        where('listId', '==', listId),
-        where('userId', '==', auth.currentUser.uid)
+        where('listId', '==', listId)
+        // KEIN userId Filter! Alle Kategorien der Liste sollen sichtbar sein
       );
 
       const querySnapshot = await getDocs(q);
