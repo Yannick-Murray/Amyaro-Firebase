@@ -86,6 +86,12 @@ export class InvitationService {
         if (listData.sharedWith && listData.sharedWith.includes(toEmail)) {
           throw new Error('Diese Person hat bereits Zugriff auf die Liste.');
         }
+        
+        // 🔒 LIMIT: Max 2 geteilte User pro Liste
+        const currentSharedCount = listData.sharedWith ? listData.sharedWith.length : 0;
+        if (currentSharedCount >= 2) {
+          throw new Error('Listen können nur mit maximal 2 Personen geteilt werden.');
+        }
       }
 
       // Versuche User anhand der Email zu finden

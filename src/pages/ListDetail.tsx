@@ -710,6 +710,7 @@ const ListDetail = () => {
           onClose={() => setShowShareModal(false)}
           listId={id!}
           listName={list.name}
+          list={list}
         />
 
         {/* Shared Info Modal */}

@@ -4,19 +4,22 @@ import { Button } from '../ui/Button';
 import { InvitationService } from '../../services/invitationService';
 import { useAuth } from '../../context/AuthContext';
 import { isValidEmail, sanitizeEmail } from '../../utils/helpers';
+import type { List } from '../../types/todoList';
 
 interface ShareListModalProps {
   isOpen: boolean;
   onClose: () => void;
   listId: string;
   listName: string;
+  list?: List; // Optional - für Sharing-Limit-Check
 }
 
 export const ShareListModal: React.FC<ShareListModalProps> = ({
   isOpen,
   onClose,
   listId,
-  listName
+  listName,
+  list
 }) => {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -24,10 +27,20 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
 
+  // Check if sharing limit is reached
+  const isShareLimitReached = list?.sharedWith && list.sharedWith.length >= 2;
+
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.trim() || !user) return;
+    
+    // Frontend validation for sharing limit
+    if (isShareLimitReached) {
+      setMessage('Listen können nur mit maximal 2 Personen geteilt werden.');
+      setMessageType('error');
+      return;
+    }
     
     // 🔒 SECURITY: Use robust email validation
     if (!isValidEmail(email)) {
@@ -111,6 +124,26 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
           <small className="text-muted mt-1">
             Die Person erhält eine Einladung und muss diese bestätigen, bevor sie Zugriff erhält.
           </small>
+          
+          {/* Sharing limit warning */}
+          {list?.sharedWith && list.sharedWith.length > 0 && (
+            <div className="mt-2">
+              <small className="text-info">
+                <i className="bi bi-people me-1"></i>
+                Bereits geteilt mit {list.sharedWith.length} Person{list.sharedWith.length > 1 ? 'en' : ''} 
+                ({2 - list.sharedWith.length} von 2 verfügbar)
+              </small>
+            </div>
+          )}
+          
+          {isShareLimitReached && (
+            <div className="mt-2">
+              <small className="text-warning">
+                <i className="bi bi-exclamation-triangle me-1"></i>
+                Sharing-Limit erreicht: Listen können nur mit maximal 2 Personen geteilt werden.
+              </small>
+            </div>
+          )}
         </div>
 
         {message && (
@@ -132,7 +165,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
           <Button
             type="submit"
             variant="primary"
-            disabled={isLoading || !email.trim()}
+            disabled={isLoading || !email.trim() || isShareLimitReached}
             isLoading={isLoading}
           >
             {isLoading ? 'Sende Einladung...' : 'Einladung senden'}
