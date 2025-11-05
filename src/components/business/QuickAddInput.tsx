@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/Button';
+import { sanitizeString } from '../../utils/helpers';
 
 interface QuickAddInputProps {
   onAddItems: (itemNames: string[]) => Promise<void>;
@@ -25,7 +26,7 @@ export const QuickAddInput: React.FC<QuickAddInputProps> = ({
       // Kommata-getrennte Items parsen und trimmen
       const itemNames = input
         .split(',')
-        .map(name => name.trim())
+        .map(name => sanitizeString(name))
         .filter(name => name.length > 0);
 
       if (itemNames.length > 0) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { isValidEmail, isValidPassword, validatePasswordRequirements, getPasswordStrength } from '../../utils/helpers';
+import { isValidEmail, isValidPassword, validatePasswordRequirements, getPasswordStrength, sanitizeString } from '../../utils/helpers';
 import type { RegisterFormData } from '../../types';
 
 interface RegisterProps {
@@ -70,7 +70,7 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
     setLoading(true);
 
     try {
-      await register(formData.email, formData.password, formData.displayName.trim());
+      await register(formData.email, formData.password, sanitizeString(formData.displayName));
       // Nach erfolgreicher Registrierung Bestätigungsmeldung anzeigen
       setShowVerificationMessage(true);
     } catch (err: any) {

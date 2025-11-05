@@ -147,6 +147,33 @@ export const MobileItem: React.FC<MobileItemProps> = ({
             {item.name}
           </span>
         </div>
+
+        {/* Delete Button - Mülleimer am Ende der Zeile */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onDelete(item.id);
+          }}
+          disabled={disabled}
+          className={cn(
+            'btn btn-sm p-0 rounded-circle d-flex align-items-center justify-content-center ms-2',
+            'btn-outline-danger hover:btn-danger',
+            'shadow-sm transition-all duration-200 ease-in-out',
+            'opacity-70 hover:opacity-100'
+          )}
+          style={{ 
+            width: '28px', 
+            height: '28px',
+            minWidth: '28px',
+            minHeight: '28px',
+            flexShrink: 0
+          }}
+          aria-label="Item löschen"
+          title="Item löschen"
+        >
+          <i className="bi bi-trash" style={{ fontSize: '12px' }} />
+        </button>
       </div>
       
       {/* Context Menu für Long-Press */}

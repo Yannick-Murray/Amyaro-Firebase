@@ -3,7 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { InvitationService } from '../../services/invitationService';
 import { useAuth } from '../../context/AuthContext';
-import { isValidEmail } from '../../utils/helpers';
+import { isValidEmail, sanitizeEmail } from '../../utils/helpers';
 
 interface ShareListModalProps {
   isOpen: boolean;
@@ -47,17 +47,19 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
     setMessageType('');
 
     try {
+      const sanitizedEmail = sanitizeEmail(email);
+      
       await InvitationService.sendInvitation(
         listId,
         listName,
         user.uid,
         user.displayName || user.email || 'Unbekannt',
-        email,
+        sanitizedEmail,
         'write'
       );
 
       // Success message
-      setMessage(`✅ Einladung gesendet! ${email} erhält eine Benachrichtigung und kann die Liste nach der Bestätigung bearbeiten.`);
+      setMessage(`✅ Einladung gesendet! ${sanitizedEmail} erhält eine Benachrichtigung und kann die Liste nach der Bestätigung bearbeiten.`);
       setMessageType('success');
       
       // Reset form after delay

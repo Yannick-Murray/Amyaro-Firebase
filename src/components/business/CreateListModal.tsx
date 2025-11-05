@@ -4,6 +4,7 @@ import { Button } from '../ui';
 import { FormField, Input, Textarea, Select, Checkbox, type SelectOption } from '../forms';
 import { CategoryService, ListService } from '../../services/listService';
 import { useAuth } from '../../context/AuthContext';
+import { sanitizeString } from '../../utils/helpers';
 import type { Category } from '../../types/todoList';
 
 export interface CreateListModalProps {
@@ -85,9 +86,9 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
       // Liste in Firebase erstellen
       await ListService.createList(
         user!.uid,
-        formData.name.trim(),
+        sanitizeString(formData.name),
         formData.type,
-        formData.description.trim() || undefined,
+        formData.description.trim() ? sanitizeString(formData.description) : undefined,
         formData.categoryId || undefined,
         formData.isPrivate
       );

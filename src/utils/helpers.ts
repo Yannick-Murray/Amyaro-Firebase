@@ -3,13 +3,22 @@ import { v4 as uuidv4 } from 'uuid';
 // ID-Generierung
 export const generateId = (): string => uuidv4();
 
-// 🔒 SECURITY: Input Sanitization
+// 🔒 SECURITY: Smart Input Sanitization (keeps normal punctuation)
 export const sanitizeString = (input: string): string => {
   if (typeof input !== 'string') return '';
   
   return input
     .trim()
-    .replace(/[<>\"']/g, '') // Remove potential HTML/JS chars
+    // Remove ONLY dangerous HTML/script constructs
+    .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags with content
+    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframe tags
+    .replace(/<object[^>]*>.*?<\/object>/gi, '') // Remove object tags  
+    .replace(/<embed[^>]*>/gi, '') // Remove embed tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/data:text\/html/gi, '') // Remove data: html protocol
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers like onclick=
+    .replace(/eval\s*\(/gi, '') // Remove eval( calls
+    .replace(/expression\s*\(/gi, '') // Remove CSS expression
     .substring(0, 1000); // Max length protection
 };
 

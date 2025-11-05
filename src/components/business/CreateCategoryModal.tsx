@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { sanitizeString } from '../../utils/helpers';
 
 interface CreateCategoryModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
 
     setIsLoading(true);
     try {
-      await onCreateCategory(name.trim(), selectedColor);
+      await onCreateCategory(sanitizeString(name), selectedColor);
       setName('');
       setSelectedColor(CATEGORY_COLORS[0]);
       onClose();

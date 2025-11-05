@@ -337,8 +337,6 @@ const ListDetail = () => {
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Item wirklich löschen?')) return;
-    
     try {
       await ItemService.deleteItem(itemId);
       loadListData();

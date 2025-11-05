@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ItemService } from '../../services/listService';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { FormField, Input, Textarea, Select } from '../forms';
+import { sanitizeString } from '../../utils/helpers';
 import type { Item } from '../../types/todoList';
 
 interface AddItemModalProps {
@@ -84,14 +85,14 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded }: AddItemModalProp
       setError('');
 
       const itemData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
+        name: sanitizeString(formData.name),
+        description: formData.description.trim() ? sanitizeString(formData.description) : undefined,
         quantity: formData.quantity,
         price: formData.price ? parseFloat(formData.price) : undefined,
         priority: formData.priority,
         categoryId: formData.categoryId || undefined,
         tags: formData.tags,
-        notes: formData.notes.trim() || undefined,
+        notes: formData.notes.trim() ? sanitizeString(formData.notes) : undefined,
         isCompleted: false,
         order: Date.now() // Simple ordering system
       };

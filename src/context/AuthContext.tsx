@@ -156,6 +156,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } catch (firestoreError) {
             console.log('Note: Could not update Firestore (this is expected during verification)');
           }
+          
+          // 🔒 SECURITY: Auto-Logout nach erfolgreicher E-Mail-Verifizierung
+          // User muss sich mit verifiziertem Account neu anmelden
+          console.log('Email verified successfully - auto logout for security');
+          setTimeout(async () => {
+            try {
+              await signOut(auth);
+            } catch (logoutError) {
+              console.error('Auto-logout after verification failed:', logoutError);
+            }
+          }, 1000); // 1 Sekunde Verzögerung für bessere UX
         }
         
         // Update user state with new verification status
