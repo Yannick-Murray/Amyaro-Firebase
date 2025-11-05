@@ -204,23 +204,40 @@ export class ListService {
   // Liste löschen
   static async deleteList(listId: string): Promise<void> {
     try {
-      // SCHRITT 1: Einzeln alle Items löschen
+      // 🔒 SECURITY: Auth-Check
+      if (!auth.currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // 🔒 SECURITY: List-Access-Check
+      const listDoc = await getDoc(doc(db, this.COLLECTION, listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      const currentUserId = auth.currentUser.uid;
+      
+      // Nur Liste-Owner kann Liste löschen
+      if (listData.userId !== currentUserId) {
+        throw new Error('Keine Berechtigung zum Löschen dieser Liste');
+      }
+
+      // 🔥 ATOMIC BATCH DELETE - alles oder nichts!
+      const batch = writeBatch(db);
+
+      // SCHRITT 1: Alle TodoItems sammeln und zur Batch hinzufügen
       const itemsQuery = query(
-        collection(db, 'items'),
+        collection(db, 'todoItems'), // Richtige Collection!
         where('listId', '==', listId)
       );
       const itemsSnapshot = await getDocs(itemsQuery);
       
-      for (const itemDoc of itemsSnapshot.docs) {
-        try {
-          await deleteDoc(itemDoc.ref);
-        } catch (error) {
-          console.error(`❌ Failed to delete item ${itemDoc.id}:`, error);
-          throw error;
-        }
-      }
+      itemsSnapshot.docs.forEach(itemDoc => {
+        batch.delete(itemDoc.ref);
+      });
       
-      // SCHRITT 2: Einzeln alle Categories löschen
+      // SCHRITT 2: Alle Categories sammeln und zur Batch hinzufügen
       try {
         const categoriesQuery = query(
           collection(db, 'categories'),
@@ -229,27 +246,22 @@ export class ListService {
         
         const categoriesSnapshot = await getDocs(categoriesQuery);
         
-        for (const categoryDoc of categoriesSnapshot.docs) {
-          try {
-            await deleteDoc(categoryDoc.ref);
-          } catch (error) {
-            console.error(`❌ Failed to delete category ${categoryDoc.id}:`, error);
-            // Einzelne Category-Fehler nicht weiterwerfen - Liste trotzdem löschen
-          }
-        }
+        categoriesSnapshot.docs.forEach(categoryDoc => {
+          batch.delete(categoryDoc.ref);
+        });
       } catch (error) {
         console.warn('⚠️ Categories query failed (collection might not exist):', error);
-        // Collection existiert nicht oder andere Probleme - trotzdem weitermachen
+        // Collection existiert nicht - das ist ok, weitermachen
       }
-      
-      // SCHRITT 3: Liste selbst löschen
+
+      // SCHRITT 3: Liste selbst zur Batch hinzufügen
       const listRef = doc(db, this.COLLECTION, listId);
-      try {
-        await deleteDoc(listRef);
-      } catch (error) {
-        console.error(`❌ Failed to delete list ${listId}:`, error);
-        throw error;
-      }
+      batch.delete(listRef);
+      
+      // 🚀 ATOMIC COMMIT - alles auf einmal!
+      await batch.commit();
+      
+      console.log(`✅ Liste ${listId} vollständig gelöscht (atomic)`);
       
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
 import { Button } from '../components/ui';
 import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
+import { ListService } from '../services/listService';
 import type { List } from '../types/todoList';
 
 const Dashboard = () => {
@@ -47,6 +48,17 @@ const Dashboard = () => {
 
   const handleListClick = (list: List) => {
     navigate(`/list/${list.id}`);
+  };
+
+  const handleListDelete = async (list: List) => {
+    try {
+      await ListService.deleteList(list.id);
+      // Liste aus dem Context entfernen / neu laden
+      refreshLists();
+    } catch (error) {
+      console.error('Fehler beim Löschen der Liste:', error);
+      // Hier könntest du eine Toast-Benachrichtigung anzeigen
+    }
   };
 
   const filteredLists = lists.filter(list => {
@@ -151,6 +163,8 @@ const Dashboard = () => {
             lists={filteredLists}
             loading={loading}
             onListClick={handleListClick}
+            onListDelete={handleListDelete}
+            currentUserId={user?.uid}
           />
         </div>
       </div>
