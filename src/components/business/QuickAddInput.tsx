@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '../ui/Button';
 import { sanitizeString } from '../../utils/helpers';
+import { logger } from '../../utils/logger';
 
 interface QuickAddInputProps {
   onAddItems: (itemNames: string[]) => Promise<void>;
@@ -16,7 +17,7 @@ export const QuickAddInput: React.FC<QuickAddInputProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!input.trim()) return;
@@ -34,11 +35,11 @@ export const QuickAddInput: React.FC<QuickAddInputProps> = ({
         setInput(''); // Input nach erfolgreichem Hinzufügen leeren
       }
     } catch (error) {
-      console.error('Fehler beim Hinzufügen der Items:', error);
+      logger.error('Fehler beim Hinzufügen der Items:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, onAddItems]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

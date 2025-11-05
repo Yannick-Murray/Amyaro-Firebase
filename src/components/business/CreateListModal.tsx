@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../ui';
 import { Button } from '../ui';
 import { FormField, Input, Textarea, Select, Checkbox, type SelectOption } from '../forms';
-import { CategoryService, ListService } from '../../services/listService';
+import { ListService } from '../../services/listService';
 import { useAuth } from '../../context/AuthContext';
 import { sanitizeString } from '../../utils/helpers';
 import type { Category } from '../../types/todoList';
@@ -39,14 +39,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Kategorien laden (hier temporär mit statischen Daten)
-  useEffect(() => {
-    if (isOpen && user) {
-      loadCategories();
-    }
-  }, [isOpen, user, formData.type]);
-
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     if (!user) return;
     
     setCategoriesLoading(true);
@@ -61,9 +54,16 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     } finally {
       setCategoriesLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Kategorien laden (hier temporär mit statischen Daten)
+  useEffect(() => {
+    if (isOpen && user) {
+      loadCategories();
+    }
+  }, [isOpen, user, formData.type, loadCategories]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     // 🔒 SECURITY: Enhanced Input Validation
@@ -101,9 +101,9 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [formData, onSubmit]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setFormData({
       name: '',
       description: '',
@@ -112,7 +112,14 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
       isPrivate: false
     });
     onClose();
-  };
+  }, [onClose]);
+
+  const handleInputChange = useCallback((field: keyof CreateListData, value: any) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      [field]: field === 'name' || field === 'description' ? sanitizeString(value) : value 
+    }));
+  }, []);
 
   const categoryOptions: SelectOption[] = [
     { value: '', label: 'Keine Kategorie' },
@@ -148,11 +155,13 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                 <Select
                   id="list-type"
                   value={formData.type}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    type: e.target.value as 'shopping' | 'gift',
-                    categoryId: '' // Reset category when type changes
-                  }))}
+                  onChange={(e) => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      type: e.target.value as 'shopping' | 'gift',
+                      categoryId: '' // Reset category when type changes
+                    }));
+                  }}
                   options={typeOptions}
                   placeholder="Listentyp auswählen"
                 />
@@ -172,10 +181,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                   id="list-name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    name: e.target.value 
-                  }))}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder={formData.type === 'shopping' ? 'z.B. Wocheneinkauf' : 'z.B. Weihnachtsgeschenke'}
                   maxLength={100}
                   autoFocus
@@ -191,10 +197,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                 <Textarea
                   id="list-description"
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    description: e.target.value 
-                  }))}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Optionale Beschreibung..."
                   rows={3}
                   maxLength={500}
@@ -225,10 +228,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
               <Checkbox
                 id="list-private"
                 checked={formData.isPrivate}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  isPrivate: e.target.checked 
-                }))}
+                onChange={(e) => handleInputChange('isPrivate', e.target.checked)}
                 label="Private Liste (nur für mich sichtbar)"
               />
               <div className="form-text text-muted small">

@@ -28,11 +28,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onEditItem,
   onDuplicateItem,
   onMoveItem,
-  onReorderItems,
+  onReorderItems: _onReorderItems,
   onEditCategory,
   onDeleteCategory,
-  onToggleExpanded,
-  disabled = false
+  onToggleExpanded: _onToggleExpanded,
+  disabled: _disabled = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   

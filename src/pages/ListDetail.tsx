@@ -39,13 +39,6 @@ const ListDetail = () => {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
-  const [dragOverState, setDragOverState] = useState<{
-    activeItemId: string | null;
-    overId: string | null;
-  }>({
-    activeItemId: null,
-    overId: null
-  });
   
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
@@ -136,10 +129,6 @@ const ListDetail = () => {
     const { active } = event;
     const item = items.find(i => i.id === active.id);
     setActiveItem(item || null);
-    setDragOverState({
-      activeItemId: active.id as string,
-      overId: null
-    });
     console.log('🎬 Drag Start:', active.id);
   };
 
@@ -148,11 +137,6 @@ const ListDetail = () => {
     
     // Update drag over state für visuelles Feedback
     const overId = over?.id as string || null;
-    
-    setDragOverState({
-      activeItemId: active.id as string,
-      overId: overId
-    });
     
     // Speichere die letzte gültige over-Position für Fallback
     if (overId && items.find(item => item.id === overId)) {
@@ -190,10 +174,7 @@ const ListDetail = () => {
     setActiveItem(null);
     
     // Reset drag state
-    setDragOverState({
-      activeItemId: null,
-      overId: null
-    });
+    setActiveItem(null);
 
     let finalOverId = over?.id as string;
     
@@ -445,7 +426,7 @@ const ListDetail = () => {
               style={{ cursor: 'pointer' }}
             >
               <div className="d-flex align-items-center gap-2">
-                <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)}`}></i>
+                <i className={`${getListTypeIcon(list.type)}`}></i>
                 <span className="fw-medium">{list.name}</span>
               </div>
               
@@ -490,7 +471,7 @@ const ListDetail = () => {
                 </nav>
                 
                 <div className="d-flex align-items-center gap-2">
-                  <i className={`${getListTypeIcon(list.type === 'gift' ? 'gifts' : list.type)} fs-4`}></i>
+                  <i className={`${getListTypeIcon(list.type)} fs-4`}></i>
                   <h1 className="h3 mb-0">{list.name}</h1>
                   
                   {/* Share Button - Conditional Behavior */}

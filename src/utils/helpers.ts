@@ -153,25 +153,25 @@ export const reorderArray = <T>(list: T[], startIndex: number, endIndex: number)
 };
 
 // Listen-Typ Helpers
-export const getListTypeLabel = (type: 'shopping' | 'gifts'): string => {
+export const getListTypeLabel = (type: 'shopping' | 'gift'): string => {
   switch (type) {
     case 'shopping':
       return 'Einkaufsliste';
-    case 'gifts':
+    case 'gift':
       return 'Geschenkeliste';
     default:
       return 'Unbekannt';
   }
 };
 
-export const getListTypeIcon = (type: 'shopping' | 'gifts'): string => {
+export const getListTypeIcon = (type: 'shopping' | 'gift'): string => {
   switch (type) {
     case 'shopping':
-      return 'bi-cart';
-    case 'gifts':
-      return 'bi-gift';
+      return '🛒';
+    case 'gift':
+      return '🎁';
     default:
-      return 'bi-list';
+      return '📝';
   }
 };
 

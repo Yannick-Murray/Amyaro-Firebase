@@ -259,16 +259,6 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
               </span>
             )}
           </div>
-
-          <div className="mt-3">
-            <small className="text-muted">
-              Durch die Registrierung stimmst du unseren{' '}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-decoration-none">Nutzungsbedingungen</a>{' '}
-              und der{' '}
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-decoration-none">Datenschutzerklärung</a>{' '}
-              zu.
-            </small>
-          </div>
         </div>
       </div>
     </div>

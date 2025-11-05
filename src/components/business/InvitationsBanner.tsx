@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { InvitationService } from '../../services/invitationService';
 import { Button } from '../ui/Button';
@@ -10,15 +10,7 @@ export const InvitationsBanner: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string>('');
 
-  useEffect(() => {
-    if (user) {
-      loadInvitations();
-      // Aufräumen abgelaufener Einladungen (optional - kann entfernt werden wenn zu langsam)
-      // InvitationService.cleanupExpiredInvitations();
-    }
-  }, [user]);
-
-  const loadInvitations = async () => {
+  const loadInvitations = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -30,9 +22,17 @@ export const InvitationsBanner: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleAccept = async (invitationId: string) => {
+  useEffect(() => {
+    if (user) {
+      loadInvitations();
+      // Aufräumen abgelaufener Einladungen (optional - kann entfernt werden wenn zu langsam)
+      // InvitationService.cleanupExpiredInvitations();
+    }
+  }, [user, loadInvitations]);
+
+  const handleAccept = useCallback(async (invitationId: string) => {
     if (!user) return;
     
     setProcessingId(invitationId);
@@ -45,9 +45,9 @@ export const InvitationsBanner: React.FC = () => {
     } finally {
       setProcessingId('');
     }
-  };
+  }, [user, loadInvitations]);
 
-  const handleDecline = async (invitationId: string) => {
+  const handleDecline = useCallback(async (invitationId: string) => {
     setProcessingId(invitationId);
     try {
       await InvitationService.declineInvitation(invitationId);
@@ -58,7 +58,7 @@ export const InvitationsBanner: React.FC = () => {
     } finally {
       setProcessingId('');
     }
-  };
+  }, [loadInvitations]);
 
   if (loading || invitations.length === 0) {
     return null;

@@ -269,31 +269,6 @@ export class ListService {
     }
   }
 
-  // Liste teilen
-  static async shareList(listId: string, userEmail: string): Promise<void> {
-    try {
-      const listRef = doc(db, this.COLLECTION, listId);
-      const listDoc = await getDoc(listRef);
-      
-      if (!listDoc.exists()) {
-        throw new Error('Liste nicht gefunden');
-      }
-
-      const listData = listDoc.data() as List;
-      const currentSharedWith = listData.sharedWith || [];
-      
-      if (!currentSharedWith.includes(userEmail)) {
-        await updateDoc(listRef, {
-          sharedWith: [...currentSharedWith, userEmail],
-          updatedAt: Timestamp.now()
-        });
-      }
-    } catch (error) {
-      console.error('Fehler beim Teilen der Liste:', error);
-      throw error;
-    }
-  }
-
   // Real-time Listener für Listen
   static subscribeToUserLists(
     userId: string,
@@ -529,7 +504,7 @@ export class CategoryService {
 export const TodoListService = ListService;
 
 export class ItemService {
-  private static collection = 'items';
+  private static collection = 'todoItems';
 
   /**
    * Creates multiple items from an array of names (bulk add)
@@ -943,86 +918,5 @@ export class ItemService {
       } as Item));
       callback(items);
     });
-  }
-}
-
-// Share Service
-export class ShareService {
-  private static readonly COLLECTION = 'listShares';
-
-  /**
-   * Shares a list with another user by email
-   */
-  static async shareList(
-    listId: string, 
-    email: string, 
-    permission: 'read' | 'write' = 'write'
-  ): Promise<string> {
-    try {
-      if (!auth.currentUser) {
-        throw new Error('Benutzer muss angemeldet sein');
-      }
-
-      // Check if already shared with this email
-      const existingShareQuery = query(
-        collection(db, this.COLLECTION),
-        where('listId', '==', listId),
-        where('sharedWithEmail', '==', email.toLowerCase())
-      );
-      
-      const existingShares = await getDocs(existingShareQuery);
-      if (!existingShares.empty) {
-        throw new Error('Liste wurde bereits mit dieser E-Mail-Adresse geteilt');
-      }
-
-      const shareData = {
-        listId,
-        ownerId: auth.currentUser.uid,
-        sharedWithEmail: email.toLowerCase(),
-        permission,
-        sharedAt: serverTimestamp(),
-        sharedBy: auth.currentUser.uid,
-        status: 'pending'
-      };
-
-      const docRef = await addDoc(collection(db, this.COLLECTION), shareData);
-      return docRef.id;
-    } catch (error) {
-      console.error('Fehler beim Teilen der Liste:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Gets all shares for a specific list
-   */
-  static async getListShares(listId: string): Promise<any[]> {
-    try {
-      const q = query(
-        collection(db, this.COLLECTION),
-        where('listId', '==', listId)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error('Fehler beim Laden der geteilten Listen:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Removes a share
-   */
-  static async removeShare(shareId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, this.COLLECTION, shareId));
-    } catch (error) {
-      console.error('Fehler beim Entfernen der Freigabe:', error);
-      throw error;
-    }
   }
 }
