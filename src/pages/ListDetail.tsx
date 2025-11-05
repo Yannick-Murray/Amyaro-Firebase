@@ -327,8 +327,6 @@ const ListDetail = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Kategorie und alle zugehörigen Items wirklich löschen?')) return;
-    
     try {
       await CategoryService.deleteCategory(categoryId);
       loadListData();

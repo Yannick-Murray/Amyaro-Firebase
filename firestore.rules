@@ -141,9 +141,7 @@ service cloud.firestore {
                        hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data);
       
       allow delete: if isValidUser() &&
-                       // Only category creator can delete
-                       request.auth.uid == resource.data.userId &&
-                       // User must have access to the associated list
+                       // Anyone with list access can delete categories
                        exists(/databases/$(database)/documents/lists/$(resource.data.listId)) &&
                        hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data);
     }

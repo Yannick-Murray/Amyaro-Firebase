@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Modal } from '../ui';
 import { Button } from '../ui';
-import { FormField, Input, Textarea, Select, Checkbox, type SelectOption } from '../forms';
+import { FormField, Input, Textarea, Select, type SelectOption } from '../forms';
 import { ListService } from '../../services/listService';
 import { useAuth } from '../../context/AuthContext';
 import { sanitizeString } from '../../utils/helpers';
-import type { Category } from '../../types/todoList';
 
 export interface CreateListModalProps {
   isOpen: boolean;
@@ -17,8 +16,6 @@ export interface CreateListData {
   name: string;
   description: string;
   type: 'shopping' | 'gift';
-  categoryId: string;
-  isPrivate: boolean;
 }
 
 export const CreateListModal: React.FC<CreateListModalProps> = ({
@@ -30,38 +27,10 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
   const [formData, setFormData] = useState<CreateListData>({
     name: '',
     description: '',
-    type: 'shopping',
-    categoryId: '',
-    isPrivate: false
+    type: 'shopping'
   });
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  const loadCategories = useCallback(async () => {
-    if (!user) return;
-    
-    setCategoriesLoading(true);
-    try {
-      // 🔒 SECURITY FIX: CreateListModal braucht keine existierenden Kategorien
-      // Kategorien werden nach Listenerstellung list-spezifisch erstellt
-      setCategories([]);
-    } catch (error) {
-      console.error('Fehler beim Laden der Kategorien:', error);
-      // Fallback auf leere Liste
-      setCategories([]);
-    } finally {
-      setCategoriesLoading(false);
-    }
-  }, [user]);
-
-  // Kategorien laden (hier temporär mit statischen Daten)
-  useEffect(() => {
-    if (isOpen && user) {
-      loadCategories();
-    }
-  }, [isOpen, user, formData.type, loadCategories]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,8 +58,8 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
         sanitizeString(formData.name),
         formData.type,
         formData.description.trim() ? sanitizeString(formData.description) : undefined,
-        formData.categoryId || undefined,
-        formData.isPrivate
+        undefined, // categoryId
+        false // isPrivate - default to false
       );
       
       // Modal schließen und Parent benachrichtigen
@@ -107,9 +76,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     setFormData({
       name: '',
       description: '',
-      type: 'shopping',
-      categoryId: '',
-      isPrivate: false
+      type: 'shopping'
     });
     onClose();
   }, [onClose]);
@@ -120,14 +87,6 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
       [field]: field === 'name' || field === 'description' ? sanitizeString(value) : value 
     }));
   }, []);
-
-  const categoryOptions: SelectOption[] = [
-    { value: '', label: 'Keine Kategorie' },
-    ...categories.map(cat => ({
-      value: cat.id,
-      label: cat.name
-    }))
-  ];
 
   const typeOptions: SelectOption[] = [
     { value: 'shopping', label: '🛒 Einkaufsliste' },
@@ -203,37 +162,6 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                   maxLength={500}
                 />
               </FormField>
-            </div>
-
-            <div className="col-12">
-              <FormField
-                label="Kategorie (optional)"
-                htmlFor="list-category"
-              >
-                <Select
-                  id="list-category"
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    categoryId: e.target.value 
-                  }))}
-                  options={categoryOptions}
-                  placeholder={categoriesLoading ? 'Kategorien werden geladen...' : 'Kategorie auswählen'}
-                  disabled={categoriesLoading}
-                />
-              </FormField>
-            </div>
-
-            <div className="col-12">
-              <Checkbox
-                id="list-private"
-                checked={formData.isPrivate}
-                onChange={(e) => handleInputChange('isPrivate', e.target.checked)}
-                label="Private Liste (nur für mich sichtbar)"
-              />
-              <div className="form-text text-muted small">
-                Private Listen können nicht geteilt werden
-              </div>
             </div>
           </div>
         </div>
