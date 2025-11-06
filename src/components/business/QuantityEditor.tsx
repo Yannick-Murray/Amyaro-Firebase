@@ -15,7 +15,7 @@ export const QuantityEditor: React.FC<QuantityEditorProps> = ({
   size = 'sm'
 }) => {
   const handleDecrease = async () => {
-    if (quantity > 0) {
+    if (quantity > 1) {
       await onQuantityChange(quantity - 1);
     }
   };
@@ -32,7 +32,7 @@ export const QuantityEditor: React.FC<QuantityEditorProps> = ({
         variant="outline-secondary"
         size={size}
         onClick={handleDecrease}
-        disabled={disabled || quantity <= 0}
+        disabled={disabled || quantity <= 1}
         className="rounded-end-0"
         style={{ minWidth: '32px' }}
       >

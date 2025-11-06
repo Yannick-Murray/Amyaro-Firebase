@@ -4,12 +4,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { ContextMenu, useContextMenu } from '../ui';
 import { useLongPress } from '../../hooks';
 import { cn } from '../../utils/cn';
+import { QuantityEditor } from './QuantityEditor';
 import type { Item } from '../../types/todoList';
 
 export interface DraggableMobileItemProps {
   item: Item;
   onToggle: (itemId: string, completed: boolean) => void;
   onDelete: (itemId: string) => void;
+  onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onEdit?: (itemId: string) => void;
   onDuplicate?: (itemId: string) => void;
   onMoveToCategory?: (itemId: string) => void;
@@ -21,6 +23,7 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
   item,
   onToggle,
   onDelete,
+  onQuantityChange,
   onEdit,
   onDuplicate,
   onMoveToCategory,
@@ -181,6 +184,22 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
             {item.name}
           </span>
         </div>
+
+        {/* Quantity Editor - nur für nicht erledigte Items */}
+        {!item.isCompleted && (
+          <div className="me-2">
+            <QuantityEditor
+              quantity={item.quantity || 1}
+              onQuantityChange={(newQuantity) => onQuantityChange(item.id, newQuantity)}
+              disabled={disabled}
+            />
+          </div>
+        )}
+
+        {/* Quantity Badge - nur für erledigte Items */}
+        {item.isCompleted && (
+          <span className="badge bg-secondary me-2">{item.quantity || 1}</span>
+        )}
 
         {/* Delete Button - Mülleimer am Ende der Zeile */}
         <button

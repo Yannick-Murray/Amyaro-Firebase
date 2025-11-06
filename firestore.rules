@@ -129,16 +129,20 @@ service cloud.firestore {
                        hasListAccess(get(/databases/$(database)/documents/lists/$(request.resource.data.listId)).data);
       
       allow update: if isValidUser() &&
-                       // Only category creator or list owner can update
-                       (request.auth.uid == resource.data.userId) &&
                        request.resource.data.listId == resource.data.listId &&
                        (!('name' in request.resource.data) || 
                         isValidString(request.resource.data.name, 1, 50)) &&
                        (!('color' in request.resource.data) || 
                         isValidString(request.resource.data.color, 3, 20)) &&
+                       (!('order' in request.resource.data) || 
+                        request.resource.data.order is number) &&
                        // User must have access to the associated list
                        exists(/databases/$(database)/documents/lists/$(resource.data.listId)) &&
-                       hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data);
+                       hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data) &&
+                       // Either category creator OR anyone with list access for order-only changes
+                       (request.auth.uid == resource.data.userId ||
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['order', 'updatedAt']));
       
       allow delete: if isValidUser() &&
                        // Anyone with list access can delete categories

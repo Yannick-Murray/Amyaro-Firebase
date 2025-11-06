@@ -10,12 +10,15 @@ export interface CategorySectionProps {
   items: Item[];
   onToggleItem: (itemId: string, completed: boolean) => void;
   onDeleteItem: (itemId: string) => void;
+  onQuantityChange: (itemId: string, quantity: number) => Promise<void>;
   onEditItem?: (itemId: string) => void;
   onDuplicateItem?: (itemId: string) => void;
   onMoveItem?: (itemId: string) => void;
   onReorderItems: (itemIds: string[]) => void;
   onEditCategory?: (category: Category) => void;
   onDeleteCategory?: (categoryId: string) => void;
+  onMoveCategoryUp?: (categoryId: string) => void;
+  onMoveCategoryDown?: (categoryId: string) => void;
   onToggleExpanded?: () => void;
   disabled?: boolean;
 }
@@ -25,12 +28,15 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   items,
   onToggleItem,
   onDeleteItem,
+  onQuantityChange,
   onEditItem,
   onDuplicateItem,
   onMoveItem,
   onReorderItems: _onReorderItems,
   onEditCategory,
   onDeleteCategory,
+  onMoveCategoryUp,
+  onMoveCategoryDown,
   onToggleExpanded: _onToggleExpanded,
   disabled: _disabled = false
 }) => {
@@ -72,6 +78,39 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 className="dropdown-menu show position-absolute end-0"
                 style={{ zIndex: 1000 }}
               >
+                {/* Move Category Up */}
+                {onMoveCategoryUp && (
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      onMoveCategoryUp(category.id);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <i className="bi bi-arrow-up me-2"></i>
+                    Nach oben
+                  </button>
+                )}
+                
+                {/* Move Category Down */}
+                {onMoveCategoryDown && (
+                  <button
+                    className="dropdown-item"
+                    onClick={() => {
+                      onMoveCategoryDown(category.id);
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <i className="bi bi-arrow-down me-2"></i>
+                    Nach unten
+                  </button>
+                )}
+                
+                {/* Divider if we have reorder buttons */}
+                {(onMoveCategoryUp || onMoveCategoryDown) && (
+                  <hr className="dropdown-divider" />
+                )}
+                
                 {onEditCategory && (
                   <button
                     className="dropdown-item"
@@ -144,6 +183,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   item={item}
                   onToggle={onToggleItem}
                   onDelete={onDeleteItem}
+                  onQuantityChange={onQuantityChange}
                   onEdit={onEditItem}
                   onDuplicate={onDuplicateItem}
                   onMoveToCategory={onMoveItem}

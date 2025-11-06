@@ -43,17 +43,17 @@ const ListDetail = () => {
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
 
-  // Mobile-optimized drag sensors 
+  // Drag sensors - reverted to working configuration
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Sehr niedrig für sofortige Aktivierung
+        distance: 3, // Zurück zur ursprünglichen Konfiguration
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100, // Kurzer Delay um Touch von Scroll zu unterscheiden
-        tolerance: 10, // Mehr Toleranz für Touch-Bewegungen
+        delay: 100, // Zurück zur ursprünglichen Konfiguration
+        tolerance: 10, // Zurück zur ursprünglichen Konfiguration
       },
     })
   );
@@ -171,6 +171,12 @@ const ListDetail = () => {
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('🏁 DRAG END CALLED:', { 
+      activeId: active.id, 
+      overId: over?.id,
+      hasOver: !!over 
+    });
+    
     setActiveItem(null);
     
     // Reset drag state
@@ -195,6 +201,7 @@ const ListDetail = () => {
     const activeId = active.id as string;
     const overId = finalOverId;
     
+    // Item drag handling
     const activeItem = items.find(item => item.id === activeId);
     const overItem = items.find(item => item.id === overId);
     
@@ -332,6 +339,58 @@ const ListDetail = () => {
       loadListData();
     } catch (error) {
       console.error('Fehler beim Löschen der Kategorie:', error);
+    }
+  };
+
+  const handleMoveCategoryUp = async (categoryId: string) => {
+    try {
+      const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+      const currentIndex = sortedCategories.findIndex(cat => cat.id === categoryId);
+      
+      if (currentIndex > 0) {
+        // Swap with previous category
+        const newOrder = [...sortedCategories];
+        [newOrder[currentIndex - 1], newOrder[currentIndex]] = [newOrder[currentIndex], newOrder[currentIndex - 1]];
+        
+        const categoryIds = newOrder.map(cat => cat.id);
+        await CategoryService.reorderCategories(categoryIds);
+        loadListData();
+      }
+    } catch (error) {
+      console.error('Fehler beim Verschieben der Kategorie:', error);
+    }
+  };
+
+  const handleMoveCategoryDown = async (categoryId: string) => {
+    try {
+      const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+      const currentIndex = sortedCategories.findIndex(cat => cat.id === categoryId);
+      
+      if (currentIndex < sortedCategories.length - 1) {
+        // Swap with next category
+        const newOrder = [...sortedCategories];
+        [newOrder[currentIndex], newOrder[currentIndex + 1]] = [newOrder[currentIndex + 1], newOrder[currentIndex]];
+        
+        const categoryIds = newOrder.map(cat => cat.id);
+        await CategoryService.reorderCategories(categoryIds);
+        loadListData();
+      }
+    } catch (error) {
+      console.error('Fehler beim Verschieben der Kategorie:', error);
+    }
+  };
+
+  const handleQuantityChange = async (itemId: string, quantity: number) => {
+    try {
+      await ItemService.updateItem(itemId, { quantity });
+      // Update local state for immediate UI feedback
+      setItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId ? { ...item, quantity } : item
+        )
+      );
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Menge:', error);
     }
   };
 
@@ -610,6 +669,7 @@ const ListDetail = () => {
                     items={grouped['uncategorized']}
                     onToggleItem={handleToggleItem}
                     onDeleteItem={handleDeleteItem}
+                    onQuantityChange={handleQuantityChange}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 )}
@@ -622,7 +682,10 @@ const ListDetail = () => {
                     items={grouped[category.id] || []}
                     onToggleItem={handleToggleItem}
                     onDeleteItem={handleDeleteItem}
+                    onQuantityChange={handleQuantityChange}
                     onDeleteCategory={handleDeleteCategory}
+                    onMoveCategoryUp={handleMoveCategoryUp}
+                    onMoveCategoryDown={handleMoveCategoryDown}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 ))}
@@ -643,21 +706,24 @@ const ListDetail = () => {
                     items={grouped['completed']}
                     onToggleItem={handleToggleItem}
                     onDeleteItem={handleDeleteItem}
+                    onQuantityChange={handleQuantityChange}
                     onReorderItems={() => {}} // Completed items nicht reorderbar
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}
 
-                {/* Add Category Button */}
-                <div className="mb-4">
-                  <button
-                    className="btn btn-outline-primary w-100"
-                    onClick={() => setShowCreateCategoryModal(true)}
-                  >
-                    <i className="bi bi-plus-circle me-2"></i>
-                    Neue Kategorie
-                  </button>
-                </div>
+                {/* Add Category Button - nur im normalen Modus, nicht im Focus Mode */}
+                {!isFocusMode && (
+                  <div className="mb-4">
+                    <button
+                      className="btn btn-outline-primary w-100"
+                      onClick={() => setShowCreateCategoryModal(true)}
+                    >
+                      <i className="bi bi-plus-circle me-2"></i>
+                      Neue Kategorie
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

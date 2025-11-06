@@ -499,6 +499,29 @@ export class CategoryService {
       throw error;
     }
   }
+
+  /**
+   * Reorder categories by updating their order values one by one
+   */
+  static async reorderCategories(categoryIds: string[]): Promise<void> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      // Update categories one by one to avoid batch permission issues
+      for (let i = 0; i < categoryIds.length; i++) {
+        const categoryRef = doc(db, this.COLLECTION, categoryIds[i]);
+        await updateDoc(categoryRef, {
+          order: i,
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error('Fehler beim Neuordnen der Kategorien:', error);
+      throw error;
+    }
+  }
 }
 
 // Backward compatibility export
