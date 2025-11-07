@@ -13,57 +13,50 @@ const TermsOfService = () => {
             <h2 className="h4 mb-3">1. Geltungsbereich</h2>
             <p>
               Diese Nutzungsbedingungen regeln die Nutzung der Amyaro Todo-List App.
-              Mit der Registrierung stimmen Sie diesen Bedingungen zu.
+              Mit der Registrierung stimmst du diesen Bedingungen zu.
             </p>
           </section>
 
           <section className="mb-5">
             <h2 className="h4 mb-3">2. Registrierung und Konto</h2>
             <ul>
-              <li>Sie müssen mindestens 13 Jahre alt sein</li>
               <li>Pro Person ist nur ein Konto erlaubt</li>
-              <li>Geben Sie wahrheitsgemäße Informationen an</li>
-              <li>Halten Sie Ihre Zugangsdaten geheim</li>
+              <li>Es darf kein Konto zur Ausführung schhädlicher Handlungen angelegt werden</li>
+              <li>Zugangsdaten sollten geheim gehalten werden</li>
             </ul>
           </section>
 
           <section className="mb-5">
             <h2 className="h4 mb-3">3. Nutzung der App</h2>
-            <p>Die App dient zur Organisation von Aufgaben und Listen. Untersagt ist:</p>
+            <p>Die App dient zur kollaborativen Organisation von Aufgaben und Listen. Untersagt ist:</p>
             <ul>
               <li>Illegale oder schädliche Inhalte</li>
               <li>Spam oder unerwünschte Einladungen</li>
               <li>Missbrauch der Sharing-Funktion</li>
               <li>Versuche, die Sicherheit zu umgehen</li>
+              <li>jegliche Form von Rassismus oder anderen menschenverachtenden Inhalten</li>
             </ul>
           </section>
 
           <section className="mb-5">
             <h2 className="h4 mb-3">4. Datenschutz</h2>
             <p>
-              Der Schutz Ihrer Daten ist uns wichtig. Details finden Sie in unserer{' '}
-              <button 
-                onClick={() => window.location.href = '/privacy'} 
-                className="btn btn-link p-0 text-decoration-none"
-              >
-                Datenschutzerklärung
-              </button>.
+              Ich werde keine Daten erheben, verkaufen und/oder auswerten. Alle erhobenen Daten sind technischer Natur und dienen der Lauffähigkeit dieser Web Applikation. 
             </p>
           </section>
 
           <section className="mb-5">
             <h2 className="h4 mb-3">5. Haftung</h2>
             <p>
-              Die Nutzung erfolgt auf eigene Verantwortung. Wir übernehmen keine 
-              Haftung für Datenverlust oder Schäden durch die Nutzung der App.
+              Die Nutzung erfolgt auf eigene Verantwortung. Ich kann und werde keinerlei Haftung übernehmen.
             </p>
           </section>
 
           <section className="mb-5">
             <h2 className="h4 mb-3">6. Kündigung</h2>
             <p>
-              Sie können Ihr Konto jederzeit in den Profileinstellungen löschen.
-              Wir behalten uns vor, Konten bei Missbrauch zu sperren.
+              Du kannst dein Konto jederzeit in den Profileinstellungen löschen.
+              Ich behalte mir vor, Konten bei Missbrauch zu sperren.
             </p>
           </section>
 
