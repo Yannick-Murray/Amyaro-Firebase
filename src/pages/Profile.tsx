@@ -1,15 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ListService } from '../services/listService';
-import { auth, db } from '../config/firebase';
-import { deleteUser } from 'firebase/auth';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { DeleteAccountModal } from '../components/business/DeleteAccountModal';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -87,89 +82,12 @@ const Profile = () => {
               
               {/* 🔒 GDPR: Account Deletion */}
               <div className="mb-3">
-                <h6 className="text-danger">Gefährliche Aktionen</h6>
-                <p className="text-muted small">
-                  Diese Aktionen können nicht rückgängig gemacht werden.
-                </p>
                 <button
                   className="btn btn-outline-danger"
-                  onClick={async () => {
-                    const confirmed = window.confirm(
-                      'Account wirklich löschen?\n\n' +
-                      'WARNUNG: Diese Aktion kann nicht rückgängig gemacht werden!\n' +
-                      '• Alle Ihre Listen und Items werden gelöscht\n' +
-                      '• Sie werden aus allen geteilten Listen entfernt\n' +
-                      '• Ihre persönlichen Daten werden permanent gelöscht\n\n' +
-                      'Wenn Sie fortfahren möchten, klicken Sie OK.'
-                    );
-
-                    if (!confirmed) return;
-
-                    try {
-                      setDeleting(true);
-
-                      // Ensure we have a current user id
-                      const uid = auth.currentUser?.uid || user?.uid;
-                      if (!uid) throw new Error('Kein angemeldeter Benutzer gefunden');
-
-                      // 1) Lösche alle eigenen Listen (inkl. Items & Kategorien)
-                      const allLists = await ListService.getUserLists(uid);
-                      const ownedLists = allLists.filter(l => l.userId === uid);
-
-                      for (const list of ownedLists) {
-                        try {
-                          await ListService.deleteList(list.id);
-                        } catch (err) {
-                          console.warn('Fehler beim Löschen der Liste', list.id, err);
-                        }
-                      }
-
-                      // 2) Entferne den Benutzer von allen geteilten Listen
-                      const sharedLists = allLists.filter(l => l.sharedWith && Array.isArray(l.sharedWith) && l.sharedWith.includes(uid) && l.userId !== uid);
-                      for (const list of sharedLists) {
-                        try {
-                          const newShared = (list.sharedWith || []).filter((id: string) => id !== uid);
-                          await ListService.updateList(list.id, { sharedWith: newShared });
-                        } catch (err) {
-                          console.warn('Fehler beim Entfernen aus geteilter Liste', list.id, err);
-                        }
-                      }
-
-                      // 3) Lösche Firestore Nutzer-Dokument
-                      try {
-                        await deleteDoc(doc(db, 'users', uid));
-                      } catch (err) {
-                        console.warn('Benutzer-Dokument konnte nicht gelöscht werden:', err);
-                      }
-
-                      // 4) Lösche Firebase Auth User
-                      try {
-                        if (auth.currentUser) {
-                          await deleteUser(auth.currentUser);
-                        }
-                      } catch (err: any) {
-                        // If reauthentication is required, surface a helpful error
-                        if (err?.code === 'auth/requires-recent-login') {
-                          alert('Aus Sicherheitsgründen muss der Benutzer kürzlich angemeldet sein. Bitte melden Sie sich erneut an und versuchen Sie die Löschung noch einmal.');
-                          return;
-                        }
-                        throw err;
-                      }
-
-                      alert('Ihr Account wurde erfolgreich gelöscht.');
-                      // Navigate to homepage - user should now be signed out
-                      navigate('/');
-                    } catch (error: any) {
-                      console.error('Fehler beim Löschen des Accounts:', error);
-                      alert('Fehler beim Löschen des Accounts: ' + (error?.message || 'Unbekannter Fehler'));
-                    } finally {
-                      setDeleting(false);
-                    }
-                  }}
-                  disabled={deleting}
+                  onClick={() => setShowDeleteModal(true)}
                 >
                   <i className="bi bi-trash me-2"></i>
-                  {deleting ? 'Lösche...' : 'Account permanent löschen'}
+                  Account permanent löschen
                 </button>
               </div>
               
@@ -185,6 +103,13 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        user={user}
+      />
     </div>
   );
 };

@@ -21,6 +21,7 @@ export { InvitationsBanner } from './InvitationsBanner';
 export { InvitationsModal } from './InvitationsModal';
 export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';
+export { DeleteAccountModal } from './DeleteAccountModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

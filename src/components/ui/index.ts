@@ -18,3 +18,5 @@ export type { SwipeableItemProps } from './SwipeableItem';
 
 export { ContextMenu, useContextMenu } from './ContextMenu';
 export type { ContextMenuProps } from './ContextMenu';
+
+export { UserDisplay, UserList } from './UserDisplay';
