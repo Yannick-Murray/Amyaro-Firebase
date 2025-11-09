@@ -152,11 +152,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Link to="/impressum" className="text-muted text-decoration-none me-3">
               Impressum
             </Link>
-            <Link to="/terms" className="text-muted text-decoration-none me-3">
+            <Link to="/terms" className="text-muted text-decoration-none">
               Nutzungsbedingungen
-            </Link>
-            <Link to="/privacy" className="text-muted text-decoration-none">
-              Datenschutz
             </Link>
           </div>
         </div>

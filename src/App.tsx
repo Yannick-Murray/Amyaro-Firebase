@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard';
 import ListDetail from './pages/ListDetail';
 import Profile from './pages/Profile';
 import AuthAction from './pages/AuthAction';
-import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Impressum from './pages/Impressum';
 import './App.css';
@@ -69,8 +68,7 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
         
-        {/* 🔒 GDPR: Legal Pages */}
-        <Route path="/privacy" element={<PrivacyPolicy />} />
+        {/* Legal Pages */}
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/impressum" element={<Impressum />} />
         

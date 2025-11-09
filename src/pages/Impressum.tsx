@@ -16,14 +16,12 @@ const Impressum = () => {
             </p>
           </section>
 
-          <section className="mb-4">
+            <section className="mb-4">
             <h2 className="h5 mb-3">Kontakt</h2>
             <p>
-              E-Mail: yannick.Murray89@gmail.com
+              E-Mail: yannick.Murray89 [at] gmail [dot] com
             </p>
-          </section>
-
-          <section className="mb-4">
+          </section>          <section className="mb-4">
             <h2 className="h5 mb-3">Hinweis</h2>
             <p className="text-muted">
               Diese App ist ein privates, nicht-kommerzielles Hobby-Projekt. 
