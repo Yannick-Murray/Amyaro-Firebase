@@ -143,11 +143,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
 
       {/* Footer */}
-              <footer className="text-center text-muted mt-5 py-4 border-top border-light">
-          <div className="container">
+      <footer className="text-center text-muted mt-5 py-4 border-top border-light">
+        <div className="container">
+          <div className="mb-2">
             © 2025 Amyaro - Deine persönliche Listen App
           </div>
-        </footer>
+          <div className="small">
+            <Link to="/impressum" className="text-muted text-decoration-none me-3">
+              Impressum
+            </Link>
+            <Link to="/terms" className="text-muted text-decoration-none me-3">
+              Nutzungsbedingungen
+            </Link>
+            <Link to="/privacy" className="text-muted text-decoration-none">
+              Datenschutz
+            </Link>
+          </div>
+        </div>
+      </footer>
     </>
   );
 };

@@ -1,0 +1,20 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#2563EB"/>
+  
+  <!-- Checkboxes (completed) -->
+  <rect x="6" y="7" width="4" height="4" rx="1" fill="#10B981" stroke="white" stroke-width="0.5"/>
+  <rect x="6" y="14" width="4" height="4" rx="1" fill="#10B981" stroke="white" stroke-width="0.5"/>
+  
+  <!-- Checkbox (uncompleted) -->
+  <rect x="6" y="21" width="4" height="4" rx="1" fill="none" stroke="white" stroke-width="1"/>
+  
+  <!-- Checkmarks -->
+  <path d="M7 9L8 10L10 8" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7 16L8 17L10 15" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- List text lines -->
+  <rect x="13" y="8" width="12" height="1.5" rx="0.5" fill="white"/>
+  <rect x="13" y="15" width="10" height="1.5" rx="0.5" fill="white"/>
+  <rect x="13" y="22" width="13" height="1.5" rx="0.5" fill="white" opacity="0.7"/>
+</svg>

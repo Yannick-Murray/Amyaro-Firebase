@@ -12,7 +12,8 @@ const TermsOfService = () => {
           <section className="mb-5">
             <h2 className="h4 mb-3">1. Geltungsbereich</h2>
             <p>
-              Diese Nutzungsbedingungen regeln die Nutzung der Amyaro Todo-List App.
+              Diese Nutzungsbedingungen regeln die Nutzung der Amyaro List App.
+              Diese App ist ein Hobby Projekt und dient keinem Kommerziellem Nutzen.
               Mit der Registrierung stimmst du diesen Bedingungen zu.
             </p>
           </section>
@@ -55,7 +56,7 @@ const TermsOfService = () => {
           <section className="mb-5">
             <h2 className="h4 mb-3">6. Kündigung</h2>
             <p>
-              Du kannst dein Konto jederzeit in den Profileinstellungen löschen.
+              Du kannst dein Konto jederzeit in den Profileinstellungen rückstandlos löschen.
               Ich behalte mir vor, Konten bei Missbrauch zu sperren.
             </p>
           </section>

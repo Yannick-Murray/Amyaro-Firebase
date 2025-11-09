@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import AuthAction from './pages/AuthAction';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Impressum from './pages/Impressum';
 import './App.css';
 
 // Auth-Route Component (für Login/Register)
@@ -71,6 +72,7 @@ const AppContent = () => {
         {/* 🔒 GDPR: Legal Pages */}
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/impressum" element={<Impressum />} />
         
         {/* Catch-all Route - Redirect to Dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
