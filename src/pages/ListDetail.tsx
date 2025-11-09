@@ -9,6 +9,7 @@ import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
 import { ShareListModal } from '../components/business/ShareListModal';
 import { SharedInfoModal } from '../components/business/SharedInfoModal';
+import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
 import { 
   DndContext, 
   DragOverlay,
@@ -39,6 +40,11 @@ const ListDetail = () => {
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
+  
+  // Duplicate item handling
+  const [duplicateItems, setDuplicateItems] = useState<{name: string, existingItem: Item}[]>([]);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [pendingNewItems, setPendingNewItems] = useState<string[]>([]);
   
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
@@ -288,21 +294,102 @@ const ListDetail = () => {
     }
   };
 
+  // Helper function to find duplicate items by name (case-insensitive)
+  const findDuplicateItems = (newNames: string[]) => {
+    const duplicates: {name: string, existingItem: Item}[] = [];
+    const nonDuplicates: string[] = [];
+    
+    newNames.forEach(name => {
+      const trimmedName = name.trim();
+      const existingItem = items.find(item => 
+        item.name.toLowerCase() === trimmedName.toLowerCase() && !item.isCompleted
+      );
+      
+      if (existingItem) {
+        duplicates.push({ name: trimmedName, existingItem });
+      } else {
+        nonDuplicates.push(trimmedName);
+      }
+    });
+    
+    return { duplicates, nonDuplicates };
+  };
+
   const handleAddItems = async (names: string[]) => {
     try {
-      for (const name of names) {
-        await ItemService.createItem(id!, {
-          name: name.trim(),
-          quantity: 1,
-          isCompleted: false,
-          priority: 'low',
-          order: 0
-        });
+      const { duplicates, nonDuplicates } = findDuplicateItems(names);
+      
+      // If there are duplicates, show confirmation modal
+      if (duplicates.length > 0) {
+        setDuplicateItems(duplicates);
+        setPendingNewItems(nonDuplicates);
+        setShowDuplicateModal(true);
+        return;
       }
-      loadListData();
+      
+      // No duplicates, create all items directly
+      await createNewItems(nonDuplicates);
+      
     } catch (error) {
       console.error('Fehler beim Hinzufügen der Items:', error);
       setError('Fehler beim Hinzufügen der Items');
+    }
+  };
+
+  // Helper to create new items
+  const createNewItems = async (names: string[]) => {
+    try {
+      for (const name of names) {
+        if (name.trim()) {
+          await ItemService.createItem(id!, {
+            name: name.trim(),
+            quantity: 1,
+            isCompleted: false,
+            priority: 'low',
+            order: 0
+          });
+        }
+      }
+      await loadListData();
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Items:', error);
+      setError('Fehler beim Erstellen der Items');
+    }
+  };
+
+  // Handle duplicate modal actions
+  const handleIncreaseQuantity = async (duplicates: {name: string, existingItem: Item}[]) => {
+    try {
+      // Increase quantity of existing items
+      for (const duplicate of duplicates) {
+        const newQuantity = Math.min(9, (duplicate.existingItem.quantity || 1) + 1);
+        await ItemService.updateQuantity(duplicate.existingItem.id, newQuantity);
+      }
+      
+      // Create remaining non-duplicate items
+      await createNewItems(pendingNewItems);
+      
+      // Reset state
+      setDuplicateItems([]);
+      setPendingNewItems([]);
+    } catch (error) {
+      console.error('Fehler beim Erhöhen der Menge:', error);
+      setError('Fehler beim Erhöhen der Menge');
+    }
+  };
+
+  const handleCreateAnyway = async (duplicates: {name: string, existingItem: Item}[]) => {
+    try {
+      // Create all items including duplicates
+      const allNames = [...duplicates.map(d => d.name), ...pendingNewItems];
+      await createNewItems(allNames);
+      
+      // Reset state
+      setDuplicateItems([]);
+      setPendingNewItems([]);
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Items:', error);
+      setError('Fehler beim Erstellen der Items');
     }
   };
 
@@ -771,6 +858,15 @@ const ListDetail = () => {
           onClose={() => setShowSharedInfoModal(false)}
           listName={list.name}
           originalCreatorId={list.userId}
+        />
+
+        {/* Duplicate Item Modal */}
+        <DuplicateItemModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          duplicates={duplicateItems}
+          onConfirmIncreaseQuantity={handleIncreaseQuantity}
+          onConfirmCreateAnyway={handleCreateAnyway}
         />
       </div>
     </DndContext>

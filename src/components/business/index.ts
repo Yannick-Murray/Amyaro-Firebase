@@ -22,6 +22,7 @@ export { InvitationsModal } from './InvitationsModal';
 export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';
 export { DeleteAccountModal } from './DeleteAccountModal';
+export { DuplicateItemModal } from './DuplicateItemModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';
