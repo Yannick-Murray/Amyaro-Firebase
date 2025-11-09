@@ -301,7 +301,7 @@ export class ListService {
 
       // Count total and completed items
       const itemsQuery = query(
-        collection(db, 'items'),
+        collection(db, 'todoItems'),
         where('listId', '==', listId)
       );
       
@@ -564,6 +564,10 @@ export class ItemService {
       });
 
       await batch.commit();
+      
+      // Update the list's item count
+      await ListService.updateListItemCount(listId);
+      
       return itemIds;
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);

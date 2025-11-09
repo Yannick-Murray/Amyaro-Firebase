@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useListsContext } from '../context/ListsContext';
 import { ListService, CategoryService, ItemService } from '../services/listService';
 import type { List, Category, Item } from '../types/todoList';
 import { getListTypeIcon } from '../utils/helpers';
@@ -27,6 +28,7 @@ import { MobileItem } from '../components/business/MobileItem';
 const ListDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { refreshLists } = useListsContext();
   const navigate = useNavigate();
   
   const [list, setList] = useState<List | null>(null);
@@ -351,6 +353,8 @@ const ListDetail = () => {
         }
       }
       await loadListData();
+      // Refresh lists context to update dashboard card counts
+      refreshLists();
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);
       setError('Fehler beim Erstellen der Items');
@@ -372,6 +376,8 @@ const ListDetail = () => {
       // Reset state
       setDuplicateItems([]);
       setPendingNewItems([]);
+      // Refresh lists context to update dashboard card counts
+      refreshLists();
     } catch (error) {
       console.error('Fehler beim Erhöhen der Menge:', error);
       setError('Fehler beim Erhöhen der Menge');
@@ -406,6 +412,8 @@ const ListDetail = () => {
       });
       
       await loadListData();
+      // Refresh lists context to update dashboard card counts
+      refreshLists();
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Items:', error);
     }
@@ -415,6 +423,8 @@ const ListDetail = () => {
     try {
       await ItemService.deleteItem(itemId);
       loadListData();
+      // Refresh lists context to update dashboard card counts
+      refreshLists();
     } catch (error) {
       console.error('Fehler beim Löschen des Items:', error);
     }
@@ -476,6 +486,8 @@ const ListDetail = () => {
           item.id === itemId ? { ...item, quantity } : item
         )
       );
+      // Refresh lists context to update dashboard card counts
+      refreshLists();
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Menge:', error);
     }
