@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import type { List } from '../../types/todoList';
 
 interface SharedListBannerProps {
@@ -11,9 +13,37 @@ export const SharedListBanner: React.FC<SharedListBannerProps> = ({
   currentUserId 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [creatorName, setCreatorName] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   
   // Prüfe ob die Liste mit dem aktuellen User geteilt wurde (User ist nicht der ursprüngliche Ersteller)
   const isSharedWithUser = currentUserId && list.userId !== currentUserId && list.sharedWith?.includes(currentUserId);
+
+  useEffect(() => {
+    const fetchCreatorName = async () => {
+      if (!list.userId || !isSharedWithUser) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const userDoc = await getDoc(doc(db, 'users', list.userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setCreatorName(userData.displayName || userData.email || 'Unbekannter Nutzer');
+        } else {
+          setCreatorName('Unbekannter Nutzer');
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des Creator-Namens:', error);
+        setCreatorName('Unbekannter Nutzer');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCreatorName();
+  }, [list.userId, isSharedWithUser]);
   
   // Wenn die Liste nicht geteilt wurde, zeige nichts an
   if (!isSharedWithUser) {
@@ -34,7 +64,11 @@ export const SharedListBanner: React.FC<SharedListBannerProps> = ({
       >
         <div className="d-flex align-items-center gap-2">
           <i className="bi bi-share text-primary" style={{ fontSize: '1rem' }}></i>
-          <span className="text-primary fw-medium small">Geteilte Liste</span>
+          {loading ? (
+            <span className="text-primary fw-medium small">Geteilte Liste</span>
+          ) : (
+            <span className="text-primary fw-medium small">geteilt von {creatorName}</span>
+          )}
         </div>
         
         <i 
@@ -62,10 +96,17 @@ export const SharedListBanner: React.FC<SharedListBannerProps> = ({
               <h6 className="mb-2 text-primary">
                 Geteilte Liste
               </h6>
-              <p className="mb-0 text-muted small">
-                Diese Liste wurde von einem anderen Nutzer mit Ihnen geteilt. 
-                Sie können Artikel hinzufügen, bearbeiten und als erledigt markieren.
-              </p>
+              {loading ? (
+                <p className="mb-0 text-muted small">
+                  Diese Liste wurde von einem anderen Nutzer mit Ihnen geteilt. 
+                  Sie können Artikel hinzufügen, bearbeiten und als erledigt markieren.
+                </p>
+              ) : (
+                <p className="mb-0 text-muted small">
+                  <strong>{creatorName}</strong> hat diese Liste mit Ihnen geteilt. 
+                  Sie können Artikel hinzufügen, bearbeiten und als erledigt markieren.
+                </p>
+              )}
             </div>
           </div>
         </div>

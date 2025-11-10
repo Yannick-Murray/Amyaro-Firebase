@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { InvitationService } from '../../services/invitationService';
@@ -26,9 +28,48 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
+  const [sharedWithNames, setSharedWithNames] = useState<string[]>([]);
+  const [loadingNames, setLoadingNames] = useState(false);
 
   // Check if sharing limit is reached
-  const isShareLimitReached = list?.sharedWith && list.sharedWith.length >= 2;
+  const isShareLimitReached = list?.sharedWith && list.sharedWith.length >= 4;
+
+  // Load names of users this list is shared with
+  useEffect(() => {
+    const loadSharedWithNames = async () => {
+      if (!list?.sharedWith || list.sharedWith.length === 0 || !isOpen) {
+        setSharedWithNames([]);
+        return;
+      }
+
+      setLoadingNames(true);
+      try {
+        const names = await Promise.all(
+          list.sharedWith.map(async (userId) => {
+            try {
+              const userDoc = await getDoc(doc(db, 'users', userId));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                return userData.displayName || userData.email || 'Unbekannter Nutzer';
+              }
+              return 'Unbekannter Nutzer';
+            } catch (error) {
+              console.error('Error loading user name:', error);
+              return 'Unbekannter Nutzer';
+            }
+          })
+        );
+        setSharedWithNames(names);
+      } catch (error) {
+        console.error('Error loading shared with names:', error);
+        setSharedWithNames([]);
+      } finally {
+        setLoadingNames(false);
+      }
+    };
+
+    loadSharedWithNames();
+  }, [list?.sharedWith, isOpen]);
 
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +78,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
     
     // Frontend validation for sharing limit
     if (isShareLimitReached) {
-      setMessage('Listen können nur mit maximal 2 Personen geteilt werden.');
+      setMessage('Listen können nur mit maximal 4 Personen geteilt werden.');
       setMessageType('error');
       return;
     }
@@ -125,13 +166,29 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
             Die Person erhält eine Einladung und muss diese bestätigen, bevor sie Zugriff erhält.
           </small>
           
-          {/* Sharing limit warning */}
+          {/* Show shared with users */}
           {list?.sharedWith && list.sharedWith.length > 0 && (
-            <div className="mt-2">
-              <small className="text-info">
+            <div className="mt-2 p-2 bg-light rounded">
+              <small className="text-info fw-medium">
                 <i className="bi bi-people me-1"></i>
-                Bereits geteilt mit {list.sharedWith.length} Person{list.sharedWith.length > 1 ? 'en' : ''} 
-                ({2 - list.sharedWith.length} von 2 verfügbar)
+                Bereits geteilt mit:
+              </small>
+              {loadingNames ? (
+                <div className="mt-1">
+                  <small className="text-muted">Lade Namen...</small>
+                </div>
+              ) : (
+                <div className="mt-1">
+                  {sharedWithNames.map((name, index) => (
+                    <div key={index} className="d-flex align-items-center gap-1">
+                      <i className="bi bi-person text-muted" style={{ fontSize: '0.75rem' }}></i>
+                      <small className="text-muted">{name}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <small className="text-info mt-1 d-block">
+                ({4 - list.sharedWith.length} von 4 verfügbar)
               </small>
             </div>
           )}
@@ -140,7 +197,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
             <div className="mt-2">
               <small className="text-warning">
                 <i className="bi bi-exclamation-triangle me-1"></i>
-                Sharing-Limit erreicht: Listen können nur mit maximal 2 Personen geteilt werden.
+                Sharing-Limit erreicht: Listen können nur mit maximal 4 Personen geteilt werden.
               </small>
             </div>
           )}

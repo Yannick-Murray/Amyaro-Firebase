@@ -1,16 +1,26 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { DeleteAccountModal } from '../components/business/DeleteAccountModal';
+import { DeleteAccountModal, ProfileEditModal } from '../components/business';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUserData } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showProfileEditModal, setShowProfileEditModal] = useState(false);
 
   const handleLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error('Logout error:', error);
+    }
+  };
+
+  const handleProfileUpdated = async () => {
+    setShowProfileEditModal(false);
+    try {
+      await refreshUserData();
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
     }
   };
 
@@ -70,9 +80,12 @@ const Profile = () => {
             </div>
 
             <div className="d-grid gap-2">
-              <button className="btn btn-outline-primary" disabled>
+              <button 
+                className="btn btn-outline-primary"
+                onClick={() => setShowProfileEditModal(true)}
+              >
                 <i className="bi bi-person-gear me-2"></i>
-                Profil bearbeiten (Coming Soon)
+                Profil bearbeiten
               </button>
               <button className="btn btn-outline-secondary" disabled>
                 <i className="bi bi-key me-2"></i>
@@ -81,15 +94,13 @@ const Profile = () => {
               <hr />
               
               {/* 🔒 GDPR: Account Deletion */}
-              <div className="mb-3">
-                <button
-                  className="btn btn-outline-danger"
-                  onClick={() => setShowDeleteModal(true)}
-                >
-                  <i className="bi bi-trash me-2"></i>
-                  Account permanent löschen
-                </button>
-              </div>
+              <button
+                className="btn btn-outline-danger"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                <i className="bi bi-trash me-2"></i>
+                Account permanent löschen
+              </button>
               
               <hr />
               <button 
@@ -109,6 +120,14 @@ const Profile = () => {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         user={user}
+      />
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={showProfileEditModal}
+        onClose={() => setShowProfileEditModal(false)}
+        user={user}
+        onProfileUpdated={handleProfileUpdated}
       />
     </div>
   );

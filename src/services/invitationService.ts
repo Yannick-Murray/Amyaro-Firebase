@@ -87,10 +87,10 @@ export class InvitationService {
           throw new Error('Diese Person hat bereits Zugriff auf die Liste.');
         }
         
-        // 🔒 LIMIT: Max 2 geteilte User pro Liste
+        // 🔒 LIMIT: Max 4 geteilte User pro Liste
         const currentSharedCount = listData.sharedWith ? listData.sharedWith.length : 0;
-        if (currentSharedCount >= 2) {
-          throw new Error('Listen können nur mit maximal 2 Personen geteilt werden.');
+        if (currentSharedCount >= 4) {
+          throw new Error('Listen können nur mit maximal 4 Personen geteilt werden.');
         }
       }
 

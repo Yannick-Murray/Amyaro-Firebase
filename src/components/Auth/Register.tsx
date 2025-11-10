@@ -109,7 +109,7 @@ const Register = ({ onSwitchToLogin }: RegisterProps) => {
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label htmlFor="displayName" className="form-label">
-                Vollständiger Name
+                Anzeigename
               </label>
               <div className="input-group">
                 <span className="input-group-text">

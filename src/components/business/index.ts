@@ -22,8 +22,10 @@ export { InvitationsModal } from './InvitationsModal';
 export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';
 export { DeleteAccountModal } from './DeleteAccountModal';
+export { DisplayNameRequiredModal } from './DisplayNameRequiredModal';
 export { DuplicateItemModal } from './DuplicateItemModal';
 export { MoveToCategoryModal } from './MoveToCategoryModal';
+export { ProfileEditModal } from './ProfileEditModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

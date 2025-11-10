@@ -12,6 +12,7 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import type { AuthContextType, User as UserType } from '../types';
+import { DisplayNameRequiredModal } from '../components/business';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -30,6 +31,7 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
 
   // Function to refresh user data from Firestore
   const refreshUserData = async () => {
@@ -55,6 +57,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const handleDisplayNameProvided = async (displayName: string) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('Kein Benutzer angemeldet');
+      }
+
+      // Update the Firebase Auth profile
+      await updateProfile(currentUser, {
+        displayName: displayName
+      });
+
+      // Update Firestore user document
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, {
+        displayName: displayName,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      setShowDisplayNameModal(false);
+      
+      // Refresh user data to get the updated display name
+      await refreshUserData();
+    } catch (error) {
+      console.error('Error updating display name:', error);
+      // Don't hide the modal if there was an error
+    }
+  };
+
   // Benutzer registrieren
   const register = async (email: string, password: string, displayName?: string) => {
     try {
@@ -63,16 +94,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // E-Mail-Verifizierung senden
       await sendEmailVerification(firebaseUser);
       
-      // Profil aktualisieren
+      // Profil aktualisieren ZUERST
       if (displayName) {
         await updateProfile(firebaseUser, { displayName });
+        // Reload the user to get the updated profile
+        await firebaseUser.reload();
       }
 
-      // Benutzer in Firestore speichern
+      // Benutzer in Firestore speichern - NACH dem updateProfile
       const userData: UserType = {
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
-        displayName: displayName || firebaseUser.displayName || '',
+        displayName: displayName || '', // Direkt den übergebenen displayName verwenden
         photoURL: firebaseUser.photoURL || '',
         emailVerified: false, // Explicitly set to false initially
         createdAt: new Date()
@@ -201,12 +234,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           if (userDoc.exists()) {
             const userData = userDoc.data() as UserType;
-            setUser({
+            // Migration: If Firestore displayName is empty but Firebase Auth has one, update Firestore
+            let finalDisplayName = userData.displayName;
+            if ((!userData.displayName || userData.displayName.trim() === '') && refreshedUser.displayName) {
+              finalDisplayName = refreshedUser.displayName;
+              
+              // Update Firestore with the Firebase Auth displayName
+              try {
+                await setDoc(doc(db, 'users', refreshedUser.uid), {
+                  displayName: refreshedUser.displayName,
+                  updatedAt: new Date().toISOString()
+                }, { merge: true });
+              } catch (error) {
+                console.error('Error migrating displayName to Firestore:', error);
+              }
+            }
+
+            const userWithData = {
               ...userData,
+              displayName: finalDisplayName,
               // Use Firestore emailVerified value if it exists, otherwise fall back to Firebase Auth
               emailVerified: userData.emailVerified !== undefined ? userData.emailVerified : refreshedUser.emailVerified,
               createdAt: userData.createdAt instanceof Date ? userData.createdAt : new Date()
-            });
+            };
+            setUser(userWithData);
+            
+            // Check if display name is required (only for existing users, not fresh registrations)
+            if (!userWithData.displayName || userWithData.displayName.trim() === '') {
+              const accountAge = Date.now() - new Date(userWithData.createdAt).getTime();
+              const oneMinute = 60 * 1000; // 1 minute in milliseconds
+              
+              // Only show modal if account is older than 1 minute (to avoid showing during registration)
+              if (accountAge > oneMinute) {
+                setShowDisplayNameModal(true);
+              }
+            }
           } else {
             // Fallback: Benutzer-Objekt aus Firebase Auth erstellen
             const userData: UserType = {
@@ -218,6 +280,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               createdAt: new Date()
             };
             setUser(userData);
+            
+            // Check if display name is required (only for existing users, not fresh registrations)
+            if (!userData.displayName || userData.displayName.trim() === '') {
+              const accountAge = Date.now() - new Date(userData.createdAt).getTime();
+              const oneMinute = 60 * 1000; // 1 minute in milliseconds
+              
+              // Only show modal if account is older than 1 minute (to avoid showing during registration)
+              if (accountAge > oneMinute) {
+                setShowDisplayNameModal(true);
+              }
+            }
             
             // Benutzer in Firestore speichern
             await setDoc(doc(db, 'users', refreshedUser.uid), userData);
@@ -333,6 +406,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      {user && showDisplayNameModal && (
+        <DisplayNameRequiredModal
+          isOpen={showDisplayNameModal}
+          onClose={handleDisplayNameProvided}
+        />
+      )}
     </AuthContext.Provider>
   );
 };
