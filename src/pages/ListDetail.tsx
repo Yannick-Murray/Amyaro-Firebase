@@ -11,6 +11,7 @@ import { CreateCategoryModal } from '../components/business/CreateCategoryModal'
 import { ShareListModal } from '../components/business/ShareListModal';
 import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
+import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal';
 import { 
   DndContext, 
   DragOverlay,
@@ -47,6 +48,10 @@ const ListDetail = () => {
   const [duplicateItems, setDuplicateItems] = useState<{name: string, existingItem: Item}[]>([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [pendingNewItems, setPendingNewItems] = useState<string[]>([]);
+  
+  // Move to Category Modal State
+  const [showMoveToCategoryModal, setShowMoveToCategoryModal] = useState(false);
+  const [itemToMove, setItemToMove] = useState<Item | null>(null);
   
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
@@ -407,26 +412,41 @@ const ListDetail = () => {
       // Verwende den completed Parameter falls vorhanden, sonst toggle
       const newCompletedState = completed !== undefined ? completed : !item.isCompleted;
 
+      // 🚀 OPTIMISTIC UPDATE - update UI immediately
+      setItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId ? { ...item, isCompleted: newCompletedState } : item
+        )
+      );
+
+      // Then update backend
       await ItemService.updateItem(itemId, {
         isCompleted: newCompletedState
       });
       
-      await loadListData();
-      // Refresh lists context to update dashboard card counts
+      // Refresh lists context to update dashboard card counts (no scroll reset)
       refreshLists();
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Items:', error);
+      // On error, revert optimistic update by reloading
+      await loadListData();
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
     try {
+      // 🚀 OPTIMISTIC UPDATE - remove from UI immediately
+      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+
+      // Then delete from backend
       await ItemService.deleteItem(itemId);
-      loadListData();
-      // Refresh lists context to update dashboard card counts
+      
+      // Refresh lists context to update dashboard card counts (no scroll reset)
       refreshLists();
     } catch (error) {
       console.error('Fehler beim Löschen des Items:', error);
+      // On error, revert optimistic update by reloading
+      await loadListData();
     }
   };
 
@@ -479,17 +499,53 @@ const ListDetail = () => {
 
   const handleQuantityChange = async (itemId: string, quantity: number) => {
     try {
-      await ItemService.updateItem(itemId, { quantity });
-      // Update local state for immediate UI feedback
+      // 🚀 OPTIMISTIC UPDATE - update UI immediately
       setItems(prevItems => 
         prevItems.map(item => 
           item.id === itemId ? { ...item, quantity } : item
         )
       );
-      // Refresh lists context to update dashboard card counts
+
+      // Then update backend
+      await ItemService.updateItem(itemId, { quantity });
+      
+      // Refresh lists context to update dashboard card counts (no scroll reset)
       refreshLists();
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Menge:', error);
+      // On error, revert optimistic update by reloading
+      await loadListData();
+    }
+  };
+
+  const handleMoveToCategory = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (item) {
+      setItemToMove(item);
+      setShowMoveToCategoryModal(true);
+    }
+  };
+
+  const handleMoveToCategoryConfirm = async (categoryId: string | null) => {
+    if (!itemToMove) return;
+
+    try {
+      // 🚀 OPTIMISTIC UPDATE - update UI immediately
+      setItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemToMove.id ? { ...item, categoryId: categoryId || undefined } : item
+        )
+      );
+
+      // Then update backend
+      await ItemService.assignItemToCategory(itemToMove.id, categoryId);
+      
+      // Refresh lists context to update dashboard card counts (no scroll reset)
+      refreshLists();
+    } catch (error) {
+      console.error('Fehler beim Verschieben des Items:', error);
+      // On error, revert optimistic update by reloading
+      await loadListData();
     }
   };
 
@@ -762,32 +818,47 @@ const ListDetail = () => {
             ) : (
               <>
                 {/* Uncategorized Items */}
-                {grouped['uncategorized'] && grouped['uncategorized'].length > 0 && (
+                {grouped['uncategorized'] && grouped['uncategorized'].length > 0 && 
+                  // In Focus Mode: nur anzeigen wenn es pending Items gibt
+                  (!isFocusMode || grouped['uncategorized'].some(item => !item.isCompleted)) && (
                   <CategorySection
                     category={null}
                     items={grouped['uncategorized']}
                     onToggleItem={handleToggleItem}
                     onDeleteItem={handleDeleteItem}
                     onQuantityChange={handleQuantityChange}
+                    onMoveItem={handleMoveToCategory}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 )}
 
                 {/* Category Sections */}
-                {categories.map(category => (
-                  <CategorySection
-                    key={category.id}
-                    category={category}
-                    items={grouped[category.id] || []}
-                    onToggleItem={handleToggleItem}
-                    onDeleteItem={handleDeleteItem}
-                    onQuantityChange={handleQuantityChange}
-                    onDeleteCategory={handleDeleteCategory}
-                    onMoveCategoryUp={handleMoveCategoryUp}
-                    onMoveCategoryDown={handleMoveCategoryDown}
-                    onReorderItems={() => {}} // TODO: Implementierung für Reorder
-                  />
-                ))}
+                {categories
+                  .filter(category => {
+                    const categoryItems = grouped[category.id] || [];
+                    // In Focus Mode: nur Kategorien mit pending (nicht erledigten) Items anzeigen
+                    if (isFocusMode) {
+                      return categoryItems.some(item => !item.isCompleted);
+                    }
+                    // In Normal Mode: alle Kategorien anzeigen (wie bisher)
+                    return true;
+                  })
+                  .map(category => (
+                    <CategorySection
+                      key={category.id}
+                      category={category}
+                      items={grouped[category.id] || []}
+                      onToggleItem={handleToggleItem}
+                      onDeleteItem={handleDeleteItem}
+                      onQuantityChange={handleQuantityChange}
+                      onMoveItem={handleMoveToCategory}
+                      onDeleteCategory={handleDeleteCategory}
+                      onMoveCategoryUp={handleMoveCategoryUp}
+                      onMoveCategoryDown={handleMoveCategoryDown}
+                      onReorderItems={() => {}} // TODO: Implementierung für Reorder
+                    />
+                  ))}
+              
 
                 {/* Erledigt Kategorie - nur anzeigen wenn es erledigte Items gibt */}
                 {grouped['completed'] && grouped['completed'].length > 0 && (
@@ -806,6 +877,7 @@ const ListDetail = () => {
                     onToggleItem={handleToggleItem}
                     onDeleteItem={handleDeleteItem}
                     onQuantityChange={handleQuantityChange}
+                    onMoveItem={handleMoveToCategory}
                     onReorderItems={() => {}} // Completed items nicht reorderbar
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
@@ -879,6 +951,16 @@ const ListDetail = () => {
           duplicates={duplicateItems}
           onConfirmIncreaseQuantity={handleIncreaseQuantity}
           onConfirmCreateAnyway={handleCreateAnyway}
+        />
+
+        {/* Move to Category Modal */}
+        <MoveToCategoryModal
+          isOpen={showMoveToCategoryModal}
+          onClose={() => setShowMoveToCategoryModal(false)}
+          categories={categories}
+          currentCategoryId={itemToMove?.categoryId || null}
+          itemName={itemToMove?.name || ''}
+          onMoveToCategory={handleMoveToCategoryConfirm}
         />
       </div>
     </DndContext>

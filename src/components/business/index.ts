@@ -23,6 +23,7 @@ export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';
 export { DeleteAccountModal } from './DeleteAccountModal';
 export { DuplicateItemModal } from './DuplicateItemModal';
+export { MoveToCategoryModal } from './MoveToCategoryModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';
