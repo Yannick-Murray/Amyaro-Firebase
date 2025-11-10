@@ -20,6 +20,7 @@ export interface CategorySectionProps {
   onMoveCategoryUp?: (categoryId: string) => void;
   onMoveCategoryDown?: (categoryId: string) => void;
   onToggleExpanded?: () => void;
+  onAddItemsToCategory?: (categoryId: string | null, itemNames: string[]) => Promise<void>;
   disabled?: boolean;
 }
 
@@ -38,11 +39,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onMoveCategoryUp,
   onMoveCategoryDown,
   onToggleExpanded: _onToggleExpanded,
+  onAddItemsToCategory,
   disabled: _disabled = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddInput, setQuickAddInput] = useState('');
   
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
@@ -95,6 +99,44 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     }
   };
 
+  const handleQuickAddItems = async () => {
+    if (!quickAddInput.trim() || !onAddItemsToCategory) return;
+    
+    // Parse comma-separated items
+    const itemNames = quickAddInput
+      .split(',')
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+    
+    if (itemNames.length === 0) return;
+
+    try {
+      await onAddItemsToCategory(category?.id || null, itemNames);
+      
+      // Reset and close quick add
+      setQuickAddInput('');
+      setShowQuickAdd(false);
+    } catch (error) {
+      console.error('Error adding items to category:', error);
+      // Could show a toast notification here
+    }
+  };
+
+  const handleQuickAddKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleQuickAddItems();
+    } else if (e.key === 'Escape') {
+      setQuickAddInput('');
+      setShowQuickAdd(false);
+    }
+  };
+
+  const handleStartQuickAdd = () => {
+    setShowQuickAdd(true);
+    setShowDropdown(false);
+  };
+
   return (
     <div className="mb-4">
       {/* Modern Category Header */}
@@ -138,14 +180,26 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           </h5>
         )}
         
-        {category && onDeleteCategory && (
-          <div className="position-relative">
+        <div className="d-flex gap-1">
+          {/* Quick Add Button - Green Plus - nur für echte Kategorien, nicht für "Ohne Kategorie" */}
+          {onAddItemsToCategory && category && (
             <button
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => setShowDropdown(!showDropdown)}
+              className="btn btn-sm btn-success"
+              onClick={handleStartQuickAdd}
+              title="Items zu dieser Kategorie hinzufügen"
             >
-              <i className="bi bi-three-dots"></i>
+              <i className="bi bi-plus"></i>
             </button>
+          )}
+          
+          {category && onDeleteCategory && (
+            <div className="position-relative">
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => setShowDropdown(!showDropdown)}
+              >
+                <i className="bi bi-three-dots"></i>
+              </button>
             
             {showDropdown && (
               <>
@@ -216,9 +270,50 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 </div>
               </>
             )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Quick Add Input - Inline below category header */}
+      {showQuickAdd && (
+        <div className="mb-3 px-2">
+          <div className="d-flex gap-1 align-items-center">
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Item hinzufügen (mehrere mit Komma trennen)"
+              value={quickAddInput}
+              onChange={(e) => setQuickAddInput(e.target.value)}
+              onKeyDown={handleQuickAddKeyPress}
+              style={{ fontSize: '0.875rem' }}
+              autoFocus
+            />
+            <button
+              type="button"
+              className="btn btn-success px-2 py-1"
+              style={{ fontSize: '0.75rem', lineHeight: '1' }}
+              onClick={handleQuickAddItems}
+              disabled={!quickAddInput.trim()}
+              title="Hinzufügen"
+            >
+              <i className="bi bi-check"></i>
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary px-2 py-1"
+              style={{ fontSize: '0.75rem', lineHeight: '1' }}
+              onClick={() => {
+                setQuickAddInput('');
+                setShowQuickAdd(false);
+              }}
+              title="Abbrechen"
+            >
+              <i className="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Drop Zone - nur für Category Transfer */}
       <div 

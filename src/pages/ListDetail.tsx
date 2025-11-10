@@ -346,7 +346,7 @@ const ListDetail = () => {
   };
 
   // Helper to create new items
-  const createNewItems = async (names: string[]) => {
+  const createNewItems = async (names: string[], categoryId: string | null = null) => {
     try {
       for (const name of names) {
         if (name.trim()) {
@@ -355,7 +355,8 @@ const ListDetail = () => {
             quantity: 1,
             isCompleted: false,
             priority: 'low',
-            order: 0
+            order: 0,
+            categoryId: categoryId || undefined
           });
         }
       }
@@ -365,6 +366,29 @@ const ListDetail = () => {
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);
       setError('Fehler beim Erstellen der Items');
+    }
+  };
+
+  // Handle adding items to specific category (for CategorySection quick add)
+  const handleAddItemsToCategory = async (categoryId: string | null, itemNames: string[]) => {
+    try {
+      const { duplicates, nonDuplicates } = findDuplicateItems(itemNames);
+      
+      // If there are duplicates, show confirmation modal
+      if (duplicates.length > 0) {
+        setDuplicateItems(duplicates);
+        setPendingNewItems(nonDuplicates);
+        setShowDuplicateModal(true);
+        // TODO: Store the target category for after duplicate resolution
+        return;
+      }
+      
+      // No duplicates, create all items directly in the specified category
+      await createNewItems(nonDuplicates, categoryId);
+      
+    } catch (error) {
+      console.error('Fehler beim Hinzufügen der Items zur Kategorie:', error);
+      setError('Fehler beim Hinzufügen der Items');
     }
   };
 
@@ -856,6 +880,7 @@ const ListDetail = () => {
                     onDeleteItem={handleDeleteItem}
                     onQuantityChange={handleQuantityChange}
                     onMoveItem={handleMoveToCategory}
+                    onAddItemsToCategory={handleAddItemsToCategory}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                   />
                 )}
@@ -884,6 +909,7 @@ const ListDetail = () => {
                       onDeleteCategory={handleDeleteCategory}
                       onMoveCategoryUp={handleMoveCategoryUp}
                       onMoveCategoryDown={handleMoveCategoryDown}
+                      onAddItemsToCategory={handleAddItemsToCategory}
                       onReorderItems={() => {}} // TODO: Implementierung für Reorder
                     />
                   ))}

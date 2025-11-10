@@ -28,7 +28,19 @@ interface ListsProviderProps {
 }
 
 export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  // Schutz vor uninitialisiertem AuthContext
+  let user = null;
+  let authLoading = true;
+  
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    authLoading = authContext.loading;
+  } catch (error) {
+    // AuthProvider ist noch nicht bereit - warte
+    console.warn('AuthProvider not ready yet, waiting...');
+  }
+  
   const [lists, setLists] = useState<List[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,6 +77,11 @@ export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    // Nur laden wenn AuthContext bereit ist
+    if (authLoading) {
+      return;
+    }
+    
     refreshLists();
 
     // Event Listener für Änderungen der Listen
@@ -78,7 +95,7 @@ export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
       window.removeEventListener('listsChanged', handleListsChanged);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, authLoading]);
 
   const addList = (list: List) => {
     setLists(prev => [list, ...prev]);
@@ -96,7 +113,7 @@ export const ListsProvider: React.FC<ListsProviderProps> = ({ children }) => {
 
   const value: ListsContextType = {
     lists,
-    loading,
+    loading: loading || authLoading, // Auch Auth-Loading berücksichtigen
     error,
     refreshLists,
     addList,

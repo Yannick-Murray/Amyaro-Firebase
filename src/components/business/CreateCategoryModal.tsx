@@ -9,18 +9,7 @@ interface CreateCategoryModalProps {
   onCreateCategory: (name: string, color: string) => Promise<void>;
 }
 
-const CATEGORY_COLORS = [
-  '#6c757d', // Default gray
-  '#dc3545', // Red
-  '#fd7e14', // Orange  
-  '#ffc107', // Yellow
-  '#28a745', // Green
-  '#20c997', // Teal
-  '#17a2b8', // Cyan
-  '#007bff', // Blue
-  '#6f42c1', // Purple
-  '#e83e8c'  // Pink
-];
+const DEFAULT_CATEGORY_COLOR = '#6c757d'; // Standard grau
 
 export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
   isOpen,
@@ -28,7 +17,6 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
   onCreateCategory
 }) => {
   const [name, setName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(CATEGORY_COLORS[0]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,9 +26,8 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
 
     setIsLoading(true);
     try {
-      await onCreateCategory(sanitizeString(name), selectedColor);
+      await onCreateCategory(sanitizeString(name), DEFAULT_CATEGORY_COLOR);
       setName('');
-      setSelectedColor(CATEGORY_COLORS[0]);
       onClose();
     } catch (error) {
       console.error('Fehler beim Erstellen der Kategorie:', error);
@@ -52,7 +39,6 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
   const handleClose = () => {
     if (!isLoading) {
       setName('');
-      setSelectedColor(CATEGORY_COLORS[0]);
       onClose();
     }
   };
@@ -77,27 +63,7 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
           />
         </div>
 
-        <div className="mb-4">
-          <label className="form-label">Farbe wählen</label>
-          <div className="d-flex flex-wrap gap-2">
-            {CATEGORY_COLORS.map(color => (
-              <button
-                key={color}
-                type="button"
-                className={`btn p-0 border ${selectedColor === color ? 'border-dark border-2' : 'border-light'}`}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: color,
-                  borderRadius: '50%'
-                }}
-                onClick={() => setSelectedColor(color)}
-                disabled={isLoading}
-                title={`Farbe ${color}`}
-              />
-            ))}
-          </div>
-        </div>
+
 
         <div className="d-flex justify-content-end gap-2">
           <Button
