@@ -312,3 +312,32 @@ button:focus-visible {
 .animate-context-menu {
   animation: contextMenuAppear 0.15s ease-out;
 }
+
+/* 📱 MOBILE TOUCH FIX: Prevent sticky hover states after touch events */
+/* DISABLED: Was too aggressive and broke click functionality
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover, 
+  .card:hover, 
+  .list-group-item:hover,
+  .dropdown-item:hover,
+  .form-check-input:hover,
+  button:hover {
+    background-color: inherit !important;
+    border-color: inherit !important;
+    color: inherit !important;
+    transform: none !important;
+    box-shadow: inherit !important;
+    opacity: inherit !important;
+  }
+}
+*/
+
+/* Force remove any lingering hover states on touch devices */
+.no-hover {
+  pointer-events: none;
+}
+
+/* Utility class to temporarily disable hover effects */
+.touch-active * {
+  pointer-events: none;
+}

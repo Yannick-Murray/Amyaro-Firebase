@@ -26,6 +26,7 @@ export { DisplayNameRequiredModal } from './DisplayNameRequiredModal';
 export { DuplicateItemModal } from './DuplicateItemModal';
 export { MoveToCategoryModal } from './MoveToCategoryModal';
 export { ProfileEditModal } from './ProfileEditModal';
+export { EditListModal } from './EditListModal';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

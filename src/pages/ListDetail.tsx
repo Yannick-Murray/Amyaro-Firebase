@@ -12,6 +12,7 @@ import { ShareListModal } from '../components/business/ShareListModal';
 import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
 import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal';
+import { EditListModal } from '../components/business/EditListModal';
 import { 
   DndContext, 
   DragOverlay,
@@ -40,6 +41,7 @@ const ListDetail = () => {
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSharedInfoModal, setShowSharedInfoModal] = useState(false); // Für geteilte Listen Info
+  const [showEditListModal, setShowEditListModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
@@ -497,6 +499,24 @@ const ListDetail = () => {
     }
   };
 
+  const handleEditCategory = async (categoryId: string, newName: string) => {
+    try {
+      // 🚀 OPTIMISTIC UPDATE - update UI immediately
+      setCategories(prevCategories => 
+        prevCategories.map(cat => 
+          cat.id === categoryId ? { ...cat, name: newName } : cat
+        )
+      );
+
+      await CategoryService.updateCategory(categoryId, { name: newName });
+    } catch (error) {
+      console.error('Fehler beim Bearbeiten der Kategorie:', error);
+      // Revert optimistic update on error
+      await loadListData();
+      throw error; // Re-throw so the component can handle it
+    }
+  };
+
   const handleQuantityChange = async (itemId: string, quantity: number) => {
     try {
       // 🚀 OPTIMISTIC UPDATE - update UI immediately
@@ -577,6 +597,14 @@ const ListDetail = () => {
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
       alert('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.');
+    }
+  };
+
+  const handleListUpdated = (updatedName: string) => {
+    if (list) {
+      setList({ ...list, name: updatedName });
+      // Auch den Context aktualisieren
+      refreshLists();
     }
   };
 
@@ -739,7 +767,7 @@ const ListDetail = () => {
                           className="dropdown-item"
                           onClick={() => {
                             setShowListDropdown(false);
-                            /* TODO: Edit List Modal */
+                            setShowEditListModal(true);
                           }}
                         >
                           <i className="bi bi-pencil me-2"></i>
@@ -852,6 +880,7 @@ const ListDetail = () => {
                       onDeleteItem={handleDeleteItem}
                       onQuantityChange={handleQuantityChange}
                       onMoveItem={handleMoveToCategory}
+                      onEditCategory={handleEditCategory}
                       onDeleteCategory={handleDeleteCategory}
                       onMoveCategoryUp={handleMoveCategoryUp}
                       onMoveCategoryDown={handleMoveCategoryDown}
@@ -962,6 +991,16 @@ const ListDetail = () => {
           itemName={itemToMove?.name || ''}
           onMoveToCategory={handleMoveToCategoryConfirm}
         />
+
+        {/* Edit List Modal */}
+        {list && (
+          <EditListModal
+            isOpen={showEditListModal}
+            onClose={() => setShowEditListModal(false)}
+            list={list}
+            onListUpdated={handleListUpdated}
+          />
+        )}
       </div>
     </DndContext>
   );

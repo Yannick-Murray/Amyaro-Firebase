@@ -15,7 +15,7 @@ export interface CategorySectionProps {
   onDuplicateItem?: (itemId: string) => void;
   onMoveItem?: (itemId: string) => void;
   onReorderItems: (itemIds: string[]) => void;
-  onEditCategory?: (category: Category) => void;
+  onEditCategory?: (categoryId: string, newName: string) => Promise<void>;
   onDeleteCategory?: (categoryId: string) => void;
   onMoveCategoryUp?: (categoryId: string) => void;
   onMoveCategoryDown?: (categoryId: string) => void;
@@ -41,6 +41,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   disabled: _disabled = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
   
   const categoryId = category?.id || 'uncategorized';
   const categoryName = category?.name || 'Ohne Kategorie';
@@ -53,16 +55,88 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   const completedItems = items.filter(item => item.isCompleted);
   const pendingItems = items.filter(item => !item.isCompleted);
 
+  const handleStartEdit = () => {
+    if (category) {
+      setEditName(category.name);
+      setIsEditing(true);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!category || !onEditCategory || !editName.trim()) return;
+    
+    const trimmedName = editName.trim();
+    if (trimmedName === category.name) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      await onEditCategory(category.id, trimmedName);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error editing category:', error);
+      // Könnte hier eine Toast-Meldung zeigen
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditName('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
   return (
     <div className="mb-4">
       {/* Modern Category Header */}
       <div className="d-flex align-items-center justify-content-between mb-3 px-2">
-        <h5 className="mb-0 d-flex align-items-center fw-semibold text-body-emphasis">
-          <span className="text-truncate">{categoryName}</span>
-          <span className="badge bg-secondary bg-opacity-25 text-secondary ms-2 rounded-pill fs-7">
-            {items.length}
-          </span>
-        </h5>
+        {isEditing && category ? (
+          <div className="d-flex align-items-center flex-grow-1 me-2">
+            <input
+              type="text"
+              className="form-control form-control-sm me-2"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={handleKeyPress}
+              onBlur={handleSaveEdit}
+              autoFocus
+              maxLength={30}
+            />
+            <div className="d-flex gap-1">
+              <button
+                type="button"
+                className="btn btn-sm btn-success"
+                onClick={handleSaveEdit}
+                disabled={!editName.trim()}
+              >
+                <i className="bi bi-check"></i>
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={handleCancelEdit}
+              >
+                <i className="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <h5 className="mb-0 d-flex align-items-center fw-semibold text-body-emphasis">
+            <span className="text-truncate">{categoryName}</span>
+            <span className="badge bg-secondary bg-opacity-25 text-secondary ms-2 rounded-pill fs-7">
+              {items.length}
+            </span>
+          </h5>
+        )}
         
         {category && onDeleteCategory && (
           <div className="position-relative">
@@ -74,10 +148,19 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
             </button>
             
             {showDropdown && (
-              <div 
-                className="dropdown-menu show position-absolute end-0"
-                style={{ zIndex: 1000 }}
-              >
+              <>
+                {/* Backdrop zum Schließen */}
+                <div 
+                  className="position-fixed top-0 start-0 w-100 h-100"
+                  style={{ zIndex: 999 }}
+                  onClick={() => setShowDropdown(false)}
+                />
+                
+                {/* Dropdown Menu */}
+                <div 
+                  className="dropdown-menu show position-absolute end-0"
+                  style={{ zIndex: 1000 }}
+                >
                 {/* Move Category Up */}
                 {onMoveCategoryUp && (
                   <button
@@ -114,10 +197,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 {onEditCategory && (
                   <button
                     className="dropdown-item"
-                    onClick={() => {
-                      onEditCategory(category);
-                      setShowDropdown(false);
-                    }}
+                    onClick={handleStartEdit}
                   >
                     <i className="bi bi-pencil me-2"></i>
                     Bearbeiten
@@ -133,7 +213,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   <i className="bi bi-trash me-2"></i>
                   Löschen
                 </button>
-              </div>
+                </div>
+              </>
             )}
           </div>
         )}

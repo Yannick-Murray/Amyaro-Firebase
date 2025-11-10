@@ -136,7 +136,11 @@ export const ListCard: React.FC<ListCardProps> = ({
 
       <div className="card-footer py-2">
         <small className="text-muted">
-          Aktualisiert: {new Date(list.updatedAt.toDate()).toLocaleDateString('de-DE')}
+          Aktualisiert: {new Date(
+            typeof list.updatedAt === 'string' 
+              ? list.updatedAt 
+              : list.updatedAt.toDate()
+          ).toLocaleDateString('de-DE')}
         </small>
       </div>
     </Card>

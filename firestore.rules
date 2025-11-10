@@ -98,10 +98,10 @@ service cloud.firestore {
       allow update: if isValidUser() && (
                        // List owner can update anything
                        isListOwner(resource.data) ||
-                       // Shared users can update limited fields
+                       // Shared users can update limited fields including name
                        (hasListAccess(resource.data) && 
                         request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['itemCount', 'updatedAt'])) ||
+                          .hasOnly(['itemCount', 'updatedAt', 'name'])) ||
                        // Special case: Allow user to add themselves to sharedWith (invitation acceptance)
                        (request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['sharedWith', 'updatedAt']) &&
@@ -145,11 +145,7 @@ service cloud.firestore {
                         request.resource.data.order is number) &&
                        // User must have access to the associated list
                        exists(/databases/$(database)/documents/lists/$(resource.data.listId)) &&
-                       hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data) &&
-                       // Either category creator OR anyone with list access for order-only changes
-                       (request.auth.uid == resource.data.userId ||
-                        request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['order', 'updatedAt']));
+                       hasListAccess(get(/databases/$(database)/documents/lists/$(resource.data.listId)).data);
       
       allow delete: if isValidUser() &&
                        // Anyone with list access can delete categories
