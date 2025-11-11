@@ -22,6 +22,7 @@ export interface CategorySectionProps {
   onToggleExpanded?: () => void;
   onAddItemsToCategory?: (categoryId: string | null, itemNames: string[]) => Promise<void>;
   disabled?: boolean;
+  isListView?: boolean; // Neue prop für vereinfachte Listview
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
@@ -40,7 +41,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onMoveCategoryDown,
   onToggleExpanded: _onToggleExpanded,
   onAddItemsToCategory,
-  disabled: _disabled = false
+  disabled: _disabled = false,
+  isListView = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -174,32 +176,36 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         ) : (
           <h5 className="mb-0 d-flex align-items-center fw-semibold text-body-emphasis">
             <span className="text-truncate">{categoryName}</span>
-            <span className="badge bg-secondary bg-opacity-25 text-secondary ms-2 rounded-pill fs-7">
-              {items.length}
-            </span>
+            {!isListView && (
+              <span className="badge bg-secondary bg-opacity-25 text-secondary ms-2 rounded-pill fs-7">
+                {items.length}
+              </span>
+            )}
           </h5>
         )}
         
-        <div className="d-flex gap-1">
-          {/* Quick Add Button - Green Plus - nur für echte Kategorien, nicht für "Ohne Kategorie" */}
-          {onAddItemsToCategory && category && (
-            <button
-              className="btn btn-sm btn-success"
-              onClick={handleStartQuickAdd}
-              title="Items zu dieser Kategorie hinzufügen"
-            >
-              <i className="bi bi-plus"></i>
-            </button>
-          )}
-          
-          {category && onDeleteCategory && (
-            <div className="position-relative">
+        {/* Buttons nur im normalen Modus anzeigen, nicht in Listview */}
+        {!isListView && (
+          <div className="d-flex gap-1">
+            {/* Quick Add Button - Green Plus - nur für echte Kategorien, nicht für "Ohne Kategorie" */}
+            {onAddItemsToCategory && category && (
               <button
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setShowDropdown(!showDropdown)}
+                className="btn btn-sm btn-success"
+                onClick={handleStartQuickAdd}
+                title="Items zu dieser Kategorie hinzufügen"
               >
-                <i className="bi bi-three-dots"></i>
+                <i className="bi bi-plus"></i>
               </button>
+            )}
+            
+            {category && onDeleteCategory && (
+              <div className="position-relative">
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setShowDropdown(!showDropdown)}
+                >
+                  <i className="bi bi-three-dots"></i>
+                </button>
             
             {showDropdown && (
               <>
@@ -270,9 +276,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 </div>
               </>
             )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick Add Input - Inline below category header */}

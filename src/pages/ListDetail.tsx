@@ -882,6 +882,7 @@ const ListDetail = () => {
                     onMoveItem={handleMoveToCategory}
                     onAddItemsToCategory={handleAddItemsToCategory}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
+                    isListView={isFocusMode}
                   />
                 )}
 
@@ -911,6 +912,7 @@ const ListDetail = () => {
                       onMoveCategoryDown={handleMoveCategoryDown}
                       onAddItemsToCategory={handleAddItemsToCategory}
                       onReorderItems={() => {}} // TODO: Implementierung für Reorder
+                      isListView={isFocusMode}
                     />
                   ))}
               
@@ -934,6 +936,7 @@ const ListDetail = () => {
                     onQuantityChange={handleQuantityChange}
                     onMoveItem={handleMoveToCategory}
                     onReorderItems={() => {}} // Completed items nicht reorderbar
+                    isListView={isFocusMode}
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}
