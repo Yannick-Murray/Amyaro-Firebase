@@ -3,10 +3,13 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { MobileItem } from './MobileItem';
 import { DraggableMobileItem } from './DraggableMobileItem';
+import { GiftItem } from './GiftItem';
+
 import type { Category, Item } from '../../types/todoList';
 
 export interface CategorySectionProps {
   category: Category | null;
+  categoryName?: string; // For custom category names (e.g., person names for gift lists)
   items: Item[];
   onToggleItem: (itemId: string, completed: boolean) => void;
   onDeleteItem: (itemId: string) => void;
@@ -23,10 +26,15 @@ export interface CategorySectionProps {
   onAddItemsToCategory?: (categoryId: string | null, itemNames: string[]) => Promise<void>;
   disabled?: boolean;
   isListView?: boolean; // Neue prop für vereinfachte Listview
+  listType?: 'shopping' | 'gift'; // Neue prop für Listen-Typ
+  sharedUsers?: Array<{id: string, name: string}>; // Für Zuweisung-Namen
+  getAssignedUserName?: (item: Item) => string; // Funktion um zugewiesenen User-Namen zu bekommen
+  getPurchaserName?: (item: Item) => string; // Funktion um Käufer-Namen zu bekommen
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
   category,
+  categoryName: customCategoryName,
   items,
   onToggleItem,
   onDeleteItem,
@@ -42,16 +50,21 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onToggleExpanded: _onToggleExpanded,
   onAddItemsToCategory,
   disabled: _disabled = false,
-  isListView = false
+  isListView = false,
+  listType = 'shopping',
+  sharedUsers = [],
+  getAssignedUserName,
+  getPurchaserName
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddInput, setQuickAddInput] = useState('');
-  
+
+  // Hilfsfunktion um den Namen der zugewiesenen Person zu finden
   const categoryId = category?.id || 'uncategorized';
-  const categoryName = category?.name || 'Ohne Kategorie';
+  const categoryName = customCategoryName || category?.name || (listType === 'gift' ? 'Noch nicht zugewiesen' : 'Ohne Kategorie');
   
   // Nur für Category-Transfer, nicht für Intra-Category Sorting
   const { isOver, setNodeRef } = useDroppable({
@@ -355,41 +368,77 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         
         {/* Sortable Items List */}
         {pendingItems.length > 0 && (
-          <SortableContext 
-            items={pendingItems.map(item => item.id)} 
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="list-group list-group-flush">
+          listType === 'gift' ? (
+            <div>
               {pendingItems.map(item => (
-                <DraggableMobileItem
+                <GiftItem
                   key={item.id}
                   item={item}
                   onToggle={onToggleItem}
                   onDelete={onDeleteItem}
-                  onQuantityChange={onQuantityChange}
                   onEdit={onEditItem}
                   onDuplicate={onDuplicateItem}
                   onMoveToCategory={onMoveItem}
+                  assignedUserName={getAssignedUserName ? getAssignedUserName(item) : ''}
+                  purchaserName={getPurchaserName ? getPurchaserName(item) : ''}
                 />
               ))}
             </div>
-          </SortableContext>
+          ) : (
+            <SortableContext 
+              items={pendingItems.map(item => item.id)} 
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="list-group list-group-flush">
+                {pendingItems.map(item => (
+                  <DraggableMobileItem
+                    key={item.id}
+                    item={item}
+                    onToggle={onToggleItem}
+                    onDelete={onDeleteItem}
+                    onQuantityChange={onQuantityChange}
+                    onEdit={onEditItem}
+                    onDuplicate={onDuplicateItem}
+                    onMoveToCategory={onMoveItem}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          )
         )}
         
         {/* Completed Items - not draggable */}
         {completedItems.length > 0 && (
           <div className={`${pendingItems.length > 0 ? 'border-top mt-2 pt-2' : ''}`}>
-            {completedItems.map(item => (
-              <MobileItem
-                key={item.id}
-                item={item}
-                onToggle={onToggleItem}
-                onDelete={onDeleteItem}
-                onEdit={onEditItem}
-                onDuplicate={onDuplicateItem}
-                onMoveToCategory={onMoveItem}
-              />
-            ))}
+            {completedItems.map(item => {
+              if (listType === 'gift') {
+                return (
+                  <GiftItem
+                    key={item.id}
+                    item={item}
+                    onToggle={onToggleItem}
+                    onDelete={onDeleteItem}
+                    onEdit={onEditItem}
+                    onDuplicate={onDuplicateItem}
+                    onMoveToCategory={onMoveItem}
+                    assignedUserName={getAssignedUserName ? getAssignedUserName(item) : ''}
+                    purchaserName={getPurchaserName ? getPurchaserName(item) : ''}
+                  />
+                );
+              } else {
+                return (
+                  <MobileItem
+                    key={item.id}
+                    item={item}
+                    onToggle={onToggleItem}
+                    onDelete={onDeleteItem}
+                    onEdit={onEditItem}
+                    onDuplicate={onDuplicateItem}
+                    onMoveToCategory={onMoveItem}
+                  />
+                );
+              }
+            })}
           </div>
         )}
       </div>

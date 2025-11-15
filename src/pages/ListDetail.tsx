@@ -8,6 +8,7 @@ import { getListTypeIcon } from '../utils/helpers';
 import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
 import { CreateCategoryModal } from '../components/business/CreateCategoryModal';
+import AddItemModal from '../components/business/AddItemModal';
 import { ShareListModal } from '../components/business/ShareListModal';
 import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
@@ -39,6 +40,7 @@ const ListDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSharedInfoModal, setShowSharedInfoModal] = useState(false); // Für geteilte Listen Info
   const [showEditListModal, setShowEditListModal] = useState(false);
@@ -58,17 +60,17 @@ const ListDetail = () => {
   // Debounced state für bessere Performance bei schnellen Bewegungen
   const [lastValidOverId, setLastValidOverId] = useState<string | null>(null);
 
-  // Drag sensors - reverted to working configuration
+  // Drag sensors - optimized for gift items
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3, // Zurück zur ursprünglichen Konfiguration
+        distance: 3, // Niedrigere Distance für responsiveres DnD
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100, // Zurück zur ursprünglichen Konfiguration
-        tolerance: 10, // Zurück zur ursprünglichen Konfiguration
+        delay: 250, // Längere Delay
+        tolerance: 5, // Niedrigere Tolerance
       },
     })
   );
@@ -102,38 +104,60 @@ const ListDetail = () => {
     loadListData();
   }, [id, user]);
 
-  // Group items by category - clean up invalid categoryIds
+  // Group items by category for shopping lists OR by assigned person for gift lists
   const grouped = useMemo(() => {
     const groupedItems: { [categoryId: string]: Item[] } = {};
-    const validCategoryIds = categories.map(c => c.id);
     
-    items.forEach(item => {
-      // Erledigt Items kommen in spezielle "completed" Kategorie
-      if (item.isCompleted) {
-        if (!groupedItems['completed']) {
-          groupedItems['completed'] = [];
+    if (list?.type === 'gift') {
+      // For gift lists: group by assignedTo (person), but keep completed separate
+      items.forEach(item => {
+        if (item.isCompleted) {
+          if (!groupedItems['completed']) {
+            groupedItems['completed'] = [];
+          }
+          groupedItems['completed'].push(item);
+          return;
         }
-        groupedItems['completed'].push(item);
-        return;
-      }
 
-      // Nur aktive Items werden normal kategorisiert
-      let categoryId = item.categoryId;
+        // Group active items by assigned person
+        const assigneeId = item.assignedTo || 'unassigned';
+        if (!groupedItems[assigneeId]) {
+          groupedItems[assigneeId] = [];
+        }
+        groupedItems[assigneeId].push(item);
+      });
+    } else {
+      // For shopping lists: group by category (existing logic)
+      const validCategoryIds = categories.map(c => c.id);
       
-      // If item has invalid categoryId, treat as uncategorized
-      if (categoryId && !validCategoryIds.includes(categoryId)) {
-        categoryId = undefined;
-      }
-      
-      const key = categoryId || 'uncategorized';
-      if (!groupedItems[key]) {
-        groupedItems[key] = [];
-      }
-      groupedItems[key].push(item);
-    });
+      items.forEach(item => {
+        // Erledigt Items kommen in spezielle "completed" Kategorie
+        if (item.isCompleted) {
+          if (!groupedItems['completed']) {
+            groupedItems['completed'] = [];
+          }
+          groupedItems['completed'].push(item);
+          return;
+        }
+
+        // Nur aktive Items werden normal kategorisiert
+        let categoryId = item.categoryId;
+        
+        // If item has invalid categoryId, treat as uncategorized
+        if (categoryId && !validCategoryIds.includes(categoryId)) {
+          categoryId = undefined;
+        }
+        
+        const key = categoryId || 'uncategorized';
+        if (!groupedItems[key]) {
+          groupedItems[key] = [];
+        }
+        groupedItems[key].push(item);
+      });
+    }
 
     return groupedItems;
-  }, [items, categories]);
+  }, [items, categories, list?.type]);
 
   const completedItems = items.filter(item => item.isCompleted);
   
@@ -144,7 +168,6 @@ const ListDetail = () => {
     const { active } = event;
     const item = items.find(i => i.id === active.id);
     setActiveItem(item || null);
-    console.log('🎬 Drag Start:', active.id);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -160,48 +183,18 @@ const ListDetail = () => {
     
     if (!over || !active) return;
     
-    const activeId = active.id as string;
-    
-    // Finde active und over items
-    const activeItem = items.find(item => item.id === activeId);
-    const overItem = items.find(item => item.id === overId);
-    
-    if (!activeItem) return;
-    
-    const activeContainer = activeItem.categoryId || 'uncategorized';
-    const overContainer = overItem ? (overItem.categoryId || 'uncategorized') : overId;
-    
-    console.log('🔄 DragOver:', {
-      activeId,
-      activeItemName: activeItem.name,
-      overId,
-      overItemName: overItem?.name || 'Container',
-      activeContainer,
-      overContainer,
-      isItemToItem: !!overItem,
-      isItemToContainer: !overItem
-    });
-    // Für jetzt nur logging für debugging
+    // Update drag state for visual feedback
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    console.log('🏁 DRAG END CALLED:', { 
-      activeId: active.id, 
-      overId: over?.id,
-      hasOver: !!over 
-    });
     
-    setActiveItem(null);
-    
-    // Reset drag state
     setActiveItem(null);
 
     let finalOverId = over?.id as string;
     
     // Fallback: Wenn kein over detected, verwende die letzte gültige Position
     if (!over && lastValidOverId) {
-      console.log('🔄 Using fallback overId:', lastValidOverId);
       finalOverId = lastValidOverId;
     }
     
@@ -209,7 +202,6 @@ const ListDetail = () => {
     setLastValidOverId(null);
 
     if (!finalOverId) {
-      console.log('❌ No drop target detected');
       return;
     }
 
@@ -221,28 +213,18 @@ const ListDetail = () => {
     const overItem = items.find(item => item.id === overId);
     
     if (!activeItem) {
-      console.log('❌ Active item not found:', activeId);
       return;
     }
 
     const activeContainer = activeItem.categoryId || 'uncategorized';
     const overContainer = overItem ? (overItem.categoryId || 'uncategorized') : overId;
 
-    console.log('🎯 Drag End:', {
-      activeId,
-      activeItemName: activeItem.name,
-      overId,
-      overItemName: overItem?.name || 'Container',
-      activeContainer,
-      overContainer,
-      isItemToItem: !!overItem,
-      isSameContainer: activeContainer === overContainer
-    });
+
 
     try {
       // Case 1: Item-to-Item Sorting (innerhalb derselben Kategorie)
       if (overItem && activeContainer === overContainer && activeId !== overId) {
-        console.log('🔄 Item-to-Item sorting within same container');
+
         
         const containerItems = items
           .filter(item => (item.categoryId || 'uncategorized') === activeContainer && !item.isCompleted)
@@ -251,7 +233,7 @@ const ListDetail = () => {
         const activeIndex = containerItems.findIndex(item => item.id === activeId);
         const overIndex = containerItems.findIndex(item => item.id === overId);
         
-        console.log('📍 Sorting indices:', { activeIndex, overIndex });
+
         
         if (activeIndex !== -1 && overIndex !== -1) {
           // Reorder logic
@@ -262,16 +244,16 @@ const ListDetail = () => {
           // Update all affected items with new order
           for (let i = 0; i < reorderedItems.length; i++) {
             const newOrder = i * 1000;
-            console.log(`📝 Updating order: ${reorderedItems[i].name} → ${newOrder}`);
+
             await ItemService.updateItemOrder(reorderedItems[i].id, newOrder);
           }
           
-          console.log('✅ Item-to-Item sorting completed');
+
         }
       }
       // Case 2: Item-to-Container Transfer
       else if (!overItem || activeContainer !== overContainer) {
-        console.log('� Item-to-Container transfer');
+
         
         const targetCategoryId = overContainer === 'uncategorized' ? null : overContainer;
         
@@ -285,16 +267,16 @@ const ListDetail = () => {
         const maxOrder = Math.max(0, ...targetItems.map(item => item.order || 0));
         const newOrder = maxOrder + 1000;
         
-        console.log(`📝 Setting new order: ${newOrder}`);
+
         await ItemService.updateItemOrder(activeId, newOrder);
         
-        console.log('✅ Item-to-Container transfer completed');
+
       }
       else {
-        console.log('⚠️ No action needed - same item/position');
+
       }
       
-      console.log('🔄 Reloading data...');
+
       await loadListData();
       
     } catch (error) {
@@ -350,14 +332,20 @@ const ListDetail = () => {
     try {
       for (const name of names) {
         if (name.trim()) {
-          await ItemService.createItem(id!, {
+          const itemData: any = {
             name: name.trim(),
             quantity: 1,
             isCompleted: false,
             priority: 'low',
-            order: 0,
-            categoryId: categoryId || undefined
-          });
+            order: 0
+          };
+          
+          // Nur categoryId hinzufügen wenn es nicht null/undefined ist
+          if (categoryId) {
+            itemData.categoryId = categoryId;
+          }
+          
+          await ItemService.createItem(id!, itemData);
         }
       }
       await loadListData();
@@ -430,6 +418,73 @@ const ListDetail = () => {
     }
   };
 
+  // Helper function to get assigned user name
+  const getAssignedUserName = (item: Item): string => {
+    if (!item.assignedTo) return '';
+    
+    // Check if it's the current user
+    if (user && item.assignedTo === user.uid) {
+      return user.displayName || user.email || 'Ich selbst';
+    }
+    
+    // For now, just return the ID (should be replaced with proper user name lookup)
+    return item.assignedTo;
+  };
+
+  // Get all available persons for gift list organization
+  const getAvailablePersons = (): Array<{id: string, name: string}> => {
+    const persons: Array<{id: string, name: string}> = [];
+    
+    // Add list creator
+    if (list && user) {
+      if (list.userId === user.uid) {
+        // Current user is creator
+        persons.push({
+          id: user.uid,
+          name: user.displayName || user.email || 'Ich'
+        });
+      } else {
+        // Current user is shared, add creator as first person (we don't have creator name yet)
+        persons.push({
+          id: list.userId,
+          name: 'Listenersteller'
+        });
+        // Add current user
+        persons.push({
+          id: user.uid,
+          name: user.displayName || user.email || 'Ich'
+        });
+      }
+    }
+
+    // Add shared users (we need to implement user name lookup later)
+    if (list?.sharedWith) {
+      list.sharedWith.forEach(userId => {
+        if (!persons.find(p => p.id === userId)) {
+          persons.push({
+            id: userId,
+            name: `Benutzer ${userId.substring(0, 8)}...` // Temporary until we have proper names
+          });
+        }
+      });
+    }
+
+    return persons;
+  };
+
+  // Helper function to get purchaser name (who bought the item)
+  const getPurchaserName = (item: Item): string => {
+    if (!item.completedBy) return '';
+    
+    // Check if it's the current user
+    if (user && item.completedBy === user.uid) {
+      return user.displayName || user.email || 'Ich selbst';
+    }
+    
+    // For now, just return the ID (should be replaced with proper user name lookup)
+    return item.completedBy;
+  };
+
   const handleToggleItem = async (itemId: string, completed?: boolean) => {
     try {
       const item = items.find(i => i.id === itemId);
@@ -440,15 +495,39 @@ const ListDetail = () => {
 
       // 🚀 OPTIMISTIC UPDATE - update UI immediately
       setItems(prevItems => 
-        prevItems.map(item => 
-          item.id === itemId ? { ...item, isCompleted: newCompletedState } : item
-        )
+        prevItems.map(item => {
+          if (item.id === itemId) {
+            const updatedItem = { ...item, isCompleted: newCompletedState };
+            
+            // For gift lists: track who bought the item
+            if (list?.type === 'gift' && newCompletedState && user) {
+              updatedItem.completedBy = user.uid;
+            } else if (!newCompletedState) {
+              updatedItem.completedBy = undefined;
+            }
+            
+            return updatedItem;
+          }
+          return item;
+        })
       );
 
       // Then update backend
-      await ItemService.updateItem(itemId, {
+      const updateData: any = {
         isCompleted: newCompletedState
-      });
+      };
+
+      // For gift lists: track who bought the item
+      if (list?.type === 'gift' && newCompletedState && user) {
+        updateData.completedBy = user.uid;
+        updateData.completedAt = new Date();
+      } else if (!newCompletedState) {
+        // When unchecking, remove purchaser info
+        updateData.completedBy = null;
+        updateData.completedAt = null;
+      }
+
+      await ItemService.updateItem(itemId, updateData);
       
       // Refresh lists context to update dashboard card counts (no scroll reset)
       refreshLists();
@@ -823,22 +902,44 @@ const ListDetail = () => {
               <p className="text-muted mt-2">{list.description}</p>
             )}
 
-            {/* Focus Mode Button - Replaces SharedListBanner */}
-            <div className="mb-3">
-              <button
-                className="btn btn-outline-secondary w-100 d-flex align-items-center gap-2"
-                onClick={() => setIsFocusMode(true)}
-              >
-                <i className="bi bi-arrow-up-circle text-primary"></i>
-                <span className="fw-medium">Listenansicht</span>
-              </button>
-            </div>
+            {/* Focus Mode Button - Nur für Shopping-Listen */}
+            {list.type === 'shopping' && (
+              <div className="mb-3">
+                <button
+                  className="btn btn-outline-secondary w-100 d-flex align-items-center gap-2"
+                  onClick={() => setIsFocusMode(true)}
+                >
+                  <i className="bi bi-arrow-up-circle text-primary"></i>
+                  <span className="fw-medium">Listenansicht</span>
+                </button>
+              </div>
+            )}
+            
+            {/* TODO: Gift-Listen haben keine Listview - hier könnte ein Gift-spezifischer Button hin */}
+            {list.type === 'gift' && (
+              <div className="mb-3" style={{ opacity: 0.6 }}>
+                {/* Placeholder für Gift-Listen spezifische Funktionen */}
+              </div>
+            )}
 
-            {/* Quick Add Input - nur in Normal Mode */}
-            <QuickAddInput
-              onAddItems={handleAddItems}
-              placeholder="Neue Items"
-            />
+            {/* Input basierend auf Listen-Typ */}
+            {list.type === 'shopping' ? (
+              <QuickAddInput
+                onAddItems={handleAddItems}
+                placeholder="Neue Items"
+              />
+            ) : (
+              /* Gift-Listen: Geschenk hinzufügen Button */
+              <div className="mb-3">
+                <button
+                  className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
+                  onClick={() => setShowAddItemModal(true)}
+                >
+                  <i className="bi bi-gift"></i>
+                  <span className="fw-medium">Geschenk hinzufügen</span>
+                </button>
+              </div>
+            )}
 
             {/* Progress - nur in Normal Mode */}
             {items.length > 0 && (
@@ -867,8 +968,65 @@ const ListDetail = () => {
                 <h4 className="mt-3 text-muted">Keine Items vorhanden</h4>
                 <p className="text-muted">Füge Items über das Eingabefeld hinzu</p>
               </div>
+            ) : list?.type === 'gift' ? (
+              <>
+                {/* Gift Lists: Person-based organization */}
+                
+                {/* Unassigned Items Section */}
+                {grouped['unassigned'] && grouped['unassigned'].length > 0 && (
+                  <CategorySection
+                    category={null}
+                    categoryName="Noch nicht zugewiesen"
+                    items={grouped['unassigned']}
+                    onToggleItem={handleToggleItem}
+                    onDeleteItem={handleDeleteItem}
+                    onQuantityChange={handleQuantityChange}
+                    onMoveItem={handleMoveToCategory}
+                    onAddItemsToCategory={handleAddItemsToCategory}
+                    onReorderItems={() => {}} // No reordering for gift lists
+                    isListView={isFocusMode}
+                    listType={list?.type}
+                    sharedUsers={[]}
+                    getAssignedUserName={getAssignedUserName}
+                    getPurchaserName={getPurchaserName}
+                  />
+                )}
+
+                {/* Person Sections - Dynamic based on assigned users */}
+                {getAvailablePersons()
+                  .filter(person => {
+                    const personItems = grouped[person.id] || [];
+                    // In Focus Mode: nur Personen mit pending Items anzeigen
+                    if (isFocusMode) {
+                      return personItems.some(item => !item.isCompleted);
+                    }
+                    // In Normal Mode: nur Personen anzeigen die auch Items haben
+                    return personItems.length > 0;
+                  })
+                  .map(person => (
+                    <CategorySection
+                      key={person.id}
+                      category={null}
+                      categoryName={person.name}
+                      items={grouped[person.id] || []}
+                      onToggleItem={handleToggleItem}
+                      onDeleteItem={handleDeleteItem}
+                      onQuantityChange={handleQuantityChange}
+                      onMoveItem={handleMoveToCategory}
+                      onAddItemsToCategory={handleAddItemsToCategory}
+                      onReorderItems={() => {}} // No reordering for gift lists
+                      isListView={isFocusMode}
+                      listType={list?.type}
+                      sharedUsers={[]}
+                      getAssignedUserName={getAssignedUserName}
+                      getPurchaserName={getPurchaserName}
+                    />
+                  ))}
+              </>
             ) : (
               <>
+                {/* Shopping Lists: Traditional category-based organization */}
+                
                 {/* Uncategorized Items */}
                 {grouped['uncategorized'] && grouped['uncategorized'].length > 0 && 
                   // In Focus Mode: nur anzeigen wenn es pending Items gibt
@@ -883,6 +1041,10 @@ const ListDetail = () => {
                     onAddItemsToCategory={handleAddItemsToCategory}
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                     isListView={isFocusMode}
+                    listType={list?.type}
+                    sharedUsers={[]}
+                    getAssignedUserName={getAssignedUserName}
+                    getPurchaserName={getPurchaserName}
                   />
                 )}
 
@@ -913,16 +1075,21 @@ const ListDetail = () => {
                       onAddItemsToCategory={handleAddItemsToCategory}
                       onReorderItems={() => {}} // TODO: Implementierung für Reorder
                       isListView={isFocusMode}
+                      listType={list?.type}
+                      sharedUsers={[]}
+                      getAssignedUserName={getAssignedUserName}
+                      getPurchaserName={getPurchaserName}
                     />
                   ))}
-              
+              </>
+            )}
 
-                {/* Erledigt Kategorie - nur anzeigen wenn es erledigte Items gibt */}
+            {/* Erledigt/Gekauft Kategorie - nur anzeigen wenn es erledigte Items gibt */}
                 {grouped['completed'] && grouped['completed'].length > 0 && (
                   <CategorySection
                     category={{
                       id: 'completed',
-                      name: 'Erledigt',
+                      name: list.type === 'gift' ? 'Gekauft' : 'Erledigt',
                       color: '#28a745',
                       listId: id!,
                       userId: user!.uid,
@@ -937,12 +1104,16 @@ const ListDetail = () => {
                     onMoveItem={handleMoveToCategory}
                     onReorderItems={() => {}} // Completed items nicht reorderbar
                     isListView={isFocusMode}
+                    listType={list?.type}
+                    sharedUsers={[]}
+                    getAssignedUserName={getAssignedUserName}
+                    getPurchaserName={getPurchaserName}
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}
 
-                {/* Add Category Button - nur im normalen Modus, nicht im Focus Mode */}
-                {!isFocusMode && (
+                {/* Add Category Button - nur für Shopping-Listen im normalen Modus */}
+                {!isFocusMode && list?.type !== 'gift' && (
                   <div className="mb-4">
                     <button
                       className="btn btn-outline-primary w-100"
@@ -953,8 +1124,6 @@ const ListDetail = () => {
                     </button>
                   </div>
                 )}
-              </>
-            )}
           </div>
         </div>
 
@@ -973,6 +1142,7 @@ const ListDetail = () => {
         <CreateCategoryModal
           isOpen={showCreateCategoryModal}
           onClose={() => setShowCreateCategoryModal(false)}
+          listType={list?.type || 'shopping'}
           onCreateCategory={async (name: string, color: string) => {
             try {
               await CategoryService.createListCategory(id!, name, color);
@@ -983,6 +1153,19 @@ const ListDetail = () => {
               setError('Fehler beim Erstellen der Kategorie');
             }
           }}
+        />
+
+        {/* Add Item Modal */}
+        <AddItemModal
+          listId={id!}
+          isOpen={showAddItemModal}
+          onClose={() => setShowAddItemModal(false)}
+          onItemAdded={() => {
+            setShowAddItemModal(false);
+            loadListData();
+          }}
+          listType={list?.type || 'shopping'}
+          sharedUsers={[]}
         />
 
         {/* Share List Modal */}
