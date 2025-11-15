@@ -601,7 +601,35 @@ export class ItemService {
         order: orderValue
       };
 
-      const docRef = await addDoc(collection(db, this.collection), item);
+      // Remove undefined fields to prevent Firestore errors
+      // Only remove optional fields that are undefined
+      const cleanItem = { ...item };
+      if (cleanItem.categoryId === undefined) {
+        delete cleanItem.categoryId;
+      }
+      if (cleanItem.description === undefined) {
+        delete cleanItem.description;
+      }
+      if (cleanItem.quantity === undefined) {
+        delete cleanItem.quantity;
+      }
+      if (cleanItem.price === undefined) {
+        delete cleanItem.price;
+      }
+      if (cleanItem.link === undefined) {
+        delete cleanItem.link;
+      }
+      if (cleanItem.category === undefined) {
+        delete cleanItem.category;
+      }
+      if (cleanItem.completedBy === undefined) {
+        delete cleanItem.completedBy;
+      }
+      if (cleanItem.completedAt === undefined) {
+        delete cleanItem.completedAt;
+      }
+
+      const docRef = await addDoc(collection(db, this.collection), cleanItem);
       
       // Update the list's item count
       await ListService.updateListItemCount(listId);
