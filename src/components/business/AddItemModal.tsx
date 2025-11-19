@@ -98,6 +98,8 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
         categoryId: formData.categoryId || undefined,
         tags: formData.tags,
         notes: formData.notes.trim() ? sanitizeString(formData.notes) : undefined,
+        link: formData.link.trim() ? formData.link : undefined,
+        assignedTo: formData.assignedTo || undefined,
         isCompleted: false,
         order: Date.now() // Simple ordering system
       };
@@ -304,49 +306,6 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
                 </div>
               </div>
             </div>
-                </div>
-
-                <div className="col-md-6">
-                  <FormField label="Priorität" htmlFor="gift-priority">
-                    <Select
-                      id="gift-priority"
-                      value={formData.priority}
-                      onChange={(e) => handleInputChange('priority', e.target.value)}
-                      disabled={isLoading}
-                      options={[
-                        { value: 'low', label: 'Niedrig' },
-                        { value: 'medium', label: 'Mittel' },
-                        { value: 'high', label: 'Hoch' }
-                      ]}
-                    />
-                  </FormField>
-                </div>
-              </div>
-
-              {/* Description */}
-              <FormField label="Beschreibung" htmlFor="gift-description">
-                <Textarea
-                  id="gift-description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Zusätzliche Details zum Geschenk..."
-                  rows={3}
-                  disabled={isLoading}
-                />
-              </FormField>
-
-              {/* Notes */}
-              <FormField label="Notizen" htmlFor="gift-notes">
-                <Input
-                  id="gift-notes"
-                  type="text"
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Nur falls es geht"
-                  disabled={isLoading}
-                />
-              </FormField>
-            </>
           ) : (
             // Shopping list form layout (existing)
             <>
