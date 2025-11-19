@@ -177,135 +177,114 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
 
           {listType === 'gift' ? (
             // Gift-specific form layout
-            <div className="gift-form">
-              {/* Grundinformationen */}
-              <div className="mb-4">
-                <h6 className="text-muted mb-3">
-                  <i className="bi bi-info-circle me-2"></i>
-                  Grundinformationen
-                </h6>
-                
-                <FormField label="Geschenkname *" htmlFor="gift-name">
-                  <Input
-                    id="gift-name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder="z.B. Kuscheltierlöwe, Lego Baukasten"
-                    disabled={isLoading}
-                    autoFocus
-                  />
-                </FormField>
+            <>
+              <FormField label="Geschenkname *" htmlFor="gift-name">
+                <Input
+                  id="gift-name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="z.B. Kuscheltierlöwe, Lego Baukasten"
+                  disabled={isLoading}
+                  autoFocus
+                />
+              </FormField>
 
-                <div className="row">
-                  <div className="col-md-8">
-                    <FormField label="Preis" htmlFor="gift-price">
-                      <div className="input-group">
-                        <Input
-                          id="gift-price"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.price}
-                          onChange={(e) => handleInputChange('price', e.target.value)}
-                          placeholder="25.00"
-                          disabled={isLoading}
-                        />
-                        <span className="input-group-text">€</span>
-                      </div>
-                    </FormField>
-                  </div>
-                  
-                  <div className="col-md-4">
-                    <FormField label="Priorität" htmlFor="gift-priority">
-                      <Select
-                        id="gift-priority"
-                        value={formData.priority}
-                        onChange={(e) => handleInputChange('priority', e.target.value)}
-                        disabled={isLoading}
-                        options={[
-                          { value: 'low', label: 'Niedrig' },
-                          { value: 'medium', label: 'Mittel' },
-                          { value: 'high', label: 'Hoch' }
-                        ]}
-                      />
-                    </FormField>
-                  </div>
-                </div>
-              </div>
-
-              {/* Zusatzinformationen */}
-              <div className="mb-4">
-                <h6 className="text-muted mb-3">
-                  <i className="bi bi-link-45deg me-2"></i>
-                  Zusatzinformationen
-                </h6>
-                
-                <FormField label="Link zum Geschenk" htmlFor="gift-link">
-                  <Input
-                    id="gift-link"
-                    type="url"
-                    value={formData.link || ''}
-                    onChange={(e) => handleInputChange('link', e.target.value)}
-                    placeholder="https://www.amazon.de/..."
-                    disabled={isLoading}
-                  />
-                </FormField>
-
-                <FormField label="Beschreibung" htmlFor="gift-description">
-                  <Textarea
-                    id="gift-description"
-                    value={formData.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Zusätzliche Details zum Geschenk..."
-                    rows={3}
-                    disabled={isLoading}
-                  />
-                </FormField>
-              </div>
-
-              {/* Zuordnung */}
-              <div className="mb-3">
-                <h6 className="text-muted mb-3">
-                  <i className="bi bi-person-check me-2"></i>
-                  Zuordnung
-                </h6>
-                
-                <div className="row">
-                  <div className="col-md-8">
-                    <FormField label="Zugewiesen an" htmlFor="gift-assignment">
-                      <Select
-                        id="gift-assignment"
-                        value={formData.assignedTo || ''}
-                        onChange={(e) => handleInputChange('assignedTo', e.target.value || undefined)}
-                        disabled={isLoading}
-                        placeholder="Noch nicht zugewiesen"
-                        options={[
-                          { value: '', label: 'Noch nicht zugewiesen' },
-                          ...sharedUsers.map(user => ({
-                            value: user.id,
-                            label: user.name
-                          }))
-                        ]}
-                      />
-                    </FormField>
-                  </div>
-                  
-                  <div className="col-md-4">
-                    <FormField label="Notizen" htmlFor="gift-notes">
+              <div className="row">
+                <div className="col-md-6">
+                  <FormField label="Preis" htmlFor="gift-price">
+                    <div className="position-relative">
                       <Input
-                        id="gift-notes"
-                        type="text"
-                        value={formData.notes}
-                        onChange={(e) => handleInputChange('notes', e.target.value)}
-                        placeholder="z.B. Falls verfügbar"
+                        id="gift-price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.price}
+                        onChange={(e) => handleInputChange('price', e.target.value)}
+                        placeholder="25.00"
                         disabled={isLoading}
+                        style={{ paddingRight: '2.5rem' }}
                       />
-                    </FormField>
-                  </div>
+                      <span className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted">
+                        €
+                      </span>
+                    </div>
+                  </FormField>
+                </div>
+                
+                <div className="col-md-6">
+                  <FormField label="Priorität" htmlFor="gift-priority">
+                    <Select
+                      id="gift-priority"
+                      value={formData.priority}
+                      onChange={(e) => handleInputChange('priority', e.target.value)}
+                      disabled={isLoading}
+                      options={[
+                        { value: 'low', label: 'Niedrig' },
+                        { value: 'medium', label: 'Mittel' },
+                        { value: 'high', label: 'Hoch' }
+                      ]}
+                    />
+                  </FormField>
                 </div>
               </div>
-            </div>
+
+              <FormField label="Link zum Geschenk" htmlFor="gift-link">
+                <Input
+                  id="gift-link"
+                  type="url"
+                  value={formData.link || ''}
+                  onChange={(e) => handleInputChange('link', e.target.value)}
+                  placeholder="https://www.amazon.de/..."
+                  disabled={isLoading}
+                />
+              </FormField>
+
+              <FormField label="Beschreibung" htmlFor="gift-description">
+                <Textarea
+                  id="gift-description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Zusätzliche Details zum Geschenk..."
+                  rows={3}
+                  disabled={isLoading}
+                />
+              </FormField>
+
+              <div className="row">
+                <div className="col-md-8">
+                  <FormField label="Zugewiesen an" htmlFor="gift-assignment">
+                    <Select
+                      id="gift-assignment"
+                      value={formData.assignedTo || ''}
+                      onChange={(e) => handleInputChange('assignedTo', e.target.value || undefined)}
+                      disabled={isLoading}
+                      placeholder="Noch nicht zugewiesen"
+                      options={[
+                        { value: '', label: 'Noch nicht zugewiesen' },
+                        ...sharedUsers.map(user => ({
+                          value: user.id,
+                          label: user.name
+                        }))
+                      ]}
+                    />
+                  </FormField>
+                </div>
+                
+                <div className="col-md-4">
+                  <FormField label="Notizen" htmlFor="gift-notes">
+                    <Input
+                      id="gift-notes"
+                      type="text"
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      placeholder="z.B. Falls verfügbar"
+                      disabled={isLoading}
+                    />
+                  </FormField>
+                </div>
+              </div>
+            </>
           ) : (
             // Shopping list form layout (existing)
             <>
