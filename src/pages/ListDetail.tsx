@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
 import { ListService, CategoryService, ItemService } from '../services/listService';
@@ -46,7 +48,32 @@ const ListDetail = () => {
   const [showEditListModal, setShowEditListModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
   const [showListDropdown, setShowListDropdown] = useState(false);
+  // Focus mode state
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
+  
+  // User names cache for assigned users
+  const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
+
+  // Function to fetch user name from Firebase
+  const fetchUserName = async (userId: string): Promise<string> => {
+    if (userNames[userId]) {
+      return userNames[userId];
+    }
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const name = userData.displayName || userData.email || 'Unbekannter Nutzer';
+        setUserNames(prev => ({ ...prev, [userId]: name }));
+        return name;
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Benutzernamens:', error);
+    }
+    
+    return userId; // Fallback zur ID
+  };
   
   // Duplicate item handling
   const [duplicateItems, setDuplicateItems] = useState<{name: string, existingItem: Item}[]>([]);
@@ -427,8 +454,19 @@ const ListDetail = () => {
       return user.displayName || user.email || 'Ich selbst';
     }
     
-    // For now, just return the ID (should be replaced with proper user name lookup)
-    return item.assignedTo;
+    // Check if we have the name cached from Firebase
+    if (userNames[item.assignedTo]) {
+      return userNames[item.assignedTo];
+    }
+    
+    // Fetch the name asynchronously if not cached
+    fetchUserName(item.assignedTo);
+    
+    // Look up the name in shared users (fallback while loading)
+    const availablePersons = getAvailablePersons();
+    const assignedPerson = availablePersons.find(person => person.id === item.assignedTo);
+    
+    return assignedPerson ? assignedPerson.name : 'Lädt...';
   };
 
   // Get all available persons for gift list organization
@@ -444,10 +482,15 @@ const ListDetail = () => {
           name: user.displayName || user.email || 'Ich'
         });
       } else {
-        // Current user is shared, add creator as first person (we don't have creator name yet)
+        // Current user is shared, add creator as first person
+        const creatorName = userNames[list.userId] || 'Listenersteller';
+        // Fetch creator name if not cached
+        if (!userNames[list.userId]) {
+          fetchUserName(list.userId);
+        }
         persons.push({
           id: list.userId,
-          name: 'Listenersteller'
+          name: creatorName
         });
         // Add current user
         persons.push({
@@ -533,6 +576,27 @@ const ListDetail = () => {
       refreshLists();
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Items:', error);
+      // On error, revert optimistic update by reloading
+      await loadListData();
+    }
+  };
+
+  const handleAssignmentChange = async (itemId: string, assignedUserId: string | undefined) => {
+    try {
+      // 🚀 OPTIMISTIC UPDATE - update UI immediately
+      setItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId 
+            ? { ...item, assignedTo: assignedUserId }
+            : item
+        )
+      );
+
+      // Update backend
+      await ItemService.updateItem(itemId, { assignedTo: assignedUserId });
+      
+    } catch (error) {
+      console.error('Fehler beim Ändern der Zuweisung:', error);
       // On error, revert optimistic update by reloading
       await loadListData();
     }
@@ -986,9 +1050,10 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // No reordering for gift lists
                     isListView={isFocusMode}
                     listType={list?.type}
-                    sharedUsers={[]}
+                    sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
+                    onAssignmentChange={handleAssignmentChange}
                   />
                 )}
 
@@ -1017,9 +1082,10 @@ const ListDetail = () => {
                       onReorderItems={() => {}} // No reordering for gift lists
                       isListView={isFocusMode}
                       listType={list?.type}
-                      sharedUsers={[]}
+                      sharedUsers={getAvailablePersons()}
                       getAssignedUserName={getAssignedUserName}
                       getPurchaserName={getPurchaserName}
+                      onAssignmentChange={handleAssignmentChange}
                     />
                   ))}
               </>
@@ -1042,9 +1108,10 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                     isListView={isFocusMode}
                     listType={list?.type}
-                    sharedUsers={[]}
+                    sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
+                    onAssignmentChange={handleAssignmentChange}
                   />
                 )}
 
@@ -1076,9 +1143,10 @@ const ListDetail = () => {
                       onReorderItems={() => {}} // TODO: Implementierung für Reorder
                       isListView={isFocusMode}
                       listType={list?.type}
-                      sharedUsers={[]}
+                      sharedUsers={getAvailablePersons()}
                       getAssignedUserName={getAssignedUserName}
                       getPurchaserName={getPurchaserName}
+                      onAssignmentChange={handleAssignmentChange}
                     />
                   ))}
               </>
@@ -1105,9 +1173,10 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // Completed items nicht reorderbar
                     isListView={isFocusMode}
                     listType={list?.type}
-                    sharedUsers={[]}
+                    sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
+                    onAssignmentChange={handleAssignmentChange}
                     // Keine onDeleteCategory - Erledigt-Kategorie kann nicht gelöscht werden
                   />
                 )}

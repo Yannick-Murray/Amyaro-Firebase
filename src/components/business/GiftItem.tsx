@@ -11,10 +11,12 @@ export interface GiftItemProps {
   onEdit?: (itemId: string) => void;
   onDuplicate?: (itemId: string) => void;
   onMoveToCategory?: (itemId: string) => void;
+  onAssignmentChange?: (itemId: string, assignedUserId: string | undefined) => void;
   disabled?: boolean;
   className?: string;
   assignedUserName?: string; // Name der zugewiesenen Person
   purchaserName?: string; // Name der Person die es gekauft hat
+  availableUsers?: Array<{id: string, name: string}>; // Verfügbare Benutzer für Zuweisung
 }
 
 export const GiftItem: React.FC<GiftItemProps> = ({
@@ -24,12 +26,15 @@ export const GiftItem: React.FC<GiftItemProps> = ({
   onEdit,
   onDuplicate,
   onMoveToCategory,
+  onAssignmentChange,
   disabled = false,
   className = '',
   assignedUserName,
-  purchaserName
+  purchaserName,
+  availableUsers = []
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showAssignmentDropdown, setShowAssignmentDropdown] = useState(false);
   const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
 
   // Context Menu Aktionen definieren
@@ -97,6 +102,7 @@ export const GiftItem: React.FC<GiftItemProps> = ({
         className
       )}
     >
+
       {/* Haupt-Content */}
       <div 
         className={cn(
@@ -223,31 +229,120 @@ export const GiftItem: React.FC<GiftItemProps> = ({
           )}
 
           {/* Zugewiesene Person (nur bei nicht-completed items) */}
-          {!item.isCompleted && assignedUserName && (
-            <div className="d-flex align-items-center gap-1">
-              <i className="bi bi-person text-muted" style={{ fontSize: '12px' }} />
-              <small className="text-muted">
-                Zugewiesen: {assignedUserName}
-              </small>
+          {!item.isCompleted && (
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <i className="bi bi-person text-muted" style={{ fontSize: '12px' }} />
+                <div className="d-flex align-items-center gap-1">
+                  <small className="text-muted">Zugewiesen:</small>
+                  {onAssignmentChange && availableUsers.length > 0 ? (
+                    <div className="d-flex align-items-center gap-1">
+                      <small className="text-muted">
+                        {assignedUserName || 'Nicht zugewiesen'}
+                      </small>
+                      {!showAssignmentDropdown && (
+                        <button
+                          type="button"
+                          className="btn btn-link p-0 text-muted"
+                          style={{ fontSize: '12px', lineHeight: '1' }}
+                          onClick={() => setShowAssignmentDropdown(true)}
+                          disabled={disabled}
+                          title="Zuweisung ändern"
+                        >
+                          <i className="bi bi-chevron-down" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <small className="text-muted">
+                      {assignedUserName || 'Nicht zugewiesen'}
+                    </small>
+                  )}
+                </div>
+              </div>
+              
+              {/* Dropdown appears below when opened */}
+              {showAssignmentDropdown && onAssignmentChange && availableUsers.length > 0 && (
+                <div className="mt-2 ms-4">
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ fontSize: '12px', maxWidth: '200px' }}
+                    value={item.assignedTo || ''}
+                    onChange={(e) => {
+                      onAssignmentChange(item.id, e.target.value || undefined);
+                      setShowAssignmentDropdown(false);
+                    }}
+                    onBlur={() => setShowAssignmentDropdown(false)}
+                    disabled={disabled}
+                    autoFocus
+                  >
+                    <option value="">Nicht zugewiesen</option>
+                    {availableUsers.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Details Indikator */}
-          {hasDetails && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCardClick();
-              }}
-              className={`btn btn-sm d-flex align-items-center gap-1 ${showDetails ? 'btn-primary' : 'btn-outline-primary'}`}
-              style={{ fontSize: '12px', padding: '4px 8px', lineHeight: '1' }}
-            >
-              <i className={`bi bi-chevron-${showDetails ? 'up' : 'down'}`} style={{ fontSize: '10px' }} />
-              Details
-            </button>
-          )}
+
         </div>
       </div>
+
+      {/* Notizzettel für Details - nur wenn Details vorhanden */}
+      {hasDetails && (
+        <div className="position-relative">
+          {/* Notizzettel */}
+          <div 
+            className={`position-relative mt-2 ms-3 cursor-pointer transition-all duration-200 ${showDetails ? 'shadow-lg' : 'shadow-sm'}`}
+            style={{
+              backgroundColor: '#fff3cd',
+              border: '1px solid #ffeaa7',
+              borderRadius: '3px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              maxWidth: '200px',
+              transform: 'rotate(-1deg)',
+              transformOrigin: 'top left',
+              boxShadow: showDetails ? '0 4px 12px rgba(0,0,0,0.15)' : '0 2px 6px rgba(0,0,0,0.1)'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+          >
+            {/* "Klebestreifen" Effekt */}
+            <div 
+              className="position-absolute"
+              style={{
+                top: '-3px',
+                right: '20px',
+                width: '25px',
+                height: '15px',
+                backgroundColor: 'rgba(255,255,255,0.8)',
+                border: '1px solid #ddd',
+                borderRadius: '2px',
+                transform: 'rotate(15deg)'
+              }}
+            />
+            
+            <div className="d-flex align-items-center gap-1 text-dark">
+              <i className="bi bi-sticky" style={{ fontSize: '11px', color: '#856404' }} />
+              <span style={{ color: '#856404', fontWeight: '500' }}>Details</span>
+              <i className={`bi bi-chevron-${showDetails ? 'up' : 'down'}`} style={{ fontSize: '10px', color: '#856404' }} />
+            </div>
+            
+            {!showDetails && (
+              <div className="text-muted mt-1" style={{ fontSize: '10px', color: '#856404' }}>
+                Klicken für mehr Info
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Erweiterte Details (ausklappbar) */}
       {hasDetails && showDetails && (

@@ -30,6 +30,7 @@ export interface CategorySectionProps {
   sharedUsers?: Array<{id: string, name: string}>; // Für Zuweisung-Namen
   getAssignedUserName?: (item: Item) => string; // Funktion um zugewiesenen User-Namen zu bekommen
   getPurchaserName?: (item: Item) => string; // Funktion um Käufer-Namen zu bekommen
+  onAssignmentChange?: (itemId: string, assignedUserId: string | undefined) => void; // Zuweisung ändern
 }
 
 export const CategorySection: React.FC<CategorySectionProps> = ({
@@ -51,10 +52,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onAddItemsToCategory,
   disabled: _disabled = false,
   isListView = false,
-  listType = 'shopping',
+  listType,
   sharedUsers = [],
   getAssignedUserName,
-  getPurchaserName
+  getPurchaserName,
+  onAssignmentChange
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -379,8 +381,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   onEdit={onEditItem}
                   onDuplicate={onDuplicateItem}
                   onMoveToCategory={onMoveItem}
+                  onAssignmentChange={onAssignmentChange}
                   assignedUserName={getAssignedUserName ? getAssignedUserName(item) : ''}
                   purchaserName={getPurchaserName ? getPurchaserName(item) : ''}
+                  availableUsers={sharedUsers}
                 />
               ))}
             </div>
@@ -421,8 +425,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     onEdit={onEditItem}
                     onDuplicate={onDuplicateItem}
                     onMoveToCategory={onMoveItem}
+                    onAssignmentChange={onAssignmentChange}
                     assignedUserName={getAssignedUserName ? getAssignedUserName(item) : ''}
                     purchaserName={getPurchaserName ? getPurchaserName(item) : ''}
+                    availableUsers={sharedUsers}
                   />
                 );
               } else {
