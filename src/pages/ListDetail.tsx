@@ -16,6 +16,7 @@ import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
 import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal';
 import { EditListModal } from '../components/business/EditListModal';
+import { Modal } from '../components/ui/Modal';
 import { 
   DndContext, 
   DragOverlay,
@@ -47,6 +48,8 @@ const ListDetail = () => {
   const [showSharedInfoModal, setShowSharedInfoModal] = useState(false); // Für geteilte Listen Info
   const [showEditListModal, setShowEditListModal] = useState(false);
   const [activeItem, setActiveItem] = useState<Item | null>(null);
+  const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [showListDropdown, setShowListDropdown] = useState(false);
   // Focus mode state
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
@@ -742,16 +745,16 @@ const ListDetail = () => {
     // Prüfe ob der aktuelle Benutzer berechtigt ist, die Liste zu löschen
     if (isSharedWithUser) {
       console.log('🚫 Geteilter Benutzer versucht Liste zu löschen - zeige Meldung');
-      window.alert('Diese Liste kann nur vom Ersteller der Liste gelöscht werden.');
+      setShowDeleteErrorModal(true);
       return;
     }
     
-    const confirmed = window.confirm(
-      `Liste "${list.name}" wirklich löschen?\n\n` +
-      `Dies löscht auch alle ${items.length} Items und ${categories.length} Kategorien unwiderruflich!`
-    );
-    
-    if (!confirmed) return;
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!list) return;
+    setShowDeleteConfirmModal(false);
     
     try {
       await ListService.deleteList(list.id);
@@ -1282,6 +1285,71 @@ const ListDetail = () => {
             onListUpdated={handleListUpdated}
           />
         )}
+
+        {/* Delete Error Modal */}
+        <Modal isOpen={showDeleteErrorModal} onClose={() => setShowDeleteErrorModal(false)} size="sm">
+          <div className="modal-header border-0">
+            <h5 className="modal-title d-flex align-items-center text-info">
+              <i className="bi bi-info-circle-fill me-2"></i>
+              Information
+            </h5>
+          </div>
+          <div className="modal-body">
+            <div className="alert alert-info mb-0">
+              <i className="bi bi-info-circle me-2"></i>
+              Diese Liste kann nur vom Ersteller der Liste gelöscht werden.
+            </div>
+          </div>
+          <div className="modal-footer border-0">
+            <button
+              type="button"
+              className="btn btn-primary w-100"
+              onClick={() => setShowDeleteErrorModal(false)}
+            >
+              Verstanden
+            </button>
+          </div>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal isOpen={showDeleteConfirmModal} onClose={() => setShowDeleteConfirmModal(false)} size="sm">
+          <div className="modal-header border-0">
+            <h5 className="modal-title d-flex align-items-center text-danger">
+              <i className="bi bi-trash3-fill me-2"></i>
+              Liste löschen
+            </h5>
+          </div>
+          <div className="modal-body">
+            <p className="mb-3">
+              <strong>Liste "{list?.name}" wirklich löschen?</strong>
+            </p>
+            <div className="alert alert-warning mb-3">
+              <strong>Achtung!</strong> Dies löscht auch alle {items.length} Items und {categories.length} Kategorien unwiderruflich!
+            </div>
+            <p className="text-muted small mb-0">
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+          </div>
+          <div className="modal-footer border-0">
+            <div className="d-flex gap-2 w-100">
+              <button
+                type="button"
+                className="btn btn-outline-secondary flex-fill"
+                onClick={() => setShowDeleteConfirmModal(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger flex-fill"
+                onClick={handleConfirmDelete}
+              >
+                <i className="bi bi-trash3 me-1"></i>
+                Löschen
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </DndContext>
   );
