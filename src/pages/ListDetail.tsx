@@ -1142,7 +1142,6 @@ const ListDetail = () => {
         <CreateCategoryModal
           isOpen={showCreateCategoryModal}
           onClose={() => setShowCreateCategoryModal(false)}
-          listType={list?.type || 'shopping'}
           onCreateCategory={async (name: string, color: string) => {
             try {
               await CategoryService.createListCategory(id!, name, color);
@@ -1165,7 +1164,8 @@ const ListDetail = () => {
             loadListData();
           }}
           listType={list?.type || 'shopping'}
-          sharedUsers={[]}
+          sharedUsers={getAvailablePersons()}
+          categories={categories}
         />
 
         {/* Share List Modal */}
