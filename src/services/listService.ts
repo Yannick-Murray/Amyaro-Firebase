@@ -602,6 +602,12 @@ export class ItemService {
       if (cleanItemData.completedBy === undefined) {
         delete cleanItemData.completedBy;
       }
+      if (cleanItemData.assignedTo === undefined) {
+        delete cleanItemData.assignedTo;
+      }
+      if (cleanItemData.link === undefined) {
+        delete cleanItemData.link;
+      }
       
       const item: Omit<Item, 'id'> = {
         ...cleanItemData,
