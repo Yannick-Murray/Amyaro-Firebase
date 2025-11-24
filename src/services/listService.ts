@@ -593,8 +593,24 @@ export class ItemService {
       }
 
       const now = serverTimestamp();
+      
+      // Clean up undefined values for Firebase
+      const cleanItemData = { ...itemData };
+      if (cleanItemData.categoryId === undefined) {
+        delete cleanItemData.categoryId;
+      }
+      if (cleanItemData.completedBy === undefined) {
+        delete cleanItemData.completedBy;
+      }
+      if (cleanItemData.assignedTo === undefined) {
+        delete cleanItemData.assignedTo;
+      }
+      if (cleanItemData.link === undefined) {
+        delete cleanItemData.link;
+      }
+      
       const item: Omit<Item, 'id'> = {
-        ...itemData,
+        ...cleanItemData,
         listId,
         createdAt: now as any,
         updatedAt: now as any,

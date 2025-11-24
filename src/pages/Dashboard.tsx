@@ -90,14 +90,12 @@ const Dashboard = () => {
 
   const filteredLists = lists.filter(list => {
     if (filter === 'all') return true;
-    // Temporarily disable gift lists
-    if (filter === 'gift') return false;
     return list.type === filter;
   });
 
   const totalLists = lists.length;
   const shoppingLists = lists.filter(l => l.type === 'shopping').length;
-  // const giftLists = lists.filter(l => l.type === 'gift').length;
+  const giftLists = lists.filter(l => l.type === 'gift').length;
 
   // Geteilte Listen: Listen die der User erstellt und geteilt hat ODER Listen die mit dem User geteilt wurden
   const sharedLists = lists.filter(list => {
@@ -174,10 +172,9 @@ const Dashboard = () => {
               id="filter-gift"
               checked={filter === 'gift'}
               onChange={() => setFilter('gift')}
-              disabled
             />
-            <label className="btn btn-outline-secondary" htmlFor="filter-gift" style={{ cursor: 'not-allowed' }}>
-              🎁 Geschenkelisten <small className="badge bg-warning text-dark ms-1">Bald</small>
+            <label className="btn btn-outline-primary" htmlFor="filter-gift">
+              🎁 Geschenkelisten ({giftLists})
             </label>
           </div>
         </div>
@@ -216,11 +213,9 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="col-6 col-md-3 mb-3">
-          <div className="card p-2 text-center border-dashed bg-light">
-            <i className="bi bi-gift text-muted mb-1"></i>
-            <h6 className="mb-0 text-muted">
-              <small className="badge bg-warning text-dark">Bald</small>
-            </h6>
+          <div className="card p-2 text-center">
+            <i className="bi bi-gift text-warning mb-1"></i>
+            <h6 className="mb-0">{giftLists}</h6>
             <small className="text-muted">Geschenkelisten</small>
           </div>
         </div>

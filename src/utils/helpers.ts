@@ -3,23 +3,141 @@ import { v4 as uuidv4 } from 'uuid';
 // ID-Generierung
 export const generateId = (): string => uuidv4();
 
-// 🔒 SECURITY: Smart Input Sanitization (keeps normal punctuation)
+// 🔒 SECURITY: Enhanced Input Sanitization with XSS Protection
 export const sanitizeString = (input: string): string => {
   if (typeof input !== 'string') return '';
   
   return input
     .trim()
-    // Remove ONLY dangerous HTML/script constructs
+    // Remove ALL HTML tags for maximum security
+    .replace(/<[^>]*>/gi, '') // Remove all HTML tags
     .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags with content
     .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframe tags
     .replace(/<object[^>]*>.*?<\/object>/gi, '') // Remove object tags  
     .replace(/<embed[^>]*>/gi, '') // Remove embed tags
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .replace(/data:text\/html/gi, '') // Remove data: html protocol
+    .replace(/data:application\/javascript/gi, '') // Remove data: js protocol
+    .replace(/vbscript:/gi, '') // Remove vbscript: protocol
     .replace(/on\w+\s*=/gi, '') // Remove event handlers like onclick=
     .replace(/eval\s*\(/gi, '') // Remove eval( calls
     .replace(/expression\s*\(/gi, '') // Remove CSS expression
+    .replace(/Function\s*\(/gi, '') // Remove Function( calls
+    .replace(/setTimeout\s*\(/gi, '') // Remove setTimeout calls
+    .replace(/setInterval\s*\(/gi, '') // Remove setInterval calls
+    .replace(/\\u[0-9a-fA-F]{4}/gi, '') // Remove unicode escape sequences
+    .replace(/\\x[0-9a-fA-F]{2}/gi, '') // Remove hex escape sequences
+    .replace(/[\x00-\x1f\x7f-\x9f]/g, '') // Remove control characters
     .substring(0, 1000); // Max length protection
+};
+
+// 🔒 SECURITY: Specific validation for URLs with enhanced security
+export const sanitizeUrl = (url: string): string => {
+  if (typeof url !== 'string') return '';
+  
+  const sanitized = url.trim();
+  
+  // Only allow http and https protocols
+  if (!/^https?:\/\//i.test(sanitized)) {
+    return '';
+  }
+  
+  // Remove dangerous patterns
+  return sanitized
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/file:/gi, '')
+    .replace(/ftp:/gi, '')
+    .substring(0, 2000); // URLs can be longer
+};
+
+// 🔒 SECURITY: Validate text input with content filtering
+export const validateTextInput = (input: string, maxLength: number = 1000): { isValid: boolean; error?: string } => {
+  if (typeof input !== 'string') {
+    return { isValid: false, error: 'Eingabe muss ein Text sein' };
+  }
+  
+  const trimmed = input.trim();
+  
+  // Check length
+  if (trimmed.length > maxLength) {
+    return { isValid: false, error: `Text darf maximal ${maxLength} Zeichen haben` };
+  }
+  
+  // Check for suspicious patterns
+  const suspiciousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /eval\s*\(/i,
+    /Function\s*\(/i,
+    /setTimeout\s*\(/i,
+    /setInterval\s*\(/i,
+    /<iframe/i,
+    /<object/i,
+    /<embed/i
+  ];
+  
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(input)) {
+      return { isValid: false, error: 'Eingabe enthält nicht erlaubte Zeichen oder Code' };
+    }
+  }
+  
+  return { isValid: true };
+};
+
+// 🔒 SECURITY: Validate price input
+export const validatePrice = (priceStr: string): { isValid: boolean; value?: number; error?: string } => {
+  if (!priceStr || priceStr.trim() === '') {
+    return { isValid: true, value: undefined };
+  }
+  
+  const price = parseFloat(priceStr);
+  
+  if (isNaN(price)) {
+    return { isValid: false, error: 'Preis muss eine gültige Zahl sein' };
+  }
+  
+  if (price < 0) {
+    return { isValid: false, error: 'Preis darf nicht negativ sein' };
+  }
+  
+  if (price > 99999) {
+    return { isValid: false, error: 'Preis darf nicht größer als 99.999 € sein' };
+  }
+  
+  // Check for reasonable decimal places
+  const decimalPlaces = (priceStr.split('.')[1] || '').length;
+  if (decimalPlaces > 2) {
+    return { isValid: false, error: 'Preis darf maximal 2 Nachkommastellen haben' };
+  }
+  
+  return { isValid: true, value: price };
+};
+
+// 🔒 SECURITY: Validate quantity input  
+export const validateQuantity = (quantityStr: string | number): { isValid: boolean; value?: number; error?: string } => {
+  const quantity = typeof quantityStr === 'string' ? parseInt(quantityStr) : quantityStr;
+  
+  if (isNaN(quantity)) {
+    return { isValid: false, error: 'Menge muss eine ganze Zahl sein' };
+  }
+  
+  if (quantity < 1) {
+    return { isValid: false, error: 'Menge muss mindestens 1 sein' };
+  }
+  
+  if (quantity > 999) {
+    return { isValid: false, error: 'Menge darf nicht größer als 999 sein' };
+  }
+  
+  if (!Number.isInteger(quantity)) {
+    return { isValid: false, error: 'Menge muss eine ganze Zahl sein' };
+  }
+  
+  return { isValid: true, value: quantity };
 };
 
 export const sanitizeEmail = (email: string): string => {
@@ -183,10 +301,29 @@ export const formatPrice = (price: number, currency: string = 'EUR'): string => 
   }).format(price);
 };
 
-// URL-Validierung
+// 🔒 SECURITY: Enhanced URL Validation with Security Checks
 export const isValidUrl = (url: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  
   try {
-    new URL(url);
+    const urlObj = new URL(url);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return false;
+    }
+    
+    // Block localhost and internal IPs for security
+    const hostname = urlObj.hostname.toLowerCase();
+    if (hostname === 'localhost' || 
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.') ||
+        hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./)) {
+      return false;
+    }
+    
     return true;
   } catch {
     return false;

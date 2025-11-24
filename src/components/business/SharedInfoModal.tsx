@@ -50,12 +50,6 @@ export const SharedInfoModal: React.FC<SharedInfoModalProps> = ({
           <i className="bi bi-info-circle me-2 text-primary"></i>
           Geteilte Liste
         </h5>
-        <button 
-          type="button" 
-          className="btn-close" 
-          onClick={onClose}
-          aria-label="Close"
-        ></button>
       </div>
       
       <div className="modal-body px-3">

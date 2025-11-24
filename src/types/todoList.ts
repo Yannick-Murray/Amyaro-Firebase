@@ -61,6 +61,8 @@ export interface Item {
   isCompleted: boolean;
   completedBy?: string;
   completedAt?: Timestamp;
+  assignedTo?: string; // Für Geschenkelisten - wem ist das Geschenk zugewiesen
+  notes?: string; // Zusätzliche Notizen
   createdAt: Timestamp;
   updatedAt: Timestamp;
   order: number;
