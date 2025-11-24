@@ -1,7 +1,7 @@
 {
   "name": "amyaro-firebase",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.9.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
