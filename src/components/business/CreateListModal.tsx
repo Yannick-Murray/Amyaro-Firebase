@@ -89,9 +89,8 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
   }, []);
 
   const typeOptions: SelectOption[] = [
-    { value: 'shopping', label: '🛒 Einkaufsliste' },
-    // Temporarily disabled: Gift lists coming soon
-    // { value: 'gift', label: '🎁 Geschenkeliste' }
+    { value: 'shopping', label: '🛜 Einkaufsliste' },
+    { value: 'gift', label: '🎁 Geschenkeliste' }
   ];
 
   return (
@@ -124,9 +123,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                   options={typeOptions}
                   placeholder="Listentyp auswählen"
                 />
-                <div className="form-text text-muted small">
-                  🎁 Geschenkelisten kommen bald verfügbar!
-                </div>
+
               </FormField>
             </div>
 
