@@ -10,9 +10,6 @@ export interface DraggableGiftItemProps {
   item: Item;
   onToggle: (itemId: string, completed: boolean) => void;
   onDelete: (itemId: string) => void;
-  onEdit?: (itemId: string) => void;
-  onDuplicate?: (itemId: string) => void;
-  onMoveToCategory?: (itemId: string) => void;
   disabled?: boolean;
   className?: string;
   assignedUserName?: string; // Name der zugewiesenen Person
@@ -23,9 +20,6 @@ export const DraggableGiftItem: React.FC<DraggableGiftItemProps> = ({
   item,
   onToggle,
   onDelete,
-  onEdit,
-  onDuplicate,
-  onMoveToCategory,
   disabled = false,
   className = '',
   assignedUserName,
