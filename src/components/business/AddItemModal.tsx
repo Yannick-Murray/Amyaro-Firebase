@@ -3,7 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { ItemService } from '../../services/listService';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../ui/Modal';
 import { FormField, Input, Textarea, Select } from '../forms';
-import { sanitizeString } from '../../utils/helpers';
+import { 
+  sanitizeString, 
+  sanitizeUrl, 
+  validateTextInput, 
+  validatePrice, 
+  validateQuantity, 
+  isValidUrl 
+} from '../../utils/helpers';
 import type { Item } from '../../types/todoList';
 
 interface AddItemModalProps {
@@ -44,65 +51,91 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 🔒 SECURITY: Enhanced Input Validation
+    // 🔒 SECURITY: Enhanced Input Validation with XSS Protection
     if (!user) {
       setError('Benutzer ist nicht angemeldet');
       return;
     }
 
-    // Name validation
+    // Name validation with security checks
+    const nameValidation = validateTextInput(formData.name, 200);
+    if (!nameValidation.isValid) {
+      setError(nameValidation.error || 'Ungültiger Name');
+      return;
+    }
+    
     if (!formData.name.trim()) {
       setError('Name ist erforderlich');
       return;
     }
 
-    if (formData.name.trim().length > 200) {
-      setError('Name darf maximal 200 Zeichen haben');
+    // Description validation with security checks
+    if (formData.description.trim()) {
+      const descValidation = validateTextInput(formData.description, 500);
+      if (!descValidation.isValid) {
+        setError(descValidation.error || 'Ungültige Beschreibung');
+        return;
+      }
+    }
+
+    // Quantity validation with enhanced checks
+    const quantityValidation = validateQuantity(formData.quantity);
+    if (!quantityValidation.isValid) {
+      setError(quantityValidation.error || 'Ungültige Menge');
       return;
     }
 
-    // Description validation
-    if (formData.description.trim().length > 500) {
-      setError('Beschreibung darf maximal 500 Zeichen haben');
-      return;
+    // Price validation with enhanced checks
+    if (formData.price.trim()) {
+      const priceValidation = validatePrice(formData.price);
+      if (!priceValidation.isValid) {
+        setError(priceValidation.error || 'Ungültiger Preis');
+        return;
+      }
     }
 
-    // Quantity validation
-    if (formData.quantity < 1 || formData.quantity > 99 || !Number.isInteger(formData.quantity)) {
-      setError('Menge muss eine ganze Zahl zwischen 1 und 99 sein');
-      return;
+    // Notes validation with security checks
+    if (formData.notes.trim()) {
+      const notesValidation = validateTextInput(formData.notes, 1000);
+      if (!notesValidation.isValid) {
+        setError(notesValidation.error || 'Ungültige Notizen');
+        return;
+      }
     }
-
-    // Price validation
-    if (formData.price && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0 || parseFloat(formData.price) > 99999)) {
-      setError('Preis muss eine gültige Zahl zwischen 0 und 99999 sein');
-      return;
-    }
-
-    // Notes validation
-    if (formData.notes.trim().length > 1000) {
-      setError('Notizen dürfen maximal 1000 Zeichen haben');
-      return;
+    
+    // URL validation with security checks
+    if (formData.link && formData.link.trim()) {
+      if (!isValidUrl(formData.link)) {
+        setError('Link muss eine gültige HTTPS/HTTP URL sein (keine lokalen Adressen)');
+        return;
+      }
     }
 
     try {
       setIsLoading(true);
       setError('');
 
+      // 🔒 SECURITY: Sanitize all user inputs before database submission
       const itemData = {
         name: sanitizeString(formData.name),
         description: formData.description.trim() ? sanitizeString(formData.description) : undefined,
-        quantity: formData.quantity,
-        price: formData.price ? parseFloat(formData.price) : undefined,
+        quantity: validateQuantity(formData.quantity).value || 1,
+        price: formData.price.trim() ? validatePrice(formData.price).value : undefined,
         priority: formData.priority,
         categoryId: formData.categoryId || undefined,
-        tags: formData.tags,
+        tags: Array.isArray(formData.tags) ? formData.tags.map(tag => sanitizeString(String(tag))) : [],
         notes: formData.notes.trim() ? sanitizeString(formData.notes) : undefined,
-        link: formData.link.trim() ? formData.link : undefined,
+        link: formData.link && formData.link.trim() ? sanitizeUrl(formData.link) : undefined,
         assignedTo: formData.assignedTo || undefined,
         isCompleted: false,
         order: Date.now() // Simple ordering system
       };
+      
+      // 🔒 SECURITY: Final validation - ensure no empty or invalid data reaches database
+      if (!itemData.name || itemData.name.length === 0) {
+        setError('Name konnte nicht verarbeitet werden - bitte überprüfen Sie Ihre Eingabe');
+        return;
+      }
 
       const itemId = await ItemService.createItem(listId, itemData);
       
