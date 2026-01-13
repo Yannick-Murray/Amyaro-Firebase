@@ -98,10 +98,10 @@ service cloud.firestore {
       allow update: if isValidUser() && (
                        // List owner can update anything
                        isListOwner(resource.data) ||
-                       // Shared users can update limited fields including name
+                       // Shared users can update limited fields including name, isClosed, closedAt
                        (hasListAccess(resource.data) && 
                         request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['itemCount', 'updatedAt', 'name'])) ||
+                          .hasOnly(['itemCount', 'updatedAt', 'name', 'isClosed', 'closedAt'])) ||
                        // Special case: Allow user to add themselves to sharedWith (invitation acceptance)
                        (request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['sharedWith', 'updatedAt']) &&
