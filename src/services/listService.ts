@@ -325,6 +325,122 @@ export class ListService {
       throw error;
     }
   }
+
+  /**
+   * Schließt eine Einkaufsliste ab und löscht alle nicht-abgehakten Items
+   */
+  static async closeList(listId: string): Promise<void> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      // Liste abrufen und prüfen
+      const listDoc = await getDoc(doc(db, this.COLLECTION, listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      
+      // Nur Shopping-Listen können abgeschlossen werden
+      if (listData.type !== 'shopping') {
+        throw new Error('Nur Einkaufslisten können abgeschlossen werden');
+      }
+
+      // Batch für atomare Operation
+      const batch = writeBatch(db);
+
+      // Alle nicht-abgehakten Items löschen
+      const itemsQuery = query(
+        collection(db, 'todoItems'),
+        where('listId', '==', listId),
+        where('isCompleted', '==', false)
+      );
+      
+      const itemsSnapshot = await getDocs(itemsQuery);
+      itemsSnapshot.docs.forEach(itemDoc => {
+        batch.delete(itemDoc.ref);
+      });
+
+      // Liste als geschlossen markieren
+      const listRef = doc(db, this.COLLECTION, listId);
+      batch.update(listRef, {
+        isClosed: true,
+        closedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      await batch.commit();
+      
+      // Item Count aktualisieren
+      await this.updateListItemCount(listId);
+      
+      logger.log(`Liste ${listId} wurde abgeschlossen`);
+    } catch (error) {
+      logger.error('Fehler beim Abschließen der Liste:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Öffnet eine geschlossene Liste wieder und setzt alle Items zurück auf nicht-abgehakt
+   */
+  static async reopenList(listId: string): Promise<void> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      // Liste abrufen und prüfen
+      const listDoc = await getDoc(doc(db, this.COLLECTION, listId));
+      if (!listDoc.exists()) {
+        throw new Error('Liste nicht gefunden');
+      }
+
+      const listData = listDoc.data();
+      
+      if (!listData.isClosed) {
+        throw new Error('Liste ist nicht geschlossen');
+      }
+
+      // Batch für atomare Operation
+      const batch = writeBatch(db);
+
+      // Alle Items wieder auf nicht-abgehakt setzen
+      const itemsQuery = query(
+        collection(db, 'todoItems'),
+        where('listId', '==', listId)
+      );
+      
+      const itemsSnapshot = await getDocs(itemsQuery);
+      itemsSnapshot.docs.forEach(itemDoc => {
+        batch.update(itemDoc.ref, {
+          isCompleted: false,
+          completedBy: null,
+          completedAt: null
+        });
+      });
+
+      // Liste wieder öffnen
+      const listRef = doc(db, this.COLLECTION, listId);
+      batch.update(listRef, {
+        isClosed: false,
+        closedAt: null,
+        updatedAt: serverTimestamp()
+      });
+
+      await batch.commit();
+      
+      // Item Count aktualisieren
+      await this.updateListItemCount(listId);
+      
+      logger.log(`Liste ${listId} wurde wieder geöffnet`);
+    } catch (error) {
+      logger.error('Fehler beim Wiedereröffnen der Liste:', error);
+      throw error;
+    }
+  }
 }
 
 // Category Service

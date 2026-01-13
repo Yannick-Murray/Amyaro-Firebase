@@ -38,6 +38,8 @@ export interface List {
   category?: Category;
   categoryId?: string;
   isPrivate: boolean;
+  isClosed?: boolean; // Liste ist abgeschlossen (nur für shopping lists)
+  closedAt?: Timestamp; // Zeitpunkt des Abschließens
   sharedWith?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;

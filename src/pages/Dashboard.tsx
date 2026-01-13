@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
 import { Button, Toast } from '../components/ui';
-import { ListGrid, CreateListModal, type CreateListData } from '../components/business';
+import { 
+  ListGrid, 
+  CreateListModal, 
+  ClosedListsModal,
+  CloseListConfirmModal,
+  type CreateListData 
+} from '../components/business';
 import { ListService } from '../services/listService';
 import { logger } from '../utils/logger';
 import type { List } from '../types/todoList';
@@ -31,6 +37,14 @@ const Dashboard = () => {
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
+  
+  // Closed Lists Modal
+  const [showClosedListsModal, setShowClosedListsModal] = useState(false);
+  
+  // Close/Reopen Confirm Modal
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
+  const [listToClose, setListToClose] = useState<List | null>(null);
+  const [isReopenMode, setIsReopenMode] = useState(false);
   
   // Toast state
   const [toast, setToast] = useState<{
@@ -88,14 +102,57 @@ const Dashboard = () => {
     }
   };
 
+  const handleListClose = (list: List) => {
+    setListToClose(list);
+    setIsReopenMode(false);
+    setShowCloseConfirmModal(true);
+  };
+
+  const handleListReopen = (list: List) => {
+    setListToClose(list);
+    setIsReopenMode(true);
+    setShowCloseConfirmModal(true);
+  };
+
+  const handleConfirmCloseReopen = async () => {
+    if (!listToClose) return;
+
+    try {
+      if (isReopenMode) {
+        await ListService.reopenList(listToClose.id);
+        showToast(`Liste "${listToClose.name}" wurde wieder geöffnet`, 'success');
+      } else {
+        await ListService.closeList(listToClose.id);
+        showToast(`Liste "${listToClose.name}" wurde abgeschlossen`, 'success');
+      }
+      
+      refreshLists();
+      setShowCloseConfirmModal(false);
+      setListToClose(null);
+    } catch (error) {
+      logger.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
+      showToast(
+        isReopenMode 
+          ? 'Fehler beim Wiedereröffnen der Liste. Bitte versuchen Sie es erneut.'
+          : 'Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.',
+        'error'
+      );
+    }
+  };
+
   const filteredLists = lists.filter(list => {
     if (filter === 'all') return true;
     return list.type === filter;
   });
 
-  const totalLists = lists.length;
-  const shoppingLists = lists.filter(l => l.type === 'shopping').length;
-  const giftLists = lists.filter(l => l.type === 'gift').length;
+  // Nur offene Listen anzeigen (geschlossene werden in separatem Modal angezeigt)
+  const openLists = filteredLists.filter(list => !list.isClosed);
+  const closedLists = lists.filter(list => list.isClosed && list.type === 'shopping');
+
+  const totalLists = lists.filter(l => !l.isClosed).length;
+  const shoppingLists = lists.filter(l => l.type === 'shopping' && !l.isClosed).length;
+  const giftLists = lists.filter(l => l.type === 'gift' && !l.isClosed).length;
+  const closedShoppingLists = closedLists.length;
 
   // Geteilte Listen: Listen die der User erstellt und geteilt hat ODER Listen die mit dem User geteilt wurden
   const sharedLists = lists.filter(list => {
@@ -184,10 +241,12 @@ const Dashboard = () => {
       <div className="row">
         <div className="col-12">
           <ListGrid
-            lists={filteredLists}
+            lists={openLists}
             loading={loading}
             onListClick={handleListClick}
             onListDelete={handleListDelete}
+            onListClose={handleListClose}
+            onListReopen={handleListReopen}
             currentUserId={user?.uid}
           />
         </div>
@@ -226,6 +285,19 @@ const Dashboard = () => {
             <small className="text-muted">Geteilte Listen</small>
           </div>
         </div>
+        <div className="col-6 col-md-3 mb-3">
+          <div 
+            className="card p-2 text-center cursor-pointer hover-shadow"
+            onClick={() => setShowClosedListsModal(true)}
+            style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <i className="bi bi-check-circle text-success mb-1"></i>
+            <h6 className="mb-0">{closedShoppingLists}</h6>
+            <small className="text-muted">Geschlossene Listen</small>
+          </div>
+        </div>
       </div>
 
       {/* Create List Modal */}
@@ -233,6 +305,29 @@ const Dashboard = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateList}
+      />
+      
+      {/* Closed Lists Modal */}
+      <ClosedListsModal
+        isOpen={showClosedListsModal}
+        onClose={() => setShowClosedListsModal(false)}
+        lists={closedLists}
+        onListClick={handleListClick}
+        onListDelete={handleListDelete}
+        onListReopen={handleListReopen}
+        currentUserId={user?.uid}
+      />
+      
+      {/* Close/Reopen Confirm Modal */}
+      <CloseListConfirmModal
+        isOpen={showCloseConfirmModal}
+        onClose={() => {
+          setShowCloseConfirmModal(false);
+          setListToClose(null);
+        }}
+        onConfirm={handleConfirmCloseReopen}
+        listName={listToClose?.name || ''}
+        isReopenMode={isReopenMode}
       />
       
       {/* Toast Notifications */}

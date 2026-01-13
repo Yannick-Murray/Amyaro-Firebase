@@ -5,6 +5,10 @@ export type { ListCardProps } from './ListCard';
 export { ListGrid } from './ListGrid';
 export type { ListGridProps } from './ListGrid';
 
+export { ClosedListsModal } from './ClosedListsModal';
+
+export { CloseListConfirmModal } from './CloseListConfirmModal';
+
 export { CreateListModal } from './CreateListModal';
 export type { CreateListModalProps, CreateListData } from './CreateListModal';
 

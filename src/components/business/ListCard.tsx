@@ -7,6 +7,8 @@ export interface ListCardProps {
   list: List;
   onClick?: (list: List) => void;
   onDelete?: (list: List) => void;
+  onClose?: (list: List) => void;
+  onReopen?: (list: List) => void;
   className?: string;
   currentUserId?: string;
 }
@@ -15,6 +17,8 @@ export const ListCard: React.FC<ListCardProps> = ({
   list,
   onClick,
   onDelete,
+  onClose,
+  onReopen,
   className,
   currentUserId
 }) => {
@@ -23,6 +27,16 @@ export const ListCard: React.FC<ListCardProps> = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation(); // Verhindert onClick der Card
     onDelete?.(list);
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClose?.(list);
+  };
+
+  const handleReopen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onReopen?.(list);
   };
 
   const typeIcon = list.type === 'shopping' ? 'cart3' : 'gift';
@@ -40,6 +54,7 @@ export const ListCard: React.FC<ListCardProps> = ({
       className={cn(
         'h-100 cursor-pointer list-card-hover',
         'hover:shadow-lg hover:border-primary',
+        list.isClosed && 'bg-light opacity-75', // Geschlossene Listen ausgegraut
         className
       )}
       onClick={handleClick}
@@ -52,6 +67,14 @@ export const ListCard: React.FC<ListCardProps> = ({
           <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
             <i className={`bi bi-${typeIcon} text-primary`} />
             <h6 className="mb-0 fw-bold text-truncate">{list.name}</h6>
+            
+            {/* Geschlossen Badge */}
+            {list.isClosed && (
+              <span className="badge bg-success text-white small">
+                <i className="bi bi-check-lg me-1"></i>
+                Abgeschlossen
+              </span>
+            )}
             
             {/* Shared Indicator */}
             {isSharedWithUser && (
@@ -73,6 +96,48 @@ export const ListCard: React.FC<ListCardProps> = ({
               <span className="badge bg-secondary text-white small">
                 {list.category.name}
               </span>
+            )}
+            
+            {/* Close/Reopen Button - nur für Shopping-Listen */}
+            {list.type === 'shopping' && (
+              list.isClosed ? (
+                onReopen && (
+                  <button
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={handleReopen}
+                    title="Liste wiedereröffnen"
+                    style={{ 
+                      width: '32px', 
+                      height: '32px',
+                      padding: '0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <i className="bi bi-arrow-counterclockwise" style={{ fontSize: '14px' }}></i>
+                  </button>
+                )
+              ) : (
+                onClose && (
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={handleClose}
+                    title="Liste abschließen"
+                    style={{ 
+                      width: '32px', 
+                      height: '32px',
+                      padding: '0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white'
+                    }}
+                  >
+                    <i className="bi bi-check-lg" style={{ fontSize: '14px' }}></i>
+                  </button>
+                )
+              )
             )}
             
             {/* Delete Button */}

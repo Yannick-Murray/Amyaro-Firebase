@@ -8,6 +8,8 @@ export interface ListGridProps {
   loading?: boolean;
   onListClick?: (list: List) => void;
   onListDelete?: (list: List) => void;
+  onListClose?: (list: List) => void;
+  onListReopen?: (list: List) => void;
   className?: string;
   currentUserId?: string;
 }
@@ -17,6 +19,8 @@ export const ListGrid: React.FC<ListGridProps> = ({
   loading = false,
   onListClick,
   onListDelete,
+  onListClose,
+  onListReopen,
   className,
   currentUserId
 }) => {
@@ -62,6 +66,8 @@ export const ListGrid: React.FC<ListGridProps> = ({
             list={list}
             onClick={onListClick}
             onDelete={onListDelete}
+            onClose={onListClose}
+            onReopen={onListReopen}
             className="h-100"
             currentUserId={currentUserId}
           />

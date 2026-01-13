@@ -16,6 +16,7 @@ import { SharedInfoModal } from '../components/business/SharedInfoModal';
 import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
 import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal';
 import { EditListModal } from '../components/business/EditListModal';
+import { CloseListConfirmModal } from '../components/business/CloseListConfirmModal';
 import { Modal } from '../components/ui/Modal';
 import { 
   DndContext, 
@@ -53,6 +54,10 @@ const ListDetail = () => {
   const [showListDropdown, setShowListDropdown] = useState(false);
   // Focus mode state
   const [isFocusMode, setIsFocusMode] = useState(false); // Focus Mode State
+  
+  // Close/Reopen Modal state
+  const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
+  const [isReopenMode, setIsReopenMode] = useState(false);
   
   // User names cache for assigned users
   const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
@@ -631,6 +636,39 @@ const ListDetail = () => {
     }
   };
 
+  const handleCloseList = () => {
+    setIsReopenMode(false);
+    setShowCloseConfirmModal(true);
+  };
+
+  const handleReopenList = () => {
+    setIsReopenMode(true);
+    setShowCloseConfirmModal(true);
+  };
+
+  const handleConfirmCloseReopen = async () => {
+    if (!list) return;
+
+    try {
+      if (isReopenMode) {
+        await ListService.reopenList(list.id);
+      } else {
+        await ListService.closeList(list.id);
+      }
+      
+      // Reload list data and refresh lists context
+      await loadListData();
+      refreshLists();
+      setShowCloseConfirmModal(false);
+    } catch (error) {
+      console.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
+      alert(isReopenMode 
+        ? 'Fehler beim Wiedereröffnen der Liste. Bitte versuchen Sie es erneut.'
+        : 'Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.'
+      );
+    }
+  };
+
   const handleMoveCategoryUp = async (categoryId: string) => {
     try {
       const sortedCategories = [...categories].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -906,6 +944,30 @@ const ListDetail = () => {
                     <i className={isSharedWithUser ? "bi bi-info-circle" : "bi bi-share"}></i>
                     <span className="d-none d-sm-inline">{isSharedWithUser ? "Info" : "Teilen"}</span>
                   </button>
+                  
+                  {/* Close/Reopen Button - nur für Shopping-Listen */}
+                  {list.type === 'shopping' && (
+                    list.isClosed ? (
+                      <button
+                        className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                        onClick={handleReopenList}
+                        title="Liste wiedereröffnen"
+                      >
+                        <i className="bi bi-arrow-counterclockwise"></i>
+                        <span className="d-none d-sm-inline">Wiedereröffnen</span>
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-success btn-sm d-flex align-items-center gap-1"
+                        onClick={handleCloseList}
+                        title="Liste abschließen"
+                        style={{ color: 'white' }}
+                      >
+                        <i className="bi bi-check-lg"></i>
+                        <span className="d-none d-sm-inline">Abschließen</span>
+                      </button>
+                    )
+                  )}
                   
                   {/* List Actions Dropdown */}
                   <div className="dropdown position-relative">
@@ -1283,6 +1345,17 @@ const ListDetail = () => {
             onClose={() => setShowEditListModal(false)}
             list={list}
             onListUpdated={handleListUpdated}
+          />
+        )}
+
+        {/* Close/Reopen List Confirm Modal */}
+        {list && (
+          <CloseListConfirmModal
+            isOpen={showCloseConfirmModal}
+            onClose={() => setShowCloseConfirmModal(false)}
+            onConfirm={handleConfirmCloseReopen}
+            listName={list.name}
+            isReopenMode={isReopenMode}
           />
         )}
 
