@@ -31,9 +31,8 @@ export const ClosedListsModal: React.FC<ClosedListsModalProps> = ({
       centered
     >
       <div className="mb-3">
-        <p className="text-muted">
-          Hier sehen Sie alle abgeschlossenen Einkaufslisten. 
-          Klicken Sie auf <i className="bi bi-arrow-counterclockwise text-primary"></i> um eine Liste wieder zu öffnen.
+        <p className="text-muted small">
+          Hier sehen Sie alle abgeschlossenen Einkaufslisten. Klicken Sie auf <i className="bi bi-arrow-counterclockwise text-primary"></i> um eine Liste wieder zu öffnen.
         </p>
       </div>
       

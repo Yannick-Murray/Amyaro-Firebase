@@ -8,6 +8,7 @@ import {
   CreateListModal, 
   ClosedListsModal,
   CloseListConfirmModal,
+  ListPriceModal,
   type CreateListData 
 } from '../components/business';
 import { ListService } from '../services/listService';
@@ -45,6 +46,9 @@ const Dashboard = () => {
   const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
   const [listToClose, setListToClose] = useState<List | null>(null);
   const [isReopenMode, setIsReopenMode] = useState(false);
+  
+  // Price Modal (shown after close confirmation)
+  const [showPriceModal, setShowPriceModal] = useState(false);
   
   // Toast state
   const [toast, setToast] = useState<{
@@ -119,27 +123,41 @@ const Dashboard = () => {
 
     try {
       if (isReopenMode) {
+        // Beim Wiedereröffnen: DIREKT wiedereröffnen ohne Price Modal
         await ListService.reopenList(listToClose.id);
         showToast(`Liste "${listToClose.name}" wurde wieder geöffnet`, 'success');
         
         // Schließe das "Geschlossene Listen" Modal falls offen
         setShowClosedListsModal(false);
+        
+        refreshLists();
+        setShowCloseConfirmModal(false);
+        setListToClose(null);
       } else {
-        await ListService.closeList(listToClose.id);
-        showToast(`Liste "${listToClose.name}" wurde abgeschlossen`, 'success');
+        // Beim Schließen: zeige Price Modal
+        setShowCloseConfirmModal(false);
+        setShowPriceModal(true);
       }
-      
-      refreshLists();
-      setShowCloseConfirmModal(false);
-      setListToClose(null);
     } catch (error) {
       logger.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
-      showToast(
-        isReopenMode 
-          ? 'Fehler beim Wiedereröffnen der Liste. Bitte versuchen Sie es erneut.'
-          : 'Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.',
-        'error'
-      );
+      showToast('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'error');
+    }
+  };
+
+  const handlePriceModalConfirm = async (destination?: string, price?: number) => {
+    if (!listToClose) return;
+
+    try {
+      // Nur beim Schließen (nicht beim Wiedereröffnen)
+      await ListService.closeList(listToClose.id, destination, price);
+      showToast(`Liste "${listToClose.name}" wurde abgeschlossen`, 'success');
+      
+      refreshLists();
+      setShowPriceModal(false);
+      setListToClose(null);
+    } catch (error) {
+      logger.error('Fehler beim Abschließen der Liste:', error);
+      showToast('Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.', 'error');
     }
   };
 
@@ -331,6 +349,16 @@ const Dashboard = () => {
         onConfirm={handleConfirmCloseReopen}
         listName={listToClose?.name || ''}
         isReopenMode={isReopenMode}
+      />
+      
+      {/* Price Modal (shown after confirmation) */}
+      <ListPriceModal
+        isOpen={showPriceModal}
+        onClose={() => {
+          setShowPriceModal(false);
+          setListToClose(null);
+        }}
+        onConfirm={handlePriceModalConfirm}
       />
       
       {/* Toast Notifications */}

@@ -29,6 +29,17 @@ export interface ListShare {
   sharedBy: string;
 }
 
+export interface Shop {
+  id: string;
+  name: string;
+  displayName: string; // z.B. "Aldi Süd", "Lidl"
+  category?: string; // z.B. "Supermarkt", "Discounter"
+  order: number; // Sortierung
+  isActive: boolean; // Für zukünftige Deaktivierung
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface List {
   id: string;
   name: string;
@@ -40,6 +51,8 @@ export interface List {
   isPrivate: boolean;
   isClosed?: boolean; // Liste ist abgeschlossen (nur für shopping lists)
   closedAt?: Timestamp; // Zeitpunkt des Abschließens
+  destination?: string; // Einkaufsort/Shop (z.B. "Aldi Süd")
+  price?: number; // Gesamtpreis der Liste
   sharedWith?: string[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -55,10 +68,11 @@ export interface Item {
   name: string;
   description?: string;
   quantity?: number;
-  price?: number;
+  price?: number; // Einzelpreis des Items (wird später verwendet)
   link?: string;
   categoryId?: string;
   category?: string;
+  destination?: string; // Einkaufsort/Shop wo das Item gekauft wurde
   priority: 'low' | 'medium' | 'high';
   isCompleted: boolean;
   completedBy?: string;

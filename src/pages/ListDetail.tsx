@@ -17,6 +17,7 @@ import { DuplicateItemModal } from '../components/business/DuplicateItemModal';
 import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal';
 import { EditListModal } from '../components/business/EditListModal';
 import { CloseListConfirmModal } from '../components/business/CloseListConfirmModal';
+import { ListPriceModal } from '../components/business/ListPriceModal';
 import { Modal } from '../components/ui/Modal';
 import { 
   DndContext, 
@@ -58,6 +59,9 @@ const ListDetail = () => {
   // Close/Reopen Modal state
   const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
   const [isReopenMode, setIsReopenMode] = useState(false);
+  
+  // Price Modal state
+  const [showPriceModal, setShowPriceModal] = useState(false);
   
   // User names cache for assigned users
   const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
@@ -670,26 +674,38 @@ const ListDetail = () => {
 
     try {
       if (isReopenMode) {
+        // Beim Wiedereröffnen: DIREKT wiedereröffnen ohne Price Modal
         await ListService.reopenList(list.id);
+        
         // Reload list data and refresh lists context
         await loadListData();
         refreshLists();
         setShowCloseConfirmModal(false);
       } else {
-        // Liste schließen
-        await ListService.closeList(list.id);
-        refreshLists();
+        // Beim Schließen: zeige Price Modal
         setShowCloseConfirmModal(false);
-        
-        // Zurück zum Dashboard navigieren
-        navigate('/');
+        setShowPriceModal(true);
       }
     } catch (error) {
-      console.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
-      alert(isReopenMode 
-        ? 'Fehler beim Wiedereröffnen der Liste. Bitte versuchen Sie es erneut.'
-        : 'Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.'
-      );
+      console.error('Fehler beim Vorbereiten der Listen-Operation:', error);
+      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
+  };
+
+  const handlePriceModalConfirm = async (destination?: string, price?: number) => {
+    if (!list) return;
+
+    try {
+      // Nur beim Schließen (nicht beim Wiedereröffnen)
+      await ListService.closeList(list.id, destination, price);
+      refreshLists();
+      setShowPriceModal(false);
+      
+      // Zurück zum Dashboard navigieren
+      navigate('/');
+    } catch (error) {
+      console.error('Fehler beim Abschließen der Liste:', error);
+      alert('Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.');
     }
   };
 
@@ -1055,8 +1071,37 @@ const ListDetail = () => {
               <p className="text-muted mt-2">{list.description}</p>
             )}
 
-            {/* Focus Mode Button - Nur für Shopping-Listen */}
-            {list.type === 'shopping' && (
+            {/* Preis & Destination Anzeige für geschlossene Listen */}
+            {list.isClosed && (list.price !== undefined && list.price !== null || list.destination) && (
+              <div className="card bg-light border-0 mb-3 p-3">
+                <div className="d-flex align-items-center gap-3 flex-wrap">
+                  {list.price !== undefined && list.price !== null && (
+                    <div className="d-flex align-items-center gap-2">
+                      <i className="bi bi-cash-coin text-success"></i>
+                      <span className="fw-semibold">
+                        {list.price.toFixed(2).replace('.', ',')} €
+                      </span>
+                    </div>
+                  )}
+                  {list.destination && (
+                    <div className="d-flex align-items-center gap-2">
+                      <i className="bi bi-shop text-muted"></i>
+                      <span className="text-muted">
+                        {list.destination === 'aldi-nord' ? 'Aldi Nord' :
+                         list.destination === 'aldi-sued' ? 'Aldi Süd' :
+                         list.destination === 'lidl' ? 'Lidl' :
+                         list.destination === 'rewe' ? 'REWE' :
+                         list.destination === 'edeka' ? 'EDEKA' :
+                         list.destination}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Focus Mode Button - Nur für Shopping-Listen und nicht geschlossene Listen */}
+            {list.type === 'shopping' && !list.isClosed && (
               <div className="mb-3">
                 <button
                   className="btn btn-outline-secondary w-100 d-flex align-items-center gap-2"
@@ -1076,21 +1121,36 @@ const ListDetail = () => {
             )}
 
             {/* Input basierend auf Listen-Typ */}
-            {list.type === 'shopping' ? (
-              <QuickAddInput
-                onAddItems={handleAddItems}
-                placeholder="Neue Items"
-              />
-            ) : (
-              /* Gift-Listen: Geschenk hinzufügen Button */
-              <div className="mb-3">
-                <button
-                  className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
-                  onClick={() => setShowAddItemModal(true)}
-                >
-                  <i className="bi bi-gift"></i>
-                  <span className="fw-medium">Geschenk hinzufügen</span>
-                </button>
+            {!list.isClosed && (
+              <>
+                {list.type === 'shopping' ? (
+                  <QuickAddInput
+                    onAddItems={handleAddItems}
+                    placeholder="Neue Items"
+                  />
+                ) : (
+                  /* Gift-Listen: Geschenk hinzufügen Button */
+                  <div className="mb-3">
+                    <button
+                      className="btn btn-success w-100 d-flex align-items-center justify-content-center gap-2"
+                      onClick={() => setShowAddItemModal(true)}
+                    >
+                      <i className="bi bi-gift"></i>
+                      <span className="fw-medium">Geschenk hinzufügen</span>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Read-Only Info Banner für geschlossene Listen */}
+            {list.isClosed && (
+              <div className="alert alert-info mb-3 d-flex align-items-center gap-2">
+                <i className="bi bi-info-circle-fill"></i>
+                <div>
+                  <strong>Diese Liste ist geschlossen</strong>
+                  <p className="mb-0 small">Um Änderungen vorzunehmen, muss die Liste wieder geöffnet werden.</p>
+                </div>
               </div>
             )}
 
@@ -1139,6 +1199,7 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // No reordering for gift lists
                     isListView={isFocusMode}
                     listType={list?.type}
+                    readOnly={list.isClosed}
                     sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
@@ -1171,6 +1232,7 @@ const ListDetail = () => {
                       onReorderItems={() => {}} // No reordering for gift lists
                       isListView={isFocusMode}
                       listType={list?.type}
+                      readOnly={list.isClosed}
                       sharedUsers={getAvailablePersons()}
                       getAssignedUserName={getAssignedUserName}
                       getPurchaserName={getPurchaserName}
@@ -1197,6 +1259,7 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // TODO: Implementierung für Reorder
                     isListView={isFocusMode}
                     listType={list?.type}
+                    readOnly={list.isClosed}
                     sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
@@ -1232,6 +1295,7 @@ const ListDetail = () => {
                       onReorderItems={() => {}} // TODO: Implementierung für Reorder
                       isListView={isFocusMode}
                       listType={list?.type}
+                      readOnly={list.isClosed}
                       sharedUsers={getAvailablePersons()}
                       getAssignedUserName={getAssignedUserName}
                       getPurchaserName={getPurchaserName}
@@ -1262,6 +1326,7 @@ const ListDetail = () => {
                     onReorderItems={() => {}} // Completed items nicht reorderbar
                     isListView={isFocusMode}
                     listType={list?.type}
+                    readOnly={list.isClosed}
                     sharedUsers={getAvailablePersons()}
                     getAssignedUserName={getAssignedUserName}
                     getPurchaserName={getPurchaserName}
@@ -1271,7 +1336,7 @@ const ListDetail = () => {
                 )}
 
                 {/* Add Category Button - nur für Shopping-Listen im normalen Modus */}
-                {!isFocusMode && list?.type !== 'gift' && (
+                {!isFocusMode && list?.type !== 'gift' && !list.isClosed && (
                   <div className="mb-4">
                     <button
                       className="btn btn-outline-primary w-100"
@@ -1380,6 +1445,15 @@ const ListDetail = () => {
             onConfirm={handleConfirmCloseReopen}
             listName={list.name}
             isReopenMode={isReopenMode}
+          />
+        )}
+
+        {/* Price Modal (shown after confirmation) */}
+        {list && (
+          <ListPriceModal
+            isOpen={showPriceModal}
+            onClose={() => setShowPriceModal(false)}
+            onConfirm={handlePriceModalConfirm}
           />
         )}
 

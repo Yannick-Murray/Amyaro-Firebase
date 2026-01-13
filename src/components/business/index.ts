@@ -9,6 +9,8 @@ export { ClosedListsModal } from './ClosedListsModal';
 
 export { CloseListConfirmModal } from './CloseListConfirmModal';
 
+export { ListPriceModal } from './ListPriceModal';
+
 export { CreateListModal } from './CreateListModal';
 export type { CreateListModalProps, CreateListData } from './CreateListModal';
 

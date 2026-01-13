@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
-import type { List, Category, ListType, Item } from '../types/todoList';
+import type { List, Category, ListType, Item, Shop } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
 export class ListService {
@@ -330,7 +330,11 @@ export class ListService {
   /**
    * Schließt eine Einkaufsliste ab und löscht alle nicht-abgehakten Items
    */
-  static async closeList(listId: string): Promise<void> {
+  static async closeList(
+    listId: string, 
+    destination?: string, 
+    price?: number
+  ): Promise<void> {
     try {
       if (!auth.currentUser) {
         throw new Error('Benutzer muss angemeldet sein');
@@ -352,6 +356,23 @@ export class ListService {
       // Batch für atomare Operation
       const batch = writeBatch(db);
 
+      // Wenn destination angegeben, alle abgehakten Items mit destination updaten
+      if (destination) {
+        const completedItemsQuery = query(
+          collection(db, 'todoItems'),
+          where('listId', '==', listId),
+          where('isCompleted', '==', true)
+        );
+        
+        const completedItemsSnapshot = await getDocs(completedItemsQuery);
+        completedItemsSnapshot.docs.forEach(itemDoc => {
+          batch.update(itemDoc.ref, {
+            destination: destination,
+            updatedAt: serverTimestamp()
+          });
+        });
+      }
+
       // Alle nicht-abgehakten Items löschen
       const itemsQuery = query(
         collection(db, 'todoItems'),
@@ -364,13 +385,23 @@ export class ListService {
         batch.delete(itemDoc.ref);
       });
 
-      // Liste als geschlossen markieren
+      // Liste als geschlossen markieren mit optionalen Feldern
       const listRef = doc(db, this.COLLECTION, listId);
-      batch.update(listRef, {
+      const updateData: any = {
         isClosed: true,
         closedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+      
+      if (destination) {
+        updateData.destination = destination;
+      }
+      
+      if (price !== undefined && price !== null) {
+        updateData.price = price;
+      }
+      
+      batch.update(listRef, updateData);
 
       await batch.commit();
       

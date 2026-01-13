@@ -25,6 +25,7 @@ export interface CategorySectionProps {
   onToggleExpanded?: () => void;
   onAddItemsToCategory?: (categoryId: string | null, itemNames: string[]) => Promise<void>;
   disabled?: boolean;
+  readOnly?: boolean; // Liste ist geschlossen und read-only
   isListView?: boolean; // Neue prop für vereinfachte Listview
   listType?: 'shopping' | 'gift'; // Neue prop für Listen-Typ
   sharedUsers?: Array<{id: string, name: string}>; // Für Zuweisung-Namen
@@ -51,6 +52,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   onToggleExpanded: _onToggleExpanded,
   onAddItemsToCategory,
   disabled: _disabled = false,
+  readOnly = false,
   isListView = false,
   listType,
   sharedUsers = [],
@@ -203,7 +205,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {!isListView && (
           <div className="d-flex gap-1">
             {/* Quick Add Button - Green Plus - nur für echte Kategorien, nicht für "Ohne Kategorie" */}
-            {onAddItemsToCategory && category && (
+            {onAddItemsToCategory && category && !readOnly && (
               <button
                 className="btn btn-sm btn-success"
                 onClick={handleStartQuickAdd}
@@ -213,7 +215,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               </button>
             )}
             
-            {category && onDeleteCategory && (
+            {category && onDeleteCategory && !readOnly && (
               <div className="position-relative">
                 <button
                   className="btn btn-sm btn-outline-secondary"
@@ -298,7 +300,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       </div>
 
       {/* Quick Add Input - Inline below category header */}
-      {showQuickAdd && (
+      {showQuickAdd && !readOnly && (
         <div className="mb-3 px-2">
           <div className="d-flex gap-1 align-items-center">
             <input

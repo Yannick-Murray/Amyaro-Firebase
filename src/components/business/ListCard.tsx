@@ -49,6 +49,43 @@ export const ListCard: React.FC<ListCardProps> = ({
   // Prüfe ob der User die Liste erstellt und mit anderen geteilt hat
   const isSharedByUser = currentUserId && list.userId === currentUserId && list.sharedWith && list.sharedWith.length > 0;
 
+  // Preis-Anzeige Logik
+  const formatPrice = (price: number): string => {
+    return price.toFixed(2).replace('.', ',');
+  };
+
+  // Formatiere Shop-Namen für Anzeige
+  const formatShopName = (shopName: string): string => {
+    // Mapping von technischen Namen zu Display-Namen
+    const shopMapping: { [key: string]: string } = {
+      'aldi-nord': 'Aldi Nord',
+      'aldi-sued': 'Aldi Süd',
+      'lidl': 'Lidl'
+    };
+    
+    return shopMapping[shopName] || shopName;
+  };
+
+  // Prüfe ob Liste nach dem Schließen modifiziert wurde
+  const isModifiedAfterClosing = (): boolean => {
+    if (!list.closedAt) return false;
+    
+    const closedAtTime = typeof list.closedAt === 'string' 
+      ? new Date(list.closedAt).getTime()
+      : list.closedAt.toDate().getTime();
+    
+    const updatedAtTime = typeof list.updatedAt === 'string'
+      ? new Date(list.updatedAt).getTime()
+      : list.updatedAt.toDate().getTime();
+    
+    // Wenn updatedAt später ist als closedAt (mit 1 Sekunde Toleranz)
+    return updatedAtTime > closedAtTime + 1000;
+  };
+
+  // Zeige Preis wenn vorhanden (egal ob geschlossen oder wiedereröffnet)
+  const showPriceInfo = list.price !== undefined && list.price !== null;
+  const isApproximate = showPriceInfo && isModifiedAfterClosing();
+
   return (
     <Card
       className={cn(
@@ -188,6 +225,27 @@ export const ListCard: React.FC<ListCardProps> = ({
             <span className="small text-muted">{Math.round(progress)}%</span>
           </div>
         </div>
+
+        {/* Preis & Destination Anzeige */}
+        {showPriceInfo && (
+          <div className="mt-2">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <div className="d-flex align-items-center gap-1">
+                <i className="bi bi-cash-coin text-success small"></i>
+                <span className="small fw-semibold">
+                  {isApproximate && 'Ungefähr '}
+                  {formatPrice(list.price!)} €
+                </span>
+              </div>
+              {list.destination && (
+                <div className="d-flex align-items-center gap-1">
+                  <i className="bi bi-shop text-muted small"></i>
+                  <span className="small text-muted">{formatShopName(list.destination)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {list.sharedWith && list.sharedWith.length > 0 && (
           <div className="mt-2 d-flex align-items-center gap-1">
