@@ -12,7 +12,8 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  writeBatch
+  writeBatch,
+  deleteField
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
@@ -992,17 +993,18 @@ export class ItemService {
       const currentItem = itemDoc.data() as Item;
       const isCompleted = !currentItem.isCompleted;
       
-      const updates: Partial<Item> = {
+      const updates: any = {
         isCompleted,
-        updatedAt: serverTimestamp() as any
+        updatedAt: serverTimestamp()
       };
 
       if (isCompleted) {
         updates.completedBy = auth.currentUser.uid;
-        updates.completedAt = serverTimestamp() as any;
+        updates.completedAt = serverTimestamp();
       } else {
-        updates.completedBy = undefined;
-        updates.completedAt = undefined;
+        // Felder explizit löschen statt auf undefined setzen
+        updates.completedBy = deleteField();
+        updates.completedAt = deleteField();
       }
 
       await updateDoc(itemRef, updates);
@@ -1011,6 +1013,39 @@ export class ItemService {
       await ListService.updateListItemCount(currentItem.listId);
     } catch (error) {
       console.error('Fehler beim Ändern des Completion-Status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reaktiviert ein abgehaktes Item (setzt isCompleted auf false)
+   */
+  static async reactivateItem(itemId: string): Promise<void> {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('Benutzer muss angemeldet sein');
+      }
+
+      const itemRef = doc(db, this.collection, itemId);
+      const itemDoc = await getDoc(itemRef);
+      
+      if (!itemDoc.exists()) {
+        throw new Error('Item nicht gefunden');
+      }
+
+      const currentItem = itemDoc.data() as Item;
+
+      await updateDoc(itemRef, {
+        isCompleted: false,
+        completedBy: deleteField(),
+        completedAt: deleteField(),
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update list item count
+      await ListService.updateListItemCount(currentItem.listId);
+    } catch (error) {
+      console.error('Fehler beim Reaktivieren des Items:', error);
       throw error;
     }
   }

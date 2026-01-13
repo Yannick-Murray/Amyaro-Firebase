@@ -327,9 +327,18 @@ const ListDetail = () => {
     
     newNames.forEach(name => {
       const trimmedName = name.trim();
-      const existingItem = items.find(item => 
+      
+      // Suche zuerst nach aktiven Items (Priorität)
+      let existingItem = items.find(item => 
         item.name.toLowerCase() === trimmedName.toLowerCase() && !item.isCompleted
       );
+      
+      // Wenn kein aktives Item gefunden, suche nach abgehakten Items
+      if (!existingItem) {
+        existingItem = items.find(item => 
+          item.name.toLowerCase() === trimmedName.toLowerCase() && item.isCompleted
+        );
+      }
       
       if (existingItem) {
         duplicates.push({ name: trimmedName, existingItem });
@@ -420,12 +429,22 @@ const ListDetail = () => {
     try {
       // Increase quantity of existing items
       for (const duplicate of duplicates) {
-        const newQuantity = Math.min(9, (duplicate.existingItem.quantity || 1) + 1);
-        await ItemService.updateQuantity(duplicate.existingItem.id, newQuantity);
+        // Wenn das Item abgehakt war, setze Menge auf 1 und reaktiviere
+        if (duplicate.existingItem.isCompleted) {
+          await ItemService.updateQuantity(duplicate.existingItem.id, 1);
+          await ItemService.reactivateItem(duplicate.existingItem.id);
+        } else {
+          // Normale Mengenerhöhung für aktive Items
+          const newQuantity = Math.min(9, (duplicate.existingItem.quantity || 1) + 1);
+          await ItemService.updateQuantity(duplicate.existingItem.id, newQuantity);
+        }
       }
       
       // Create remaining non-duplicate items
       await createNewItems(pendingNewItems);
+      
+      // Reload data to see changes
+      await loadListData();
       
       // Reset state
       setDuplicateItems([]);

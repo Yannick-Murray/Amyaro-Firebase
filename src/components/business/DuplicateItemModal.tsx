@@ -53,21 +53,41 @@ export const DuplicateItemModal: React.FC<DuplicateItemModalProps> = ({
         </p>
 
         <div className="bg-light rounded p-3 mb-4">
-          {duplicates.map((duplicate, index) => (
-            <div key={index} className="d-flex justify-content-between align-items-center mb-2 last:mb-0">
-              <div>
-                <strong>{duplicate.name}</strong>
-                <div className="text-muted small">
-                  Aktuelle Menge: {duplicate.existingItem.quantity || 1}
+          {duplicates.map((duplicate, index) => {
+            // Wenn abgehakt: Menge ist quasi 0, wird auf 1 gesetzt
+            // Wenn aktiv: Normale Mengenerhöhung
+            const isCompleted = duplicate.existingItem.isCompleted;
+            const currentQty = duplicate.existingItem.quantity || 1;
+            const newQty = isCompleted ? 1 : Math.min(9, currentQty + 1);
+            
+            return (
+              <div key={index} className="mb-3 last:mb-0">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="flex-grow-1">
+                    <strong>{duplicate.name}</strong>
+                    <div className="text-muted small">
+                      {isCompleted ? (
+                        <>Abgehakt (Menge: {currentQty})</>
+                      ) : (
+                        <>Aktuelle Menge: {currentQty}</>
+                      )}
+                    </div>
+                    {isCompleted && (
+                      <div className="text-success small">
+                        <i className="bi bi-check-circle me-1"></i>
+                        Wird reaktiviert
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-end">
+                    <span className="badge bg-secondary">
+                      {isCompleted ? `→ ${newQty}` : `+1 → ${newQty}`}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="text-end">
-                <span className="badge bg-secondary">
-                  +1 → {(duplicate.existingItem.quantity || 1) + 1}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <p className="text-muted mb-0">
