@@ -121,6 +121,9 @@ const Dashboard = () => {
       if (isReopenMode) {
         await ListService.reopenList(listToClose.id);
         showToast(`Liste "${listToClose.name}" wurde wieder geöffnet`, 'success');
+        
+        // Schließe das "Geschlossene Listen" Modal falls offen
+        setShowClosedListsModal(false);
       } else {
         await ListService.closeList(listToClose.id);
         showToast(`Liste "${listToClose.name}" wurde abgeschlossen`, 'success');

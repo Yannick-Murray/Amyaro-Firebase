@@ -652,14 +652,19 @@ const ListDetail = () => {
     try {
       if (isReopenMode) {
         await ListService.reopenList(list.id);
+        // Reload list data and refresh lists context
+        await loadListData();
+        refreshLists();
+        setShowCloseConfirmModal(false);
       } else {
+        // Liste schließen
         await ListService.closeList(list.id);
+        refreshLists();
+        setShowCloseConfirmModal(false);
+        
+        // Zurück zum Dashboard navigieren
+        navigate('/');
       }
-      
-      // Reload list data and refresh lists context
-      await loadListData();
-      refreshLists();
-      setShowCloseConfirmModal(false);
     } catch (error) {
       console.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
       alert(isReopenMode 
