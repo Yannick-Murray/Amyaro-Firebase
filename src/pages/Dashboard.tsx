@@ -217,7 +217,7 @@ const Dashboard = () => {
       {/* Filter - direkt nach Header */}
       <div className="row mb-4">
         <div className="col-12">
-          <div className="btn-group" role="group">
+          <div className="btn-group w-100 d-none d-md-flex" role="group">
             <input
               type="radio"
               className="btn-check"
@@ -263,6 +263,57 @@ const Dashboard = () => {
               onChange={() => setFilter('closed')}
             />
             <label className="btn btn-outline-primary" htmlFor="filter-closed">
+              ✓ Geschlossene ({closedListsCount})
+            </label>
+          </div>
+
+          {/* Mobile: Buttons vertical */}
+          <div className="d-md-none d-grid gap-2">
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilterMobile"
+              id="filter-all-mobile"
+              checked={filter === 'all'}
+              onChange={() => setFilter('all')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-all-mobile">
+              Alle ({totalLists})
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilterMobile"
+              id="filter-shopping-mobile"
+              checked={filter === 'shopping'}
+              onChange={() => setFilter('shopping')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-shopping-mobile">
+              🛒 Einkaufslisten ({shoppingLists})
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilterMobile"
+              id="filter-gift-mobile"
+              checked={filter === 'gift'}
+              onChange={() => setFilter('gift')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-gift-mobile">
+              🎁 Geschenkelisten ({giftLists})
+            </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilterMobile"
+              id="filter-closed-mobile"
+              checked={filter === 'closed'}
+              onChange={() => setFilter('closed')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-closed-mobile">
               ✓ Geschlossene ({closedListsCount})
             </label>
           </div>
