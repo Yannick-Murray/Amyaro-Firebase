@@ -100,101 +100,108 @@ export const ListCard: React.FC<ListCardProps> = ({
       }}
     >
       <div className="card-header pb-2">
-        <div className="d-flex align-items-center justify-content-between">
-          <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+        <div className="d-flex flex-column gap-2">
+          {/* Erste Zeile: Typ Icon + Name */}
+          <div className="d-flex align-items-center gap-2 min-w-0">
             <i className={`bi bi-${typeIcon} text-primary`} />
-            <h6 className="mb-0 fw-bold text-truncate">{list.name}</h6>
-            
-            {/* Geschlossen Badge */}
-            {list.isClosed && (
-              <span className="badge bg-success text-white small">
-                <i className="bi bi-check-lg me-1"></i>
-                Abgeschlossen
-              </span>
-            )}
-            
-            {/* Shared Indicator */}
-            {isSharedWithUser && (
-              <div className="d-flex align-items-center">
-                <i className="bi bi-person-check text-info me-1" title="Mit Ihnen geteilt"></i>
-                <small className="text-info">Geteilt</small>
-              </div>
-            )}
-            {isSharedByUser && (
-              <div className="d-flex align-items-center">
-                <i className="bi bi-share text-success me-1" title="Von Ihnen geteilt"></i>
-                <small className="text-success">{list.sharedWith?.length}</small>
-              </div>
-            )}
+            <h6 className="mb-0 fw-bold text-truncate flex-grow-1">{list.name}</h6>
           </div>
-          
-          <div className="d-flex align-items-center gap-2 flex-shrink-0">
-            {list.category && (
-              <span className="badge bg-secondary text-white small">
-                {list.category.name}
-              </span>
-            )}
+
+          {/* Zweite Zeile: Badges und Buttons */}
+          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              {/* Geschlossen Badge */}
+              {list.isClosed && (
+                <span className="badge bg-success text-white small">
+                  <i className="bi bi-check-lg me-1"></i>
+                  Abgeschlossen
+                </span>
+              )}
+              
+              {/* Category Badge */}
+              {list.category && (
+                <span className="badge bg-secondary text-white small">
+                  {list.category.name}
+                </span>
+              )}
+              
+              {/* Shared Indicator */}
+              {isSharedWithUser && (
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-person-check text-info me-1" title="Mit Ihnen geteilt"></i>
+                  <small className="text-info">Geteilt</small>
+                </div>
+              )}
+              {isSharedByUser && (
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-share text-success me-1" title="Von Ihnen geteilt"></i>
+                  <small className="text-success">{list.sharedWith?.length}</small>
+                </div>
+              )}
+            </div>
             
-            {/* Close/Reopen Button - nur für Shopping-Listen */}
-            {list.type === 'shopping' && (
-              list.isClosed ? (
-                onReopen && (
-                  <button
-                    className="btn btn-outline-primary btn-sm"
-                    onClick={handleReopen}
-                    title="Liste wiedereröffnen"
-                    style={{ 
-                      width: '32px', 
-                      height: '32px',
-                      padding: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <i className="bi bi-arrow-counterclockwise" style={{ fontSize: '14px' }}></i>
-                  </button>
+            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+              {/* Close/Reopen Button - nur für Shopping-Listen */}
+              {list.type === 'shopping' && (
+                list.isClosed ? (
+                  onReopen && (
+                    <button
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={handleReopen}
+                      title="Liste wiedereröffnen"
+                      style={{ 
+                        width: '32px', 
+                        height: '32px',
+                        padding: '0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <i className="bi bi-arrow-counterclockwise" style={{ fontSize: '14px' }}></i>
+                    </button>
+                  )
+                ) : (
+                  onClose && (
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={handleClose}
+                      title="Liste abschließen"
+                      style={{ 
+                        width: '32px', 
+                        height: '32px',
+                        padding: '0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white'
+                      }}
+                    >
+                      <i className="bi bi-check-lg" style={{ fontSize: '14px' }}></i>
+                    </button>
+                  )
                 )
-              ) : (
-                onClose && (
-                  <button
-                    className="btn btn-success btn-sm"
-                    onClick={handleClose}
-                    title="Liste abschließen"
-                    style={{ 
-                      width: '32px', 
-                      height: '32px',
-                      padding: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white'
-                    }}
-                  >
-                    <i className="bi bi-check-lg" style={{ fontSize: '14px' }}></i>
-                  </button>
-                )
-              )
-            )}
-            
-            {/* Delete Button */}
-            {onDelete && (
-              <button
-                className="btn btn-outline-danger btn-sm delete-btn"
-                onClick={handleDelete}
-                title="Liste löschen"
-                style={{ 
-                  width: '32px', 
-                  height: '32px',
-                  padding: '0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <i className="bi bi-trash" style={{ fontSize: '14px' }}></i>
-              </button>
-            )}
+              )}
+              
+              {/* Delete Button */}
+              {onDelete && (
+                <button
+                  className="btn btn-outline-danger btn-sm delete-btn"
+                  onClick={handleDelete}
+                  title="Liste löschen"
+                  style={{ 
+                    width: '32px', 
+                    height: '32px',
+                    padding: '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <i className="bi bi-trash" style={{ fontSize: '14px' }}></i>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
