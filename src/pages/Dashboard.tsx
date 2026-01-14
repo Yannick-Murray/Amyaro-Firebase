@@ -37,7 +37,7 @@ const Dashboard = () => {
   }
   
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'shopping' | 'gift'>('all');
+  const [filter, setFilter] = useState<'all' | 'shopping' | 'gift' | 'closed'>('all');
   
   // Closed Lists Modal
   const [showClosedListsModal, setShowClosedListsModal] = useState(false);
@@ -162,18 +162,17 @@ const Dashboard = () => {
   };
 
   const filteredLists = lists.filter(list => {
-    if (filter === 'all') return true;
-    return list.type === filter;
+    if (filter === 'all') return !list.isClosed; // Alle offenen Listen
+    if (filter === 'closed') return list.isClosed; // Nur geschlossene Listen
+    return list.type === filter && !list.isClosed; // Nach Typ filtern (nur offene)
   });
 
-  // Nur offene Listen anzeigen (geschlossene werden in separatem Modal angezeigt)
-  const openLists = filteredLists.filter(list => !list.isClosed);
   const closedLists = lists.filter(list => list.isClosed && list.type === 'shopping');
 
   const totalLists = lists.filter(l => !l.isClosed).length;
   const shoppingLists = lists.filter(l => l.type === 'shopping' && !l.isClosed).length;
   const giftLists = lists.filter(l => l.type === 'gift' && !l.isClosed).length;
-  const closedShoppingLists = closedLists.length;
+  const closedListsCount = lists.filter(l => l.isClosed).length;
 
   // Geteilte Listen: Listen die der User erstellt und geteilt hat ODER Listen die mit dem User geteilt wurden
   const sharedLists = lists.filter(list => {
@@ -254,6 +253,18 @@ const Dashboard = () => {
             <label className="btn btn-outline-primary" htmlFor="filter-gift">
               🎁 Geschenkelisten ({giftLists})
             </label>
+
+            <input
+              type="radio"
+              className="btn-check"
+              name="listFilter"
+              id="filter-closed"
+              checked={filter === 'closed'}
+              onChange={() => setFilter('closed')}
+            />
+            <label className="btn btn-outline-primary" htmlFor="filter-closed">
+              ✓ Geschlossene ({closedListsCount})
+            </label>
           </div>
         </div>
       </div>
@@ -262,7 +273,7 @@ const Dashboard = () => {
       <div className="row">
         <div className="col-12">
           <ListGrid
-            lists={openLists}
+            lists={filteredLists}
             loading={loading}
             onListClick={handleListClick}
             onListDelete={handleListDelete}
@@ -309,13 +320,13 @@ const Dashboard = () => {
         <div className="col-6 col-md-3 mb-3">
           <div 
             className="card p-2 text-center cursor-pointer hover-shadow"
-            onClick={() => setShowClosedListsModal(true)}
+            onClick={() => setFilter('closed')}
             style={{ cursor: 'pointer', transition: 'all 0.2s' }}
             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
           >
             <i className="bi bi-check-circle text-success mb-1"></i>
-            <h6 className="mb-0">{closedShoppingLists}</h6>
+            <h6 className="mb-0">{closedListsCount}</h6>
             <small className="text-muted">Geschlossene Listen</small>
           </div>
         </div>
