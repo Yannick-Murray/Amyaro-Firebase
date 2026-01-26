@@ -8,6 +8,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import ListDetail from './pages/ListDetail';
 import Profile from './pages/Profile';
+import Statistics from './pages/Statistics';
 import AuthAction from './pages/AuthAction';
 import TermsOfService from './pages/TermsOfService';
 import Impressum from './pages/Impressum';
@@ -64,6 +65,14 @@ const AppContent = () => {
           <ProtectedRoute>
             <Layout>
               <Profile />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/statistics" element={
+          <ProtectedRoute>
+            <Layout>
+              <Statistics />
             </Layout>
           </ProtectedRoute>
         } />

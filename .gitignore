@@ -32,3 +32,4 @@ firestore.rules
 *.njsproj
 *.sln
 *.sw?
+JUNIOR_DEVELOPER_GUIDE.md

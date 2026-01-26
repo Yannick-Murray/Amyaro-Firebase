@@ -1,36 +1,66 @@
 # 🎓 Junior Developer Guide - Amyaro Firebase
 
 > **Eine komplette Einführung in das Amyaro Firebase Projekt für Junior-Entwickler**
+> 
+> **Version:** 2.0 | **Stand:** Januar 2026 | **Zielgruppe:** Junior Developer & Praktikanten
 
 ## 📋 Inhaltsverzeichnis
 
 1. [Was ist Amyaro?](#was-ist-amyaro)
 2. [Technologie-Stack verstehen](#technologie-stack-verstehen)
 3. [Projekt-Struktur](#projekt-struktur)
-4. [Wichtige Konzepte](#wichtige-konzepte)
-5. [Code-Aufbau verstehen](#code-aufbau-verstehen)
-6. [Firebase Integration](#firebase-integration)
-7. [React Patterns in diesem Projekt](#react-patterns-in-diesem-projekt)
-8. [Häufige Entwickler-Aufgaben](#häufige-entwickler-aufgaben)
+4. [Neue Features & Konzepte](#neue-features--konzepte)
+5. [Wichtige Konzepte](#wichtige-konzepte)
+6. [Code-Aufbau verstehen](#code-aufbau-verstehen)
+7. [Firebase Integration](#firebase-integration)
+8. [React Patterns in diesem Projekt](#react-patterns-in-diesem-projekt)
+9. [Listen-Sharing & Collaboration](#listen-sharing--collaboration)
+10. [Price Tracking System](#price-tracking-system)
+11. [Häufige Entwickler-Aufgaben](#häufige-entwickler-aufgaben)
+12. [Best Practices & Code Style](#best-practices--code-style)
+13. [Testing & Debugging](#testing--debugging)
 
 ---
 
 ## 🎯 Was ist Amyaro?
 
-**Amyaro** ist eine moderne Web-Anwendung für **Einkaufslisten und Geschenkelisten** mit folgenden Features:
+**Amyaro** ist eine moderne, kollaborative Web-Anwendung für **Einkaufslisten und Geschenkelisten** mit erweiterten Features für Haushaltsverwaltung und Preisanalyse.
 
 ### Hauptfunktionen:
-- 📝 **Einkaufslisten erstellen** und verwalten
-- 🎁 **Geschenkelisten** für besondere Anlässe
-- 👥 **Listen teilen** mit Familie und Freunden
-- 📱 **Mobile-optimiert** für Smartphone-Nutzung
-- ⚡ **Real-time Updates** - Änderungen sofort sichtbar
-- 🗂️ **Kategorien** für bessere Organisation
+
+#### 📝 Listen-Management
+- **Einkaufslisten** mit intelligenter Kategorisierung
+- **Geschenkelisten** für Geburtstage, Weihnachten, etc.
+- **Drag & Drop** für intuitive Organisation
+- **Kategorien** für bessere Strukturierung
+- **Geschlossene Listen** zur Archivierung
+
+#### 👥 Collaboration Features
+- **Listen teilen** mit Familie und Freunden
+- **Einladungssystem** via E-Mail
+- **Echtzeit-Synchronisation** zwischen Nutzern
+- **Permissions-System** (Lese-/Schreibrechte)
+- **Multi-User Assignments** für Items
+
+#### 💰 Price Tracking (NEU!)
+- **Preiserfassung** beim Abschließen von Listen
+- **Shop-Verwaltung** (Aldi, REWE, EDEKA, etc.)
+- **Preisvergleiche** zwischen Läden
+- **Budget-Tracking** für geschlossene Listen
+- **"Ungefähr"-Indikator** bei nachträglichen Änderungen
+
+#### 📱 Mobile-First Design
+- **Responsive Design** für alle Bildschirmgrößen
+- **Touch-optimiert** für Smartphones
+- **Swipe-Gesten** für schnelle Aktionen
+- **Progressive Web App** (PWA-Ready)
 
 ### Warum ist es besonders?
-- **Offline-fähig** - funktioniert auch ohne Internet
-- **Kollaborativ** - mehrere Personen können gleichzeitig bearbeiten
-- **Intuitive Bedienung** - auch für nicht-technikaffine Nutzer
+- ✅ **Offline-fähig** - funktioniert auch ohne Internet
+- ✅ **Kollaborativ** - mehrere Personen gleichzeitig
+- ✅ **Intuitive Bedienung** - auch für Nicht-Techies
+- ✅ **Kostenlos** - keine Subscriptions oder In-App-Käufe
+- ✅ **Datenschutz** - eigene Firebase-Instanz, keine Drittanbieter
 
 ---
 
@@ -39,32 +69,56 @@
 ### Frontend (Das was der User sieht):
 ```
 React 18 + TypeScript
-├── Vite (Build-Tool)
+├── Vite (Build-Tool, schneller als Webpack)
 ├── Bootstrap 5 (CSS Framework)
-├── React Router (Navigation)
-└── DnD-Kit (Drag & Drop)
+├── React Router v6 (Navigation zwischen Seiten)
+├── @dnd-kit (Drag & Drop für Kategorien/Items)
+└── Logger Utility (Custom Debug-System)
 ```
 
 ### Backend & Datenbank:
 ```
 Firebase (Google's Backend-as-a-Service)
-├── Authentication (Benutzer-Anmeldung)
-├── Firestore (NoSQL Datenbank)
-├── Hosting (Web-Server)
-└── Security Rules (Zugriffskontrolle)
+├── Authentication (Email/Password + Email-Verification)
+├── Firestore (NoSQL Real-time Database)
+├── Hosting (CDN + Web-Server)
+├── Security Rules (Zugriffssteuerung)
+└── Composite Indexes (Performance-Optimierung)
+```
+
+### Development Tools:
+```
+Development Environment
+├── ESLint (Code-Qualität)
+├── TypeScript (Type Safety)
+├── Vite Dev Server (Hot Module Replacement)
+└── Git (Version Control)
 ```
 
 ### Warum diese Technologien?
 
 **React + TypeScript**: 
-- React = Moderne UI-Bibliothek
-- TypeScript = JavaScript mit Typen (weniger Bugs!)
+- React = Moderne UI-Bibliothek mit komponentenbasiertem Ansatz
+- TypeScript = JavaScript mit Typen → weniger Bugs, bessere IDE-Unterstützung
+- Große Community, viele Libraries verfügbar
 
 **Firebase**:
-- Kein eigener Server nötig
-- Real-time Database
-- Automatische Skalierung
-- Integrierte Benutzer-Verwaltung
+- ✅ Kein eigener Server nötig
+- ✅ Real-time Database (Änderungen sofort bei allen Nutzern)
+- ✅ Automatische Skalierung
+- ✅ Integrierte Benutzer-Verwaltung
+- ✅ Kostenloser Plan für kleine Projekte
+
+**Bootstrap 5**:
+- ✅ Mobile-First Design System
+- ✅ Vorgefertigte Komponenten (Buttons, Cards, Modals)
+- ✅ Responsive Grid-System
+- ✅ Keine jQuery-Abhängigkeit mehr (im Gegensatz zu Bootstrap 4)
+
+**Vite**:
+- ✅ Extrem schneller Dev-Server (<1s Start)
+- ✅ Hot Module Replacement (Code-Änderungen sofort sichtbar)
+- ✅ Optimierte Production-Builds
 
 ---
 
@@ -73,31 +127,273 @@ Firebase (Google's Backend-as-a-Service)
 ```
 Amyaro-Firebase/
 │
-├── public/                 # Statische Dateien
-│   └── index.html         # HTML-Template
+├── public/                    # Statische Dateien (direkt ausgeliefert)
+│   ├── favicon.svg           # Browser-Icon
+│   └── vite.svg              # Vite-Logo
 │
-├── src/                   # Haupt-Quellcode
-│   ├── components/        # Wiederverwendbare UI-Teile
-│   │   ├── ui/           # Basis-Komponenten (Button, Card, etc.)
-│   │   ├── business/     # Geschäfts-Komponenten (ListCard, etc.)
-│   │   ├── Auth/         # Anmeldung-bezogene Komponenten
-│   │   └── Layout/       # Seiten-Layout Komponenten
+├── src/                      # Haupt-Quellcode (TypeScript/React)
 │   │
-│   ├── pages/            # Ganze Seiten/Views
-│   │   ├── Dashboard.tsx # Hauptseite (Listen-Übersicht)
-│   │   ├── ListDetail.tsx# Einzelne Liste bearbeiten
-│   │   └── Profile.tsx   # Benutzer-Profil
+│   ├── components/           # Wiederverwendbare UI-Komponenten
+│   │   ├── ui/              # Basis-Komponenten (Atoms)
+│   │   │   ├── Button.tsx           # Wiederverwendbarer Button
+│   │   │   ├── Card.tsx             # Card-Layout
+│   │   │   ├── Modal.tsx            # Modal-Dialog Wrapper
+│   │   │   ├── Toast.tsx            # Benachrichtigungen
+│   │   │   ├── Badge.tsx            # Status-Badges
+│   │   │   ├── ContextMenu.tsx      # Rechtsklick-Menü
+│   │   │   ├── SwipeableItem.tsx    # Mobile Swipe-Gesten
+│   │   │   └── UserDisplay.tsx      # User-Avatar-Anzeige
+│   │   │
+│   │   ├── business/        # Business-Logik Komponenten (Molecules/Organisms)
+│   │   │   ├── ListCard.tsx              # Listen-Karte (Dashboard)
+│   │   │   ├── ListGrid.tsx              # Grid-Layout für Listen
+│   │   │   ├── CategorySection.tsx       # Kategorie mit Items
+│   │   │   ├── DraggableItem.tsx         # Desktop Drag & Drop Item
+│   │   │   ├── MobileItem.tsx            # Mobile-optimiertes Item
+│   │   │   ├── QuickAddInput.tsx         # Schnell-Eingabe für Items
+│   │   │   ├── QuantityEditor.tsx        # Mengen-Auswahl
+│   │   │   ├── CreateListModal.tsx       # Neue Liste erstellen
+│   │   │   ├── CreateCategoryModal.tsx   # Neue Kategorie
+│   │   │   ├── EditListModal.tsx         # Liste bearbeiten
+│   │   │   ├── ShareListModal.tsx        # Listen teilen (NEU!)
+│   │   │   ├── InvitationsBanner.tsx     # Einladungen anzeigen (NEU!)
+│   │   │   ├── InvitationsModal.tsx      # Einladungen verwalten (NEU!)
+│   │   │   ├── SharedInfoModal.tsx       # Sharing-Info anzeigen (NEU!)
+│   │   │   ├── ListPriceModal.tsx        # Preis erfassen (NEU!)
+│   │   │   ├── CloseListConfirmModal.tsx # Liste schließen bestätigen
+│   │   │   ├── ClosedListsModal.tsx      # Archivierte Listen
+│   │   │   ├── ProfileEditModal.tsx      # Profil bearbeiten
+│   │   │   ├── DeleteAccountModal.tsx    # Account löschen
+│   │   │   └── DuplicateItemModal.tsx    # Item duplizieren
+│   │   │
+│   │   ├── Auth/            # Authentication-Komponenten
+│   │   │   ├── Login.tsx                      # Login-Formular
+│   │   │   ├── Register.tsx                   # Registrierung
+│   │   │   ├── PasswordReset.tsx              # Passwort vergessen
+│   │   │   ├── ProtectedRoute.tsx             # Route-Guard
+│   │   │   ├── AuthWrapper.tsx                # Auth-State-Wrapper
+│   │   │   ├── EmailVerificationBanner.tsx    # Email bestätigen (NEU!)
+│   │   │   ├── EmailVerificationRequired.tsx  # Email-Pflicht (NEU!)
+│   │   │   └── DisplayNameRequiredModal.tsx   # Name-Pflicht (NEU!)
+│   │   │
+│   │   ├── Layout/          # Layout-Komponenten
+│   │   │   ├── Layout.tsx   # Haupt-Layout (Header + Content)
+│   │   │   └── Loading.tsx  # Loading-Spinner
+│   │   │
+│   │   └── forms/           # Formular-Komponenten (NEU!)
+│   │       ├── Input.tsx    # Text-Input mit Validation
+│   │       ├── Textarea.tsx # Mehrzeilige Textfelder
+│   │       ├── Select.tsx   # Dropdown-Auswahl
+│   │       ├── Checkbox.tsx # Checkbox-Input
+│   │       └── FormField.tsx# Wrapper für Labels/Errors
 │   │
-│   ├── context/          # React Context (globaler Zustand)
-│   │   ├── AuthContext.tsx    # Benutzer-Zustand
-│   │   └── ListsContext.tsx   # Listen-Zustand
+│   ├── pages/               # Ganze Seiten/Views (Pages/Templates)
+│   │   ├── Dashboard.tsx    # Hauptseite (Listen-Übersicht)
+│   │   ├── ListDetail.tsx   # Einzelne Liste bearbeiten
+│   │   ├── Profile.tsx      # Benutzer-Profil
+│   │   ├── AuthAction.tsx   # Email-Verification Handler (NEU!)
+│   │   ├── Impressum.tsx    # Impressum/Datenschutz
+│   │   └── TermsOfService.tsx # AGB (NEU!)
 │   │
-│   ├── services/         # API-Calls und Business-Logic
-│   │   ├── listService.ts     # Listen-Operationen
-│   │   └── itemService.ts     # Item-Operationen
+│   ├── context/             # React Context (Globaler State)
+│   │   ├── AuthContext.tsx  # Benutzer-Zustand (Login/Logout)
+│   │   └── ListsContext.tsx # Listen-Zustand (CRUD + Real-time)
 │   │
-│   ├── types/            # TypeScript Typ-Definitionen
-│   │   ├── index.ts      # Allgemeine Typen
+│   ├── services/            # API-Calls und Business-Logic
+│   │   ├── listService.ts   # Listen-Operationen (CRUD + Close/Reopen)
+│   │   ├── itemService.ts   # Item-Operationen (CRUD + Toggle)
+│   │   ├── userService.ts   # User-Profil-Verwaltung (NEU!)
+│   │   ├── shopService.ts   # Shop-Verwaltung (NEU!)
+│   │   └── invitationService.ts # Einladungs-System (NEU!)
+│   │
+│   ├── hooks/               # Custom React Hooks (NEU!)
+│   │   ├── useInvitations.ts # Einladungen verwalten
+│   │   └── useLongPress.ts   # Long-Press-Gesten (Mobile)
+│   │
+│   ├── types/               # TypeScript Typ-Definitionen
+│   │   ├── index.ts         # Allgemeine Typen (User, Share, Invitation)
+│   │   └── todoList.ts      # Listen-spezifische Typen (List, Item, Category, Shop)
+│   │
+│   ├── utils/               # Hilfsfunktionen
+│   │   ├── helpers.ts       # Allgemeine Helfer
+│   │   ├── cn.ts            # ClassNames-Utility (TailwindCSS-like)
+│   │   ├── logger.ts        # Debug-Logger (NEU!)
+│   │   └── touchUtils.ts    # Touch/Swipe-Gesten (NEU!)
+│   │
+│   ├── config/              # Konfiguration
+│   │   └── firebase.ts      # Firebase Setup & Initialisierung
+│   │
+│   ├── App.tsx              # Haupt-App Komponente (Router-Config)
+│   ├── App.css              # App-spezifische Styles
+│   ├── main.tsx             # React App Einsprungspunkt (ReactDOM.render)
+│   └── index.css            # Globale Styles & Bootstrap-Overrides
+│
+├── firestore.rules          # Firebase Security Rules (Server-seitig!)
+├── firestore.indexes.json   # Composite Indexes (Performance)
+├── firebase.json            # Firebase Project Config
+├── package.json             # NPM Dependencies & Scripts
+├── tsconfig.json            # TypeScript Konfiguration
+├── tsconfig.app.json        # TypeScript App-Config
+├── tsconfig.node.json       # TypeScript Node-Config
+├── vite.config.ts           # Vite Build-Tool Konfiguration
+├── eslint.config.js         # ESLint Code-Quality-Regeln
+├── index.html               # HTML Entry Point
+├── README.md                # Projekt-Übersicht
+├── SECURITY.md              # Security-Policy & Vulnerability-Reporting
+├── JUNIOR_DEVELOPER_GUIDE.md # Diese Datei!
+└── SHOPS_INITIALIZATION.md  # Anleitung: Shops in Firestore anlegen (NEU!)
+```
+
+### 🔍 Wie finde ich was?
+
+| Was möchtest du tun? | Wo findest du es? |
+|----------------------|-------------------|
+| **Neue Seite hinzufügen** | `src/pages/` + Route in `App.tsx` |
+| **UI-Komponente ändern** | `src/components/ui/` (Basis) oder `src/components/business/` (komplex) |
+| **Datenbank-Logik** | `src/services/` |
+| **Globale Zustände** | `src/context/` |
+| **Styling ändern** | `src/index.css` oder Bootstrap-Klassen in Components |
+| **Firebase Rules** | `firestore.rules` (Achtung: Server-seitig!) |
+| **TypeScript-Typen** | `src/types/` |
+| **Neue Dependency** | `package.json` (via `npm install`) |
+
+---
+
+## 🆕 Neue Features & Konzepte
+
+### 1. **Listen-Sharing & Collaboration**
+
+**Was ist neu?**
+- Listen können mit anderen Nutzern geteilt werden
+- E-Mail-basiertes Einladungssystem
+- Read/Write Permissions
+- Multi-User Item-Assignments
+- Real-time Sync zwischen Nutzern
+
+**Technische Umsetzung:**
+```typescript
+// InvitationService - src/services/invitationService.ts
+class InvitationService {
+  // Einladung senden
+  static async sendInvitation(listId, listName, fromUserId, fromUserName, toEmail, permission)
+  
+  // Einladung annehmen
+  static async acceptInvitation(invitationId, userId)
+  
+  // Einladung ablehnen
+  static async declineInvitation(invitationId)
+  
+  // Limit: Max 4 geteilte User pro Liste
+}
+```
+
+**Komponenten:**
+- `ShareListModal.tsx` - Liste teilen
+- `InvitationsBanner.tsx` - Benachrichtigung über neue Einladungen
+- `InvitationsModal.tsx` - Einladungen verwalten
+- `SharedInfoModal.tsx` - Info über geteilte Liste
+
+### 2. **Price Tracking System**
+
+**Was ist neu?**
+- Preiserfassung beim Abschließen von Listen
+- Shop-Auswahl (Aldi, REWE, EDEKA, etc.)
+- "Ungefähr"-Indikator bei nachträglichen Änderungen
+- Geschlossene Listen = Archiv mit Preis-Historie
+
+**Datenmodell:**
+```typescript
+interface List {
+  // ... bestehende Felder
+  isClosed?: boolean;      // Liste abgeschlossen?
+  closedAt?: Timestamp;    // Wann geschlossen?
+  destination?: string;    // Shop (z.B. "Aldi Nord")
+  price?: number;          // Gesamtpreis in €
+}
+
+interface Shop {
+  id: string;
+  name: string;            // Technischer Name (z.B. "aldi-nord")
+  displayName: string;     // Anzeige-Name (z.B. "Aldi Nord")
+  category?: string;       // z.B. "Discounter"
+  order: number;           // Sortierung
+  isActive: boolean;
+}
+```
+
+**Services:**
+- `ShopService.getShops()` - Alle aktiven Shops
+- `ListService.closeList(listId, destination?, price?)` - Liste mit Preis schließen
+- `ListService.reopenList(listId)` - Liste wiedereröffnen
+
+**Komponenten:**
+- `ListPriceModal.tsx` - Preis & Shop erfassen
+- `CloseListConfirmModal.tsx` - Bestätigung vor Schließen
+- `ClosedListsModal.tsx` - Archiv ansehen
+
+**Flow:**
+```
+1. User klickt "Liste abschließen"
+2. CloseListConfirmModal: "Wirklich schließen? (Unchecked Items werden gelöscht)"
+3. ListPriceModal: "Wo eingekauft? Wie viel bezahlt?"
+4. Liste wird geschlossen:
+   - isClosed = true
+   - closedAt = now
+   - destination = "Aldi Nord"
+   - price = 47.52
+   - Unchecked Items gelöscht
+5. Liste erscheint ausgegraut im Dashboard
+6. Filter "Geschlossene Listen" zeigt Archiv
+```
+
+### 3. **Geschlossene Listen (Closed Lists)**
+
+**Konzept:**
+- Shopping-Listen können "abgeschlossen" werden
+- Alle nicht-abgehakten Items werden beim Schließen gelöscht
+- Geschlossene Listen = Archiv mit Preisinfo
+- Listen können wiedereröffnet werden
+
+**Filter im Dashboard:**
+```typescript
+// Dashboard.tsx - Filter
+const filters = {
+  'all': 'Alle offenen Listen',
+  'shopping': 'Nur Einkaufslisten (offen)',
+  'gift': 'Nur Geschenkelisten',
+  'closed': 'Archiv (geschlossene Listen)'
+}
+```
+
+### 4. **Email-Verification & User-Management**
+
+**Was ist neu?**
+- Email muss bestätigt werden (EmailVerificationBanner)
+- DisplayName ist Pflicht für Sharing (DisplayNameRequiredModal)
+- Profil-Edit-Funktion (ProfileEditModal)
+- Account-Löschen mit Warnung (DeleteAccountModal)
+
+**Flow:**
+```
+1. User registriert sich
+2. Email-Bestätigungsmail wird gesendet
+3. Banner: "Bitte Email bestätigen"
+4. User klickt Link in Email
+5. AuthAction.tsx handlet Verification
+6. Banner verschwindet
+```
+
+### 5. **Mobile-First Improvements**
+
+**Neue Features:**
+- SwipeableItem.tsx - Swipe-to-Delete/Complete
+- Touch-optimierte Buttons (größere Touch-Targets)
+- Responsive Filter (horizontal Desktop, vertikal Mobile)
+- Mobile-optimierte Modals
+
+---
+
+## 💡 Wichtige Konzepte
 │   │   └── todoList.ts   # Listen-spezifische Typen
 │   │
 │   ├── utils/            # Hilfsfunktionen
@@ -132,7 +428,7 @@ Amyaro-Firebase/
 ### 1. **React Komponenten**
 
 ```tsx
-// Eine einfache Komponente
+// Eine einfache Komponente (Function Component)
 const MeineKomponente = () => {
   return (
     <div>
@@ -140,12 +436,34 @@ const MeineKomponente = () => {
     </div>
   );
 };
+
+// Komponente mit Props (TypeScript!)
+interface MeineKomponenteProps {
+  title: string;
+  count: number;
+  onButtonClick: () => void;
+}
+
+const MeineKomponente: React.FC<MeineKomponenteProps> = ({ 
+  title, 
+  count, 
+  onButtonClick 
+}) => {
+  return (
+    <div>
+      <h1>{title}</h1>
+      <p>Count: {count}</p>
+      <button onClick={onButtonClick}>Klick mich!</button>
+    </div>
+  );
+};
 ```
 
 **Komponenten sind wie LEGO-Bausteine:**
-- Jede Komponente hat eine Aufgabe
+- Jede Komponente hat **eine** klare Aufgabe
 - Komponenten können andere Komponenten verwenden
-- Props = Parameter für Komponenten
+- Props = Parameter für Komponenten (read-only!)
+- State = Interner Zustand einer Komponente (veränderbar)
 
 ### 2. **TypeScript Typen**
 
@@ -586,79 +904,187 @@ import type { MyNewType } from '../types/myTypes';
 
 ---
 
-## 🚀 Nächste Schritte für Junior-Entwickler
+## 🚀 Nächste Schritte & Onboarding-Checklist (Praktisch)
 
-### Phase 1: **Verstehen** (Woche 1-2)
-- [ ] Projekt lokal zum Laufen bringen
-- [ ] Jede Datei einmal durchlesen
-- [ ] Haupt-Features der App ausprobieren
-- [ ] Firebase Console erkunden
+Kurze Schritt-für-Schritt-Anleitung damit du schnell loslegen kannst.
 
-### Phase 2: **Kleine Änderungen** (Woche 3-4)
-- [ ] CSS-Styling anpassen
-- [ ] Text-Inhalte ändern
-- [ ] Neue Bootstrap-Klassen ausprobieren
-- [ ] Console.log hinzufügen um Datenfluss zu verstehen
+1. Fork / Clone das Repository
+2. Node.js (>=18) installieren
+3. Installiere Dependencies
 
-### Phase 3: **Eigene Features** (Woche 5+)
-- [ ] Neue Komponente erstellen
-- [ ] Bestehende Komponente erweitern
-- [ ] Neue Seite hinzufügen
-- [ ] Einfache Firebase-Operationen
+```bash
+npm install
+```
 
-### 📚 **Empfohlene Lernressourcen:**
+4. Lokalen Dev-Server starten (Vite)
 
-1. **React Basics:** [React Official Tutorial](https://react.dev/learn)
-2. **TypeScript:** [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-3. **Firebase:** [Firebase Web Docs](https://firebase.google.com/docs/web/setup)
-4. **Bootstrap:** [Bootstrap Documentation](https://getbootstrap.com/docs/5.3/getting-started/introduction/)
+```bash
+npm run dev
+```
+
+5. Öffne die App im Browser: `http://localhost:5173`
+6. In Firebase Console einloggen (Projektzugriff notwendig)
+7. Lies die Datei `src/config/firebase.ts` für Environment-Setup
 
 ---
 
-## 🆘 Hilfe & Debugging
+## 🧰 Umgebungsvariablen & Firebase Setup
 
-### Häufige Fehler und Lösungen:
+Die Firebase-Konfiguration wird in `src/config/firebase.ts` verwendet. Wir halten sensible Werte außerhalb des Repos (z.B. in CI Secrets oder lokal in `.env`).
 
-**❌ "Cannot read property of undefined"**
-- **Problem:** Versuch auf undefined/null zuzugreifen
-- **Lösung:** Optional Chaining verwenden: `user?.name`
+Wichtige Variablen (lokal in `.env`):
 
-**❌ "useAuth must be used within AuthProvider"**
-- **Problem:** Hook außerhalb des Providers verwendet
-- **Lösung:** Komponente in AuthProvider wrappen
+```
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+```
 
-**❌ "Firestore permission denied"**
-- **Problem:** Sicherheitsregeln verbieten Zugriff
-- **Lösung:** `firestore.rules` prüfen
-
-**❌ "Module not found"**
-- **Problem:** Import-Pfad falsch
-- **Lösung:** Relative Pfade prüfen: `../`, `./`
-
-### Debugging-Tools:
-
-1. **Browser DevTools** (F12)
-   - Console für Errors
-   - Network für API-Calls
-   - React DevTools Extension
-
-2. **Firebase Console**
-   - Firestore Data
-   - Authentication Users
-   - Usage Statistics
-
-3. **VSCode Extensions**
-   - ES7+ React/Redux Snippets
-   - Firebase Explorer
-   - TypeScript Importer
+Hinweis: Vite liest `VITE_`-Präfixe automatisch in `import.meta.env`.
 
 ---
 
-**🎉 Gratulation! Du hast jetzt einen soliden Überblick über das Amyaro-Projekt.**
+## 🧭 Development Workflow (Git & Branching)
 
-**Nächster Schritt:** Starte mit Phase 1 und arbeite dich langsam vor. Bei Fragen: einfach fragen! 🤝
+Konventionen, damit das Team sauber zusammenarbeitet:
+
+- Haupt-Branch: `main` (stabile Produktion)
+- Feature-Branches: `feature/<short-desc>`
+- Bugfix-Branches: `bugfix/<ticket-id>-short-desc`
+- Release-Branches (selten): `release/<version>`
+
+Beispiel: `feature/add-price-tracking`
+
+### PR-Anforderungen
+- Erstelle einen Pull Request in GitHub gegen `main`
+- PR-Template ausfüllen (Beschreibung, Screenshots, Test-Schritte)
+- Mindestens 1 Reviewer
+- Keine Merges ohne grünen CI-Status
+
+### Commit Message Style
+Wir empfehlen Conventional Commits:
+
+```
+feat(list): add close list price modal
+fix(list): prevent focus mode on closed lists
+chore(deps): update eslint
+```
 
 ---
 
-*Letzte Aktualisierung: November 2024*
+## ✅ Quality Gates (Was jeder PR durchlaufen muss)
+
+1. Lint/Typecheck (ESLint + TypeScript)
+2. Lokaler Build: `npm run build` (keine TypeScript-Fehler)
+3. Manuelle Smoke-Test: wichtige UI-Flows
+4. Tests (falls vorhanden)
+
+CI sollte die Schritte automatisieren. Wenn etwas in CI fehlschlägt, bitte lokal reproduzieren und fixen.
+
+---
+
+## 🔁 Build & Deploy (Kurzreferenz)
+
+1. Production Build erstellen:
+
+```bash
+npm run build
+```
+
+2. Preview (optional):
+
+```bash
+npm run preview
+```
+
+3. Deploy zu Firebase Hosting (falls du Zugriff hast):
+
+```bash
+firebase deploy --only hosting
+```
+
+Für Firestore Indexes/Rules:
+
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
+```
+
+---
+
+## 🧪 Tests, Linting & Formatierung
+
+- Lint (ESLint):
+
+```bash
+npm run lint
+```
+
+- Formatierung (Prettier) (falls konfiguriert):
+
+```bash
+npm run format
+```
+
+- TypeScript-Check (wird in `npm run build` ausgeführt):
+
+```bash
+npm run build
+```
+
+Aktuell sind keine Unit-Tests integriert (Jest/Testing Library). Wenn du Tests hinzufügst, erstelle einen `tests/`-Ordner und ergänze CI.
+
+---
+
+## 🐞 Debugging-Checkliste (häufige Probleme)
+
+1. Fehler beim Build (TS Fehler):
+   - Typfehler lesen und `import` Pfade prüfen
+   - Unused Imports entfernen
+2. Firestore Permission Denied:
+   - `firestore.rules` prüfen
+   - Prüfe Authentication State
+3. Camera / PWA Probleme auf Mobile:
+   - HTTPS erforderlich
+   - Browser Permissions prüfen
+4. UI-Fehler:
+   - React DevTools verwenden
+   - Console/Network Tabs prüfen
+
+---
+
+## 📦 Wichtige Dateien & Orte (Schnellnavigation)
+
+- `src/config/firebase.ts` — Firebase Setup
+- `src/services/` — Business-Logik & Firestore-Interface
+- `src/context/` — Global State (Auth, Lists)
+- `src/components/business/` — Geschäfts-UI
+- `src/components/ui/` — Basis-UI-Komponenten
+- `firestore.rules` — Security Regeln
+- `firestore.indexes.json` — Index-Definitionen
+
+---
+
+## 👥 Rollen & Verantwortlichkeiten
+
+- Owner/Maintainer: Release, Production-Deploys, Secret Management
+- Developer: Feature-Branches, PRs, Unit-Tests
+- Reviewer: Code-Review, Acceptance Testing
+
+---
+
+## 📚 Weiterführende Hinweise & Good-to-Know
+
+- Wenn du Shops initialisieren musst (nur Admin): `SHOPS_INITIALIZATION.md` lesen
+- Feature Flags werden noch nicht genutzt — neue große Features sollten mit Feature-Flag geplant werden
+- Schreibe kleine, gut testbare Commits (Atomic Commits)
+
+---
+
+**🎉 Fertig — viel Erfolg beim Einstieg!**
+
+*Letzte Aktualisierung: 18. Januar 2026*
 *Erstellt für: Junior-Entwickler Onboarding*

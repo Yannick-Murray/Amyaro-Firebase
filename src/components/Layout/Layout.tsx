@@ -102,6 +102,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <i className="bi bi-person me-2"></i>
                     Profil
                   </Link>
+                  <Link className="dropdown-item" to="/statistics" onClick={closeDropdown}>
+                    <i className="bi bi-bar-chart me-2"></i>
+                    Statistiken
+                  </Link>
                   <div className="dropdown-divider"></div>
                   <button 
                     className="dropdown-item" 
