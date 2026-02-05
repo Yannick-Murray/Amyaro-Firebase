@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
-import type { List, Category, ListType, Item, Shop } from '../types/todoList';
+import type { List, Category, ListType, Item, Shop, ListHistory } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
 export class ListService {
@@ -356,15 +356,18 @@ export class ListService {
       // Batch für atomare Operation
       const batch = writeBatch(db);
 
+      // Abgehakte Items abrufen für Count und optional destination update
+      const completedItemsQuery = query(
+        collection(db, 'todoItems'),
+        where('listId', '==', listId),
+        where('isCompleted', '==', true)
+      );
+      
+      const completedItemsSnapshot = await getDocs(completedItemsQuery);
+      const completedItemsCount = completedItemsSnapshot.docs.length;
+
       // Wenn destination angegeben, alle abgehakten Items mit destination updaten
       if (destination) {
-        const completedItemsQuery = query(
-          collection(db, 'todoItems'),
-          where('listId', '==', listId),
-          where('isCompleted', '==', true)
-        );
-        
-        const completedItemsSnapshot = await getDocs(completedItemsQuery);
         completedItemsSnapshot.docs.forEach(itemDoc => {
           batch.update(itemDoc.ref, {
             destination: destination,
@@ -402,6 +405,20 @@ export class ListService {
       }
       
       batch.update(listRef, updateData);
+
+      // History-Eintrag erstellen
+      const historyRef = doc(collection(db, 'listHistory'));
+      const historyEntry: Omit<ListHistory, 'id'> = {
+        listId: listId,
+        listName: listData.name,
+        userId: auth.currentUser.uid,
+        shop: destination,
+        price: price,
+        itemCount: completedItemsCount,
+        closedAt: serverTimestamp() as any,
+        sharedWith: listData.sharedWith || []
+      };
+      batch.set(historyRef, historyEntry);
 
       await batch.commit();
       

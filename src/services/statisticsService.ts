@@ -3,7 +3,15 @@
  * Aggregiert und analysiert Daten aus geschlossenen Listen
  */
 
-import type { List } from '../types/todoList';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs,
+  orderBy
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import type { ListHistory } from '../types/todoList';
 
 export interface ShopStatistics {
   shopName: string;
@@ -41,57 +49,100 @@ export interface OverallStatistics {
 export type ListOwnership = 'all' | 'own' | 'shared';
 
 export class StatisticsService {
+  private static readonly HISTORY_COLLECTION = 'listHistory';
+
   /**
-   * Filtert Listen basierend auf Ownership
+   * Lädt die History-Einträge für einen User aus Firestore
    */
-  static filterListsByOwnership(
-    lists: List[],
+  static async fetchHistory(
     currentUserId: string,
-    ownership: ListOwnership
-  ): List[] {
-    if (ownership === 'all') {
-      return lists;
+    ownership: ListOwnership = 'all'
+  ): Promise<ListHistory[]> {
+    try {
+      let historyQuery;
+
+      if (ownership === 'own') {
+        // Nur eigene Listen
+        historyQuery = query(
+          collection(db, this.HISTORY_COLLECTION),
+          where('userId', '==', currentUserId),
+          orderBy('closedAt', 'desc')
+        );
+      } else if (ownership === 'shared') {
+        // Nur geteilte Listen (wo User in sharedWith ist, aber nicht owner)
+        historyQuery = query(
+          collection(db, this.HISTORY_COLLECTION),
+          where('sharedWith', 'array-contains', currentUserId),
+          orderBy('closedAt', 'desc')
+        );
+      } else {
+        // Alle Listen - eigene + geteilte
+        // Da wir keine OR-Query machen können, müssen wir zwei Queries machen
+        const ownQuery = query(
+          collection(db, this.HISTORY_COLLECTION),
+          where('userId', '==', currentUserId),
+          orderBy('closedAt', 'desc')
+        );
+        
+        const sharedQuery = query(
+          collection(db, this.HISTORY_COLLECTION),
+          where('sharedWith', 'array-contains', currentUserId),
+          orderBy('closedAt', 'desc')
+        );
+
+        const [ownSnapshot, sharedSnapshot] = await Promise.all([
+          getDocs(ownQuery),
+          getDocs(sharedQuery)
+        ]);
+
+        const allDocs = [...ownSnapshot.docs, ...sharedSnapshot.docs];
+        
+        // Duplikate entfernen (falls ein User sowohl owner als auch in sharedWith ist)
+        const uniqueDocs = Array.from(
+          new Map(allDocs.map(doc => [doc.id, doc])).values()
+        );
+
+        return uniqueDocs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          closedAt: doc.data().closedAt
+        } as ListHistory));
+      }
+
+      const snapshot = await getDocs(historyQuery);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        closedAt: doc.data().closedAt
+      } as ListHistory));
+    } catch (error) {
+      console.error('Fehler beim Laden der History:', error);
+      return [];
     }
-    
-    if (ownership === 'own') {
-      // Nur eigene Listen (User ist der Ersteller)
-      return lists.filter(list => list.userId === currentUserId);
-    }
-    
-    if (ownership === 'shared') {
-      // Nur geteilte Listen (User ist NICHT der Ersteller, aber hat Zugriff)
-      return lists.filter(
-        list => list.userId !== currentUserId && 
-                list.sharedWith?.includes(currentUserId)
-      );
-    }
-    
-    return lists;
   }
 
   /**
-   * Berechnet Statistiken pro Shop
+   * Berechnet Statistiken pro Shop aus History
    */
-  static calculateShopStatistics(lists: List[]): ShopStatistics[] {
+  static calculateShopStatistics(history: ListHistory[]): ShopStatistics[] {
     const shopMap = new Map<string, {
       totalSpent: number;
       count: number;
       lastPurchase?: Date;
     }>();
 
-    // Nur geschlossene Listen mit Preis und Shop
-    const closedLists = lists.filter(
-      list => list.isClosed && 
-              list.price !== undefined && 
-              list.price !== null &&
-              list.destination
+    // Nur Einträge mit Preis und Shop
+    const validHistory = history.filter(
+      entry => entry.price !== undefined && 
+               entry.price !== null &&
+               entry.shop
     );
 
-    closedLists.forEach(list => {
-      const shop = list.destination!;
-      const price = list.price!;
-      const closedAt = list.closedAt 
-        ? (typeof list.closedAt === 'string' ? new Date(list.closedAt) : list.closedAt.toDate())
+    validHistory.forEach(entry => {
+      const shop = entry.shop!;
+      const price = entry.price!;
+      const closedAt = entry.closedAt 
+        ? (typeof entry.closedAt === 'string' ? new Date(entry.closedAt) : entry.closedAt.toDate())
         : undefined;
 
       const existing = shopMap.get(shop);
@@ -126,26 +177,25 @@ export class StatisticsService {
   }
 
   /**
-   * Erstellt eine Timeline aller Einkäufe
+   * Erstellt eine Timeline aller Einkäufe aus History
    */
-  static createTimeline(lists: List[]): TimelineEntry[] {
-    const closedLists = lists.filter(
-      list => list.isClosed && 
-              list.price !== undefined && 
-              list.price !== null &&
-              list.destination &&
-              list.closedAt
+  static createTimeline(history: ListHistory[]): TimelineEntry[] {
+    const validHistory = history.filter(
+      entry => entry.price !== undefined && 
+               entry.price !== null &&
+               entry.shop &&
+               entry.closedAt
     );
 
-    const timeline: TimelineEntry[] = closedLists.map(list => ({
-      listId: list.id,
-      listName: list.name,
-      shop: list.destination!,
-      price: list.price!,
-      closedAt: typeof list.closedAt === 'string' 
-        ? new Date(list.closedAt) 
-        : list.closedAt!.toDate(),
-      itemCount: list.itemCount?.completed || 0
+    const timeline: TimelineEntry[] = validHistory.map(entry => ({
+      listId: entry.listId,
+      listName: entry.listName,
+      shop: entry.shop!,
+      price: entry.price!,
+      closedAt: typeof entry.closedAt === 'string' 
+        ? new Date(entry.closedAt) 
+        : entry.closedAt!.toDate(),
+      itemCount: entry.itemCount
     }));
 
     // Sortieren nach Datum (neueste zuerst)
@@ -153,16 +203,15 @@ export class StatisticsService {
   }
 
   /**
-   * Berechnet Gesamt-Statistiken
+   * Berechnet Gesamt-Statistiken aus History
    */
-  static calculateOverallStatistics(lists: List[]): OverallStatistics {
-    const closedLists = lists.filter(
-      list => list.isClosed && 
-              list.price !== undefined && 
-              list.price !== null
+  static calculateOverallStatistics(history: ListHistory[]): OverallStatistics {
+    const validHistory = history.filter(
+      entry => entry.price !== undefined && 
+               entry.price !== null
     );
 
-    if (closedLists.length === 0) {
+    if (validHistory.length === 0) {
       return {
         totalSpent: 0,
         totalPurchases: 0,
@@ -172,12 +221,12 @@ export class StatisticsService {
       };
     }
 
-    const totalSpent = closedLists.reduce((sum, list) => sum + list.price!, 0);
-    const totalPurchases = closedLists.length;
+    const totalSpent = validHistory.reduce((sum, entry) => sum + entry.price!, 0);
+    const totalPurchases = validHistory.length;
     const averagePerPurchase = totalSpent / totalPurchases;
 
     // Teuerstes & günstigstes finden
-    const sortedByPrice = [...closedLists].sort((a, b) => b.price! - a.price!);
+    const sortedByPrice = [...validHistory].sort((a, b) => b.price! - a.price!);
     const mostExpensive = sortedByPrice[0];
     const cheapest = sortedByPrice[sortedByPrice.length - 1];
 
@@ -186,14 +235,14 @@ export class StatisticsService {
       totalPurchases,
       averagePerPurchase,
       mostExpensivePurchase: mostExpensive ? {
-        listName: mostExpensive.name,
+        listName: mostExpensive.listName,
         price: mostExpensive.price!,
-        shop: mostExpensive.destination || 'Unbekannt'
+        shop: mostExpensive.shop || 'Unbekannt'
       } : null,
       cheapestPurchase: cheapest ? {
-        listName: cheapest.name,
+        listName: cheapest.listName,
         price: cheapest.price!,
-        shop: cheapest.destination || 'Unbekannt'
+        shop: cheapest.shop || 'Unbekannt'
       } : null
     };
   }

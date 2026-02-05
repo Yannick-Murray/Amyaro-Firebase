@@ -1,30 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useListsContext } from '../context/ListsContext';
 import { useAuth } from '../context/AuthContext';
 import { 
   StatisticsService, 
   type ListOwnership
 } from '../services/statisticsService';
+import type { ListHistory } from '../types/todoList';
 import { Card } from '../components/ui';
 
 export default function Statistics() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { lists } = useListsContext();
   
   const [ownershipFilter, setOwnershipFilter] = useState<ListOwnership>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
+  const [history, setHistory] = useState<ListHistory[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Gefilterte Listen basierend auf Ownership
-  const filteredLists = user 
-    ? StatisticsService.filterListsByOwnership(lists, user.uid, ownershipFilter)
-    : [];
+  // History laden wenn User oder Filter sich ändert
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!user) {
+        setHistory([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await StatisticsService.fetchHistory(user.uid, ownershipFilter);
+        setHistory(data);
+      } catch (error) {
+        console.error('Fehler beim Laden der History:', error);
+        setHistory([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [user, ownershipFilter]);
 
   // Statistiken berechnen
-  const shopStats = StatisticsService.calculateShopStatistics(filteredLists);
-  const timeline = StatisticsService.createTimeline(filteredLists);
-  const overallStats = StatisticsService.calculateOverallStatistics(filteredLists);
+  const shopStats = StatisticsService.calculateShopStatistics(history);
+  const timeline = StatisticsService.createTimeline(history);
+  const overallStats = StatisticsService.calculateOverallStatistics(history);
 
   // Timeline nach Shop filtern
   const filteredTimeline = selectedShop === 'all' 
@@ -34,14 +54,13 @@ export default function Statistics() {
   // Alle verfügbaren Shops für Dropdown
   const availableShops = shopStats.map(stat => stat.shopName);
 
-  // Anzahl Listen pro Kategorie
-  const ownListsCount = lists.filter(l => l.userId === user?.uid && l.isClosed).length;
-  const sharedListsCount = lists.filter(l => 
-    l.userId !== user?.uid && 
-    l.sharedWith?.includes(user?.uid || '') &&
-    l.isClosed
+  // Anzahl Listen pro Kategorie (aus History)
+  const ownListsCount = history.filter(h => h.userId === user?.uid).length;
+  const sharedListsCount = history.filter(h => 
+    h.userId !== user?.uid && 
+    h.sharedWith?.includes(user?.uid || '')
   ).length;
-  const allListsCount = ownListsCount + sharedListsCount;
+  const allListsCount = history.length;
 
   return (
     <div className="container py-4">
@@ -130,7 +149,16 @@ export default function Statistics() {
       </Card>
 
       {/* Check if there's data */}
-      {overallStats.totalPurchases === 0 ? (
+      {loading ? (
+        <Card>
+          <div className="card-body text-center py-5">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Laden...</span>
+            </div>
+            <p className="text-muted mb-0">Lade Statistiken...</p>
+          </div>
+        </Card>
+      ) : overallStats.totalPurchases === 0 ? (
         <Card>
           <div className="card-body text-center py-5">
             <i className="bi bi-bar-chart display-1 text-muted mb-3"></i>

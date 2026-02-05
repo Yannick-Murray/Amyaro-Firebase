@@ -323,6 +323,38 @@ service cloud.firestore {
                        request.auth.uid == resource.data.fromUserId;
     }
     
+    // List History - immutable purchase history
+    match /listHistory/{historyId} {
+      // Read access: list owner or shared users
+      allow read: if isValidUser() && (
+        request.auth.uid == resource.data.userId ||
+        (resource.data.sharedWith != null && 
+         request.auth.uid in resource.data.sharedWith)
+      );
+      
+      // Create: Only when closing a list
+      allow create: if isValidUser() && 
+                       request.auth.uid == request.resource.data.userId &&
+                       isValidString(request.resource.data.listName, 1, 100) &&
+                       request.resource.data.listId is string &&
+                       request.resource.data.itemCount is number &&
+                       request.resource.data.closedAt is timestamp &&
+                       // Optional shop and price validation
+                       (!('shop' in request.resource.data) || 
+                        request.resource.data.shop is string ||
+                        request.resource.data.shop == null) &&
+                       (!('price' in request.resource.data) || 
+                        request.resource.data.price is number ||
+                        request.resource.data.price == null) &&
+                       // Optional sharedWith validation
+                       (!('sharedWith' in request.resource.data) || 
+                        request.resource.data.sharedWith is list);
+      
+      // History is immutable - no updates or deletes
+      allow update: if false;
+      allow delete: if false;
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

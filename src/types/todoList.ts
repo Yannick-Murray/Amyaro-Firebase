@@ -83,3 +83,15 @@ export interface Item {
   updatedAt: Timestamp;
   order: number;
 }
+
+export interface ListHistory {
+  id: string;
+  listId: string; // Referenz zur ursprünglichen Liste
+  listName: string; // Name der Liste zum Zeitpunkt des Schließens
+  userId: string; // Der User, der die Liste geschlossen hat
+  shop?: string; // Einkaufsort/Shop
+  price?: number; // Gesamtpreis
+  itemCount: number; // Anzahl der abgehakten Items
+  closedAt: Timestamp; // Zeitpunkt des Schließens
+  sharedWith?: string[]; // Wer hatte Zugriff auf die Liste
+}
