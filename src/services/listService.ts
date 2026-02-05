@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
-import type { List, Category, ListType, Item, Shop, ListHistory } from '../types/todoList';
+import type { List, Category, ListType, Item, ListHistory } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
 export class ListService {
