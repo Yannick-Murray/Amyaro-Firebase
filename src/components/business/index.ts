@@ -33,6 +33,7 @@ export { DuplicateItemModal } from './DuplicateItemModal';
 export { MoveToCategoryModal } from './MoveToCategoryModal';
 export { ProfileEditModal } from './ProfileEditModal';
 export { EditListModal } from './EditListModal';
+export { default as SpendingChart } from './SpendingChart';
 
 // Mobile Components
 export { MobileItem } from './MobileItem';

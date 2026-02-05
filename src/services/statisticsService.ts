@@ -22,6 +22,7 @@ export interface ShopStatistics {
 }
 
 export interface TimelineEntry {
+  id: string; // History-Entry ID (eindeutig)
   listId: string;
   listName: string;
   shop: string;
@@ -47,6 +48,15 @@ export interface OverallStatistics {
 }
 
 export type ListOwnership = 'all' | 'own' | 'shared';
+export type TimeRange = 'thisMonth' | 'thisYear' | 'lastYear' | 'all';
+
+export interface MonthlyChartData {
+  month: string; // z.B. "Jan 2026"
+  totalSpent: number;
+  purchaseCount: number;
+  year: number;
+  monthIndex: number; // 0-11 für Sortierung
+}
 
 export class StatisticsService {
   private static readonly HISTORY_COLLECTION = 'listHistory';
@@ -188,6 +198,7 @@ export class StatisticsService {
     );
 
     const timeline: TimelineEntry[] = validHistory.map(entry => ({
+      id: entry.id,
       listId: entry.listId,
       listName: entry.listName,
       shop: entry.shop!,
@@ -312,5 +323,135 @@ export class StatisticsService {
     };
     
     return shopMapping[shopName.toLowerCase()] || shopName;
+  }
+
+  /**
+   * Filtert History nach TimeRange
+   */
+  static filterHistoryByTimeRange(
+    history: ListHistory[],
+    timeRange: TimeRange
+  ): ListHistory[] {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
+
+    switch (timeRange) {
+      case 'thisMonth': {
+        const startOfMonth = new Date(currentYear, currentMonth, 1);
+        const endOfMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
+        return history.filter(entry => {
+          const closedAt = typeof entry.closedAt === 'string' 
+            ? new Date(entry.closedAt) 
+            : entry.closedAt.toDate();
+          return closedAt >= startOfMonth && closedAt <= endOfMonth;
+        });
+      }
+      
+      case 'thisYear': {
+        const startOfYear = new Date(currentYear, 0, 1);
+        const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+        return history.filter(entry => {
+          const closedAt = typeof entry.closedAt === 'string' 
+            ? new Date(entry.closedAt) 
+            : entry.closedAt.toDate();
+          return closedAt >= startOfYear && closedAt <= endOfYear;
+        });
+      }
+      
+      case 'lastYear': {
+        const lastYear = currentYear - 1;
+        const startOfLastYear = new Date(lastYear, 0, 1);
+        const endOfLastYear = new Date(lastYear, 11, 31, 23, 59, 59);
+        return history.filter(entry => {
+          const closedAt = typeof entry.closedAt === 'string' 
+            ? new Date(entry.closedAt) 
+            : entry.closedAt.toDate();
+          return closedAt >= startOfLastYear && closedAt <= endOfLastYear;
+        });
+      }
+      
+      case 'all':
+      default:
+        return history;
+    }
+  }
+
+  /**
+   * Gruppiert History nach Monaten für Chart-Darstellung
+   */
+  static aggregateByMonth(history: ListHistory[]): MonthlyChartData[] {
+    const monthMap = new Map<string, {
+      totalSpent: number;
+      count: number;
+      year: number;
+      monthIndex: number;
+    }>();
+
+    // Nur Einträge mit Preis
+    const validHistory = history.filter(
+      entry => entry.price !== undefined && entry.price !== null
+    );
+
+    validHistory.forEach(entry => {
+      const closedAt = typeof entry.closedAt === 'string' 
+        ? new Date(entry.closedAt) 
+        : entry.closedAt.toDate();
+      
+      const year = closedAt.getFullYear();
+      const month = closedAt.getMonth(); // 0-11
+      const monthKey = `${year}-${month}`; // Eindeutiger Key
+
+      const existing = monthMap.get(monthKey);
+      
+      if (existing) {
+        monthMap.set(monthKey, {
+          totalSpent: existing.totalSpent + entry.price!,
+          count: existing.count + 1,
+          year,
+          monthIndex: month
+        });
+      } else {
+        monthMap.set(monthKey, {
+          totalSpent: entry.price!,
+          count: 1,
+          year,
+          monthIndex: month
+        });
+      }
+    });
+
+    // Zu Array konvertieren und formatieren
+    const monthNames = [
+      'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+    ];
+
+    const result: MonthlyChartData[] = Array.from(monthMap.entries()).map(([_, data]) => {
+      const monthLabel = `${monthNames[data.monthIndex]} ${data.year}`;
+      return {
+        month: monthLabel,
+        totalSpent: data.totalSpent,
+        purchaseCount: data.count,
+        year: data.year,
+        monthIndex: data.monthIndex
+      };
+    });
+
+    // Sortieren nach Jahr und Monat (älteste zuerst für Chart)
+    return result.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return a.monthIndex - b.monthIndex;
+    });
+  }
+
+  /**
+   * Formatiert Monat für Anzeige (kurz)
+   */
+  static formatMonth(date: Date): string {
+    return new Intl.DateTimeFormat('de-DE', {
+      month: 'short',
+      year: 'numeric'
+    }).format(date);
   }
 }

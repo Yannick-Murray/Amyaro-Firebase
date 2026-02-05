@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   StatisticsService, 
-  type ListOwnership
+  type ListOwnership,
+  type TimeRange
 } from '../services/statisticsService';
 import type { ListHistory } from '../types/todoList';
 import { Card } from '../components/ui';
+import { SpendingChart } from '../components/business';
 
 export default function Statistics() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ export default function Statistics() {
   
   const [ownershipFilter, setOwnershipFilter] = useState<ListOwnership>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('thisYear');
   const [history, setHistory] = useState<ListHistory[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -45,6 +48,18 @@ export default function Statistics() {
   const shopStats = StatisticsService.calculateShopStatistics(history);
   const timeline = StatisticsService.createTimeline(history);
   const overallStats = StatisticsService.calculateOverallStatistics(history);
+
+  // Chart-Daten für TimeRange (gefilterte Timeline)
+  const filteredHistoryForChart = StatisticsService.filterHistoryByTimeRange(history, timeRange);
+  const chartTimeline = StatisticsService.createTimeline(filteredHistoryForChart);
+  
+  // TimeRange Labels
+  const timeRangeLabels: Record<TimeRange, string> = {
+    thisMonth: 'Dieser Monat',
+    thisYear: 'Dieses Jahr',
+    lastYear: 'Letztes Jahr',
+    all: 'Alle Daten'
+  };
 
   // Timeline nach Shop filtern
   const filteredTimeline = selectedShop === 'all' 
@@ -84,7 +99,7 @@ export default function Statistics() {
         <div className="card-body">
           <div className="row g-3">
             {/* Ownership Filter */}
-            <div className="col-md-6">
+            <div className="col-md-4">
               <label className="form-label fw-medium">Listen-Typ</label>
               <div className="btn-group w-100" role="group">
                 <input
@@ -125,8 +140,26 @@ export default function Statistics() {
               </div>
             </div>
 
+            {/* TimeRange Filter */}
+            <div className="col-md-4">
+              <label htmlFor="time-range-filter" className="form-label fw-medium">
+                Zeitraum (Chart)
+              </label>
+              <select
+                id="time-range-filter"
+                className="form-select"
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+              >
+                <option value="thisMonth">Dieser Monat</option>
+                <option value="thisYear">Dieses Jahr</option>
+                <option value="lastYear">Letztes Jahr</option>
+                <option value="all">Alle Daten</option>
+              </select>
+            </div>
+
             {/* Shop Filter */}
-            <div className="col-md-6">
+            <div className="col-md-4">
               <label htmlFor="shop-filter" className="form-label fw-medium">
                 Shop Filter
               </label>
@@ -170,6 +203,14 @@ export default function Statistics() {
         </Card>
       ) : (
         <>
+          {/* Spending Chart */}
+          <div className="mb-4">
+            <SpendingChart 
+              data={chartTimeline} 
+              timeRangeLabel={timeRangeLabels[timeRange]} 
+            />
+          </div>
+
           {/* Overall Statistics Cards */}
           <div className="row g-3 mb-4">
             <div className="col-md-3 col-sm-6">
@@ -286,7 +327,7 @@ export default function Statistics() {
                 <div className="list-group list-group-flush">
                   {filteredTimeline.slice(0, 20).map((entry) => (
                     <div 
-                      key={entry.listId} 
+                      key={entry.id} 
                       className="list-group-item list-group-item-action cursor-pointer"
                       onClick={() => navigate(`/list/${entry.listId}`)}
                     >
