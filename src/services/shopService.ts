@@ -4,15 +4,11 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   onSnapshot,
   serverTimestamp,
   writeBatch,
   addDoc,
-  updateDoc,
-  deleteDoc,
-  Timestamp,
-  or
+  updateDoc
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
