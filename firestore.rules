@@ -10,10 +10,6 @@ service cloud.firestore {
       // Require email verification for all operations (except initial user creation)
       return isAuthenticated() && request.auth.token.email_verified == true;
     }
-
-    function isOwner(userId) {
-      return isValidUser() && request.auth.uid == userId;
-    }
     
     function isListOwner(listData) {
       return isValidUser() && request.auth.uid == listData.userId;
@@ -37,6 +33,31 @@ service cloud.firestore {
       return text is string && 
              text.size() >= minLen && 
              text.size() <= maxLen;
+    }
+    
+    function isValidShopCreate(shop) {
+      return isValidString(shop.name, 1, 100) &&
+             isValidString(shop.displayName, 1, 100) &&
+             shop.isActive is bool &&
+             shop.order is int &&
+             shop.userId is string &&
+             shop.type == 'user' &&
+             shop.createdAt is timestamp &&
+             shop.updatedAt is timestamp;
+    }
+    
+    function isValidShopUpdate(shop) {
+      return (!('name' in shop) || isValidString(shop.name, 1, 100)) &&
+             (!('displayName' in shop) || isValidString(shop.displayName, 1, 100)) &&
+             (!('isActive' in shop) || shop.isActive is bool) &&
+             (!('order' in shop) || shop.order is int) &&
+             shop.updatedAt is timestamp;
+    }
+    
+    function isShopOwner(shopData) {
+      return isValidUser() && 
+             shopData.userId != null &&
+             request.auth.uid == shopData.userId;
     }
     
     function isWithinRateLimit() {
@@ -116,13 +137,24 @@ service cloud.firestore {
       allow delete: if isValidUser() && isListOwner(resource.data);
     }
     
-    // Shops collection - read-only for all users
+    // Shops collection - global and user-specific shops
     match /shops/{shopId} {
-      // All verified users can read shops
+      // Allow reading global shops (no userId field or null) and own user-specific shops
       allow read: if isValidUser();
       
-      // Only admins can write (for now, prevent all writes from client)
-      allow write: if false;
+      // Allow creating user-specific shops only
+      allow create: if isValidUser() &&
+                       isValidShopCreate(request.resource.data) &&
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Allow updating only own user-specific shops
+      allow update: if isValidUser() &&
+                       isShopOwner(resource.data) &&
+                       isValidShopUpdate(request.resource.data) &&
+                       request.resource.data.userId == resource.data.userId;
+      
+      // Allow deleting only own user-specific shops (soft delete by setting isActive=false)
+      allow delete: if isValidUser() && isShopOwner(resource.data);
     }
     
     // Categories - secure with proper list access control

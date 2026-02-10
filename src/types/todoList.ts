@@ -36,6 +36,8 @@ export interface Shop {
   category?: string; // z.B. "Supermarkt", "Discounter"
   order: number; // Sortierung
   isActive: boolean; // Für zukünftige Deaktivierung
+  userId?: string; // undefined/null = global shop, populated = user-specific shop
+  type?: 'global' | 'user'; // Type for easier filtering
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

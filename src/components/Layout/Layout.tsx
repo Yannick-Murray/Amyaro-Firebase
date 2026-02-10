@@ -150,7 +150,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer className="text-center text-muted mt-5 py-4 border-top border-light">
         <div className="container">
           <div className="mb-2">
-            © 2025 Amyaro - Deine persönliche Listen App
+            © 2026 Amyaro - Deine persönliche Listen App
           </div>
           <div className="small">
             <Link to="/impressum" className="text-muted text-decoration-none me-3">

@@ -11,6 +11,10 @@ export { CloseListConfirmModal } from './CloseListConfirmModal';
 
 export { ListPriceModal } from './ListPriceModal';
 
+export { SaveShopModal } from './SaveShopModal';
+
+export { ManageShopModal } from './ManageShopModal';
+
 export { CreateListModal } from './CreateListModal';
 export type { CreateListModalProps, CreateListData } from './CreateListModal';
 
