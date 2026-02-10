@@ -51,7 +51,12 @@ export default function Statistics() {
 
   // Chart-Daten für TimeRange (gefilterte Timeline)
   const filteredHistoryForChart = StatisticsService.filterHistoryByTimeRange(history, timeRange);
-  const chartTimeline = StatisticsService.createTimeline(filteredHistoryForChart);
+  let chartTimeline = StatisticsService.createTimeline(filteredHistoryForChart);
+  
+  // Chart-Daten auch nach Shop filtern wenn ein Shop ausgewählt ist
+  if (selectedShop !== 'all') {
+    chartTimeline = StatisticsService.filterTimelineByShop(chartTimeline, selectedShop);
+  }
   
   // TimeRange Labels
   const timeRangeLabels: Record<TimeRange, string> = {
