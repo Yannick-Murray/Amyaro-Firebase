@@ -59,7 +59,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" showCloseButton={false}>
       <div className="modal-header border-0 pb-0">
         <h5 className="modal-title d-flex align-items-center">
           <i className="bi bi-envelope me-2 text-primary"></i>
