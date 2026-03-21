@@ -2,7 +2,7 @@
 
 > **Eine komplette Einführung in das Amyaro Firebase Projekt für Junior-Entwickler**
 > 
-> **Version:** 2.0 | **Stand:** Januar 2026 | **Zielgruppe:** Junior Developer & Praktikanten
+> **Version:** 2.1 | **Stand:** März 2026 | **Zielgruppe:** Junior Developer & Praktikanten
 
 ## 📋 Inhaltsverzeichnis
 
@@ -191,6 +191,7 @@ Amyaro-Firebase/
 │   │   ├── Dashboard.tsx    # Hauptseite (Listen-Übersicht)
 │   │   ├── ListDetail.tsx   # Einzelne Liste bearbeiten
 │   │   ├── Profile.tsx      # Benutzer-Profil
+│   │   ├── Statistics.tsx   # Statistiken & Auswertungen
 │   │   ├── AuthAction.tsx   # Email-Verification Handler (NEU!)
 │   │   ├── Impressum.tsx    # Impressum/Datenschutz
 │   │   └── TermsOfService.tsx # AGB (NEU!)
@@ -201,9 +202,10 @@ Amyaro-Firebase/
 │   │
 │   ├── services/            # API-Calls und Business-Logic
 │   │   ├── listService.ts   # Listen-Operationen (CRUD + Close/Reopen)
-│   │   ├── itemService.ts   # Item-Operationen (CRUD + Toggle)
+│   │   ├── (ItemService ist in listService.ts enthalten)
 │   │   ├── userService.ts   # User-Profil-Verwaltung (NEU!)
 │   │   ├── shopService.ts   # Shop-Verwaltung (NEU!)
+│   │   ├── statisticsService.ts # Auswertungen/Statistikdaten
 │   │   └── invitationService.ts # Einladungs-System (NEU!)
 │   │
 │   ├── hooks/               # Custom React Hooks (NEU!)
@@ -239,23 +241,31 @@ Amyaro-Firebase/
 ├── eslint.config.js         # ESLint Code-Quality-Regeln
 ├── index.html               # HTML Entry Point
 ├── README.md                # Projekt-Übersicht
-├── SECURITY.md              # Security-Policy & Vulnerability-Reporting
-├── JUNIOR_DEVELOPER_GUIDE.md # Diese Datei!
-└── SHOPS_INITIALIZATION.md  # Anleitung: Shops in Firestore anlegen (NEU!)
+├── Dokumentation/           # Zentraler Ort für Projekt-Dokumentationen
+│   ├── SECURITY.md          # Security-Policy & Vulnerability-Reporting
+│   ├── STATISTICS_MODULE.md # Statistik-Modul Doku
+│   └── JUNIOR_DEVELOPER_GUIDE.md # Diese Datei!
+└── scripts/                 # Hilfs-Skripte für Projektpflege
+  ├── clean-logs.sh        # Logs bereinigen
+  └── initializeShops.ts   # Shops in Firestore anlegen
 ```
 
 ### 🔍 Wie finde ich was?
 
-| Was möchtest du tun? | Wo findest du es? |
-|----------------------|-------------------|
-| **Neue Seite hinzufügen** | `src/pages/` + Route in `App.tsx` |
-| **UI-Komponente ändern** | `src/components/ui/` (Basis) oder `src/components/business/` (komplex) |
-| **Datenbank-Logik** | `src/services/` |
-| **Globale Zustände** | `src/context/` |
-| **Styling ändern** | `src/index.css` oder Bootstrap-Klassen in Components |
-| **Firebase Rules** | `firestore.rules` (Achtung: Server-seitig!) |
-| **TypeScript-Typen** | `src/types/` |
-| **Neue Dependency** | `package.json` (via `npm install`) |
+Wenn du neu bist: Starte immer mit dieser Tabelle. Sie zeigt dir den **besten ersten Ort** für typische Aufgaben.
+
+| Was möchtest du tun? | Wo findest du es? | Anfänger-Tipp |
+|----------------------|-------------------|---------------|
+| **Neue Seite hinzufügen** | `src/pages/` + Route in `App.tsx` | Kopiere als Vorlage zuerst eine kleine bestehende Page (z. B. `Profile.tsx`). |
+| **UI-Komponente ändern** | `src/components/ui/` (Basis) oder `src/components/business/` (komplex) | `ui` = kleine Bausteine, `business` = fachliche Komponenten mit mehr Logik. |
+| **Datenbank-Logik** | `src/services/` | Erst lesen, dann ändern: Services kapseln die Firestore-Logik. |
+| **Items einer Liste bearbeiten** | `ItemService` in `src/services/listService.ts` | Nicht nach `itemService.ts` suchen: Die Item-Methoden liegen im `listService.ts`. |
+| **Globale Zustände** | `src/context/` | Für app-weite Daten (`User`, `Listen`) immer hier starten. |
+| **Styling ändern** | `src/index.css`, `src/App.css` oder Bootstrap-Klassen in Komponenten | Kleine Änderungen zuerst lokal in der Komponente testen. |
+| **Firebase Rules** | `firestore.rules` | Wichtig: Rules laufen serverseitig und schützen Datenzugriffe. |
+| **TypeScript-Typen** | `src/types/` | Bei neuen Feldern zuerst den Typ anpassen, dann die UI. |
+| **Statistiken anpassen** | `src/pages/Statistics.tsx` + `src/services/statisticsService.ts` | UI und Datenlogik getrennt ändern. |
+| **Neue Dependency** | `package.json` (über `npm install <paket>`) | Danach immer kurz `npm run build` prüfen. |
 
 ---
 
@@ -390,36 +400,6 @@ const filters = {
 - Touch-optimierte Buttons (größere Touch-Targets)
 - Responsive Filter (horizontal Desktop, vertikal Mobile)
 - Mobile-optimierte Modals
-
----
-
-## 💡 Wichtige Konzepte
-│   │   └── todoList.ts   # Listen-spezifische Typen
-│   │
-│   ├── utils/            # Hilfsfunktionen
-│   │   ├── helpers.ts    # Allgemeine Helfer
-│   │   └── classNames.ts # CSS-Klassen Helfer
-│   │
-│   ├── config/           # Konfiguration
-│   │   └── firebase.ts   # Firebase Setup
-│   │
-│   ├── App.tsx           # Haupt-App Komponente
-│   ├── main.tsx          # React App Einsprungspunkt
-│   └── index.css         # Globale Styles
-│
-├── firestore.rules       # Firebase Sicherheits-Regeln
-├── package.json          # NPM Dependencies
-├── tsconfig.json         # TypeScript Konfiguration
-└── vite.config.ts        # Build-Tool Konfiguration
-```
-
-### 🔍 Wie finde ich was?
-
-**Neue Seite hinzufügen?** → `src/pages/`
-**UI-Komponente ändern?** → `src/components/`
-**Datenbank-Logik?** → `src/services/`
-**Globale Zustände?** → `src/context/`
-**Styling?** → `src/index.css` oder Bootstrap-Klassen
 
 ---
 
@@ -1078,7 +1058,7 @@ Aktuell sind keine Unit-Tests integriert (Jest/Testing Library). Wenn du Tests h
 
 ## 📚 Weiterführende Hinweise & Good-to-Know
 
-- Wenn du Shops initialisieren musst (nur Admin): `SHOPS_INITIALIZATION.md` lesen
+- Wenn du Shops initialisieren musst (nur Admin): `scripts/initializeShops.ts` nutzen
 - Feature Flags werden noch nicht genutzt — neue große Features sollten mit Feature-Flag geplant werden
 - Schreibe kleine, gut testbare Commits (Atomic Commits)
 
