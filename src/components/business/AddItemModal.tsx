@@ -25,6 +25,7 @@ interface AddItemModalProps {
 
 const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shopping', sharedUsers = [], categories = [] }: AddItemModalProps) => {
   const { user } = useAuth();
+  const formId = 'add-item-form';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -193,7 +194,7 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg" className="add-item-modal-content">
       <ModalHeader>
         <h5 className="modal-title">
           {listType === 'gift' ? 'Geschenk hinzufügen' : 'Item hinzufügen'}
@@ -201,7 +202,7 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
       </ModalHeader>
       
       <ModalBody>
-        <form onSubmit={handleSubmit}>
+        <form id={formId} onSubmit={handleSubmit}>
           {error && (
             <div className="alert alert-danger" role="alert">
               {error}
@@ -211,7 +212,9 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
           {listType === 'gift' ? (
             // Gift-specific form layout
             <>
-              <FormField label="Geschenkname *" htmlFor="gift-name">
+              <div className="gift-form-section-title">Basisdaten</div>
+
+              <FormField label="Geschenkname" required htmlFor="gift-name">
                 <Input
                   id="gift-name"
                   type="text"
@@ -246,21 +249,47 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
                 </div>
                 
                 <div className="col-md-6">
-                  <FormField label="Priorität" htmlFor="gift-priority">
-                    <Select
-                      id="gift-priority"
-                      value={formData.priority}
-                      onChange={(e) => handleInputChange('priority', e.target.value)}
-                      disabled={isLoading}
-                      options={[
-                        { value: 'low', label: 'Niedrig' },
-                        { value: 'medium', label: 'Mittel' },
-                        { value: 'high', label: 'Hoch' }
-                      ]}
-                    />
+                  <FormField label="Priorität" htmlFor="gift-priority-medium">
+                    <div className="gift-priority-selector" role="radiogroup" aria-label="Priorität auswählen">
+                      <button
+                        id="gift-priority-low"
+                        type="button"
+                        role="radio"
+                        aria-checked={formData.priority === 'low'}
+                        className={`gift-priority-option ${formData.priority === 'low' ? 'active' : ''}`}
+                        onClick={() => handleInputChange('priority', 'low')}
+                        disabled={isLoading}
+                      >
+                        Niedrig
+                      </button>
+                      <button
+                        id="gift-priority-medium"
+                        type="button"
+                        role="radio"
+                        aria-checked={formData.priority === 'medium'}
+                        className={`gift-priority-option ${formData.priority === 'medium' ? 'active' : ''}`}
+                        onClick={() => handleInputChange('priority', 'medium')}
+                        disabled={isLoading}
+                      >
+                        Mittel
+                      </button>
+                      <button
+                        id="gift-priority-high"
+                        type="button"
+                        role="radio"
+                        aria-checked={formData.priority === 'high'}
+                        className={`gift-priority-option ${formData.priority === 'high' ? 'active' : ''}`}
+                        onClick={() => handleInputChange('priority', 'high')}
+                        disabled={isLoading}
+                      >
+                        Hoch
+                      </button>
+                    </div>
                   </FormField>
                 </div>
               </div>
+
+              <div className="gift-form-section-title">Optionale Details</div>
 
               <FormField label="Link zum Geschenk" htmlFor="gift-link">
                 <Input
@@ -292,7 +321,6 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
                       value={formData.assignedTo || ''}
                       onChange={(e) => handleInputChange('assignedTo', e.target.value || undefined)}
                       disabled={isLoading}
-                      placeholder="Noch nicht zugewiesen"
                       options={[
                         { value: '', label: 'Noch nicht zugewiesen' },
                         ...sharedUsers.map(user => ({
@@ -304,14 +332,14 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
                   </FormField>
                 </div>
                 
-                <div className="col-md-4">
+                <div className="col-md-12">
                   <FormField label="Notizen" htmlFor="gift-notes">
-                    <Input
+                    <Textarea
                       id="gift-notes"
-                      type="text"
                       value={formData.notes}
                       onChange={(e) => handleInputChange('notes', e.target.value)}
                       placeholder="z.B. Falls verfügbar"
+                      rows={2}
                       disabled={isLoading}
                     />
                   </FormField>
@@ -467,10 +495,10 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
         </form>
       </ModalBody>
       
-      <ModalFooter>
+      <ModalFooter className="d-flex flex-nowrap gap-2">
         <button
           type="button"
-          className="btn btn-outline-secondary"
+          className="btn btn-outline-secondary flex-fill text-nowrap"
           onClick={handleClose}
           disabled={isLoading}
         >
@@ -478,8 +506,8 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
         </button>
         <button
           type="submit"
-          className="btn btn-primary"
-          onClick={handleSubmit}
+          className="btn btn-primary flex-fill text-nowrap"
+          form={formId}
           disabled={isLoading || !formData.name.trim()}
         >
           {isLoading ? (

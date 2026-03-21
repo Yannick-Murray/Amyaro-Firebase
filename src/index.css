@@ -341,3 +341,129 @@ button:focus-visible {
 .touch-active * {
   pointer-events: none;
 }
+
+/* CreateListModal: clearer 2-option selector */
+.list-type-selector {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.list-type-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--amyaro-border);
+  background: var(--amyaro-bg);
+  text-align: left;
+  color: var(--amyaro-text);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.list-type-option:hover {
+  border-color: #bfd4fa;
+  background-color: #f8fbff;
+}
+
+.list-type-option:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
+}
+
+.list-type-option.active {
+  border-color: var(--amyaro-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background-color: #f3f8ff;
+}
+
+.list-type-icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.list-type-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.list-type-title {
+  font-weight: 600;
+  color: var(--amyaro-text);
+}
+
+.list-type-subtitle {
+  color: var(--amyaro-text-muted);
+  font-size: 0.86rem;
+}
+
+/* AddItemModal: clearer grouping and direct priority selection */
+.gift-form-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--amyaro-text-muted);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.gift-priority-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.gift-priority-option {
+  border: 1px solid var(--amyaro-border);
+  border-radius: 10px;
+  background: var(--amyaro-bg);
+  color: var(--amyaro-text);
+  padding: 0.6rem 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: center;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.gift-priority-option:hover {
+  border-color: #bfd4fa;
+  background-color: #f8fbff;
+}
+
+.gift-priority-option:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.35);
+  outline-offset: 2px;
+}
+
+.gift-priority-option.active {
+  border-color: var(--amyaro-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background-color: #f3f8ff;
+}
+
+.gift-priority-option:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* AddItemModal: prevent clipped footer actions on smaller viewports */
+.add-item-modal-content {
+  max-height: calc(100vh - 1rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.add-item-modal-content > .modal-body {
+  overflow-y: auto;
+  padding: 0;
+}
+
+.add-item-modal-content .modal-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--amyaro-bg);
+  z-index: 1;
+}

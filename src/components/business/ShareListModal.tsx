@@ -113,7 +113,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
       );
 
       // Success message
-      setMessage(`✅ Einladung gesendet! ${sanitizedEmail} erhält eine Benachrichtigung und kann die Liste nach der Bestätigung bearbeiten.`);
+      setMessage(`✅ Einladung gesendet! ${sanitizedEmail} sieht die Einladung in ihrer Amyaro-App und kann die Liste nach der Bestätigung bearbeiten.`);
       setMessageType('success');
       
       // Reset form after delay
@@ -162,9 +162,16 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
               fontSize: '16px' // Prevents zoom on iOS
             }}
           />
-          <small className="text-muted mt-1">
-            Die Person erhält eine Einladung und muss diese bestätigen, bevor sie Zugriff erhält.
-          </small>
+          <div className="mt-2 d-flex flex-column gap-1">
+            <small className="text-muted">
+              <i className="bi bi-info-circle me-1 text-primary"></i>
+              Die Person muss ein Amyaro-Konto mit genau dieser E-Mail-Adresse besitzen.
+            </small>
+            <small className="text-muted">
+              <i className="bi bi-bell-slash me-1 text-secondary"></i>
+              Es wird <strong>keine E-Mail</strong> an die Person verschickt – die Einladung erscheint in ihrer Amyaro-App unter "Einladungen".
+            </small>
+          </div>
           
           {/* Show shared with users */}
           {list?.sharedWith && list.sharedWith.length > 0 && (

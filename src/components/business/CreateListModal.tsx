@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Modal } from '../ui';
 import { Button } from '../ui';
-import { FormField, Input, Textarea, Select, type SelectOption } from '../forms';
+import { FormField, Input } from '../forms';
 import { ListService } from '../../services/listService';
 import { useAuth } from '../../context/AuthContext';
 import { sanitizeString } from '../../utils/helpers';
@@ -88,11 +88,6 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     }));
   }, []);
 
-  const typeOptions: SelectOption[] = [
-    { value: 'shopping', label: '🛜 Einkaufsliste' },
-    { value: 'gift', label: '🎁 Geschenkeliste' }
-  ];
-
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
       <div className="modal-header">
@@ -108,30 +103,49 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
               <FormField
                 label="Listentyp"
                 required
-                htmlFor="list-type"
+                htmlFor="list-type-shopping"
+                helpText="Wählen Sie aus, welche Art von Liste Sie anlegen möchten."
               >
-                <Select
-                  id="list-type"
-                  value={formData.type}
-                  onChange={(e) => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      type: e.target.value as 'shopping' | 'gift',
-                      categoryId: '' // Reset category when type changes
-                    }));
-                  }}
-                  options={typeOptions}
-                  placeholder="Listentyp auswählen"
-                />
+                <div className="list-type-selector" role="radiogroup" aria-label="Listentyp auswählen">
+                  <button
+                    id="list-type-shopping"
+                    type="button"
+                    role="radio"
+                    aria-checked={formData.type === 'shopping'}
+                    className={`list-type-option ${formData.type === 'shopping' ? 'active' : ''}`}
+                    onClick={() => handleInputChange('type', 'shopping')}
+                  >
+                    <span className="list-type-icon" aria-hidden="true">🛒</span>
+                    <span className="list-type-content">
+                      <span className="list-type-title">Einkaufsliste</span>
+                      <span className="list-type-subtitle">Für Lebensmittel und Besorgungen</span>
+                    </span>
+                  </button>
 
+                  <button
+                    id="list-type-gift"
+                    type="button"
+                    role="radio"
+                    aria-checked={formData.type === 'gift'}
+                    className={`list-type-option ${formData.type === 'gift' ? 'active' : ''}`}
+                    onClick={() => handleInputChange('type', 'gift')}
+                  >
+                    <span className="list-type-icon" aria-hidden="true">🎁</span>
+                    <span className="list-type-content">
+                      <span className="list-type-title">Geschenkeliste</span>
+                      <span className="list-type-subtitle">Für Anlässe und Geschenkideen</span>
+                    </span>
+                  </button>
+                </div>
               </FormField>
             </div>
 
             <div className="col-12">
               <FormField
-                label="Name"
+                label="Listen-Name"
                 required
                 htmlFor="list-name"
+                helpText={formData.type === 'shopping' ? 'Beispiel: Wocheneinkauf, Drogerie, Baumarkt' : 'Beispiel: Geburtstag Mama, Weihnachten 2026'}
               >
                 <Input
                   id="list-name"
@@ -145,30 +159,17 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
               </FormField>
             </div>
 
-            <div className="col-12">
-              <FormField
-                label="Beschreibung (optional)"
-                htmlFor="list-description"
-              >
-                <Textarea
-                  id="list-description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Optionale Beschreibung..."
-                  rows={3}
-                  maxLength={500}
-                />
-              </FormField>
-            </div>
+
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer d-flex flex-nowrap gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={handleClose}
             disabled={submitting}
+            className="flex-fill text-nowrap"
           >
             Abbrechen
           </Button>
@@ -177,6 +178,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
             variant="primary"
             isLoading={submitting}
             disabled={!formData.name.trim() || submitting}
+            className="flex-fill text-nowrap"
           >
             {submitting ? 'Erstelle...' : 'Liste erstellen'}
           </Button>

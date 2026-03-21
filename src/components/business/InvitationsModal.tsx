@@ -89,7 +89,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
             <i className="bi bi-inbox display-1 text-muted mb-3"></i>
             <h6 className="text-muted">Keine neuen Einladungen</h6>
             <p className="text-muted small mb-0">
-              Wenn jemand eine Liste mit Ihnen teilt, erscheint sie hier.
+              Wenn jemand eine Liste mit Dir teilt, erscheint diese hier.
             </p>
           </div>
         ) : (
