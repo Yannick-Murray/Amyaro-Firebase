@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 // User-bezogene Typen
 export interface User {
   uid: string;
@@ -35,6 +37,23 @@ export interface ListInvitation {
   createdAt: Date;
   expiresAt: Date;
   respondedAt?: Date;
+}
+
+// Aktivitäts-Benachrichtigungen für geteilte Listen
+export interface ActivityNotification {
+  id: string;
+  recipientId: string;
+  fromUserId: string;
+  fromUserName: string;
+  listId: string;
+  listName: string;
+  type: 'items_added' | 'list_closed' | 'list_reopened';
+  itemCount?: number;           // Anzahl hinzugefügter Items (items_added)
+  itemNames?: string[];         // Bis zu 3 Item-Namen (items_added)
+  unclosedItemCount?: number;   // Anzahl nicht-abgehakter Items beim Schließen
+  unclosedItemNames?: string[]; // Namen der nicht-abgehakten Items (bis zu 5)
+  isRead: boolean;
+  createdAt: Timestamp;
 }
 
 // Auth Context Typen

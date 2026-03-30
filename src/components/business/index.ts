@@ -29,6 +29,7 @@ export { CreateCategoryModal } from './CreateCategoryModal';
 export { ShareListModal } from './ShareListModal';
 export { InvitationsBanner } from './InvitationsBanner';
 export { InvitationsModal } from './InvitationsModal';
+export { ActivityNotificationsModal } from './ActivityNotificationsModal';
 export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';
 export { DeleteAccountModal } from './DeleteAccountModal';

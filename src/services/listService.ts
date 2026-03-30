@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
+import { NotificationService } from './notificationService';
 import type { List, Category, ListType, Item, ListHistory } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
@@ -376,7 +377,7 @@ export class ListService {
         });
       }
 
-      // Alle nicht-abgehakten Items löschen
+      // Alle nicht-abgehakten Items löschen (Namen vorher für Notification sichern)
       const itemsQuery = query(
         collection(db, 'todoItems'),
         where('listId', '==', listId),
@@ -384,6 +385,7 @@ export class ListService {
       );
       
       const itemsSnapshot = await getDocs(itemsQuery);
+      const unclosedItemNames = itemsSnapshot.docs.map(d => d.data().name as string);
       itemsSnapshot.docs.forEach(itemDoc => {
         batch.delete(itemDoc.ref);
       });
@@ -424,7 +426,29 @@ export class ListService {
       
       // Item Count aktualisieren
       await this.updateListItemCount(listId);
-      
+
+      // Andere Listenmitglieder über das Schließen benachrichtigen (non-critical)
+      try {
+        const sharedWith: string[] = listData.sharedWith || [];
+        if (sharedWith.length > 0 || listData.userId !== auth.currentUser.uid) {
+          const fromName = auth.currentUser.displayName || auth.currentUser.email || 'Unbekannter Nutzer';
+          await NotificationService.createNotificationsForListMembers(
+            listId,
+            listData.name,
+            auth.currentUser.uid,
+            fromName,
+            sharedWith,
+            listData.userId,
+            'list_closed',
+            undefined,
+            unclosedItemNames
+          );
+        }
+      } catch (notifyError) {
+        // Benachrichtigung ist nicht kritisch — Liste ist bereits geschlossen
+        logger.log('Benachrichtigung nach Listenschluss konnte nicht gesendet werden', notifyError);
+      }
+
       logger.log(`Liste ${listId} wurde abgeschlossen`);
     } catch (error) {
       logger.error('Fehler beim Abschließen der Liste:', error);
@@ -483,6 +507,25 @@ export class ListService {
       
       // Item Count aktualisieren
       await this.updateListItemCount(listId);
+
+      // Andere Listenmitglieder über das Wiedereröffnen benachrichtigen (non-critical)
+      try {
+        const sharedWith: string[] = listData.sharedWith || [];
+        if (sharedWith.length > 0 || listData.userId !== auth.currentUser.uid) {
+          const fromName = auth.currentUser.displayName || auth.currentUser.email || 'Unbekannter Nutzer';
+          await NotificationService.createNotificationsForListMembers(
+            listId,
+            listData.name,
+            auth.currentUser.uid,
+            fromName,
+            sharedWith,
+            listData.userId,
+            'list_reopened'
+          );
+        }
+      } catch (notifyError) {
+        logger.log('Benachrichtigung nach Wiedereröffnen konnte nicht gesendet werden', notifyError);
+      }
       
       logger.log(`Liste ${listId} wurde wieder geöffnet`);
     } catch (error) {
@@ -732,7 +775,33 @@ export class ItemService {
       
       // Update the list's item count
       await ListService.updateListItemCount(listId);
-      
+
+      // Andere Listenmitglieder über neue Items benachrichtigen (non-critical)
+      try {
+        const listDoc = await getDoc(doc(db, 'lists', listId));
+        if (listDoc.exists()) {
+          const listData = listDoc.data();
+          const sharedWith: string[] = listData.sharedWith || [];
+          if (sharedWith.length > 0 || listData.userId !== userId) {
+            const currentUser = auth.currentUser!;
+            const fromName = currentUser.displayName || currentUser.email || 'Unbekannter Nutzer';
+            await NotificationService.createNotificationsForListMembers(
+              listId,
+              listData.name,
+              userId,
+              fromName,
+              sharedWith,
+              listData.userId,
+              'items_added',
+              itemNames
+            );
+          }
+        }
+      } catch (notifyError) {
+        // Non-critical — Items wurden erstellt
+        logger.log('Benachrichtigung nach Bulk-Add konnte nicht gesendet werden', notifyError);
+      }
+
       return itemIds;
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);
@@ -814,7 +883,32 @@ export class ItemService {
       
       // Update the list's item count
       await ListService.updateListItemCount(listId);
-      
+
+      // Andere Listenmitglieder über das neue Item benachrichtigen (non-critical)
+      try {
+        const listDoc = await getDoc(doc(db, 'lists', listId));
+        if (listDoc.exists()) {
+          const listData = listDoc.data();
+          const sharedWith: string[] = listData.sharedWith || [];
+          if (sharedWith.length > 0 || listData.userId !== auth.currentUser!.uid) {
+            const fromName = auth.currentUser!.displayName || auth.currentUser!.email || 'Unbekannter Nutzer';
+            await NotificationService.createNotificationsForListMembers(
+              listId,
+              listData.name,
+              auth.currentUser!.uid,
+              fromName,
+              sharedWith,
+              listData.userId,
+              'items_added',
+              [cleanItem.name as string]
+            );
+          }
+        }
+      } catch (notifyError) {
+        // Non-critical — Item wurde erstellt
+        logger.log('Benachrichtigung nach Item-Erstellung konnte nicht gesendet werden', notifyError);
+      }
+
       return docRef.id;
     } catch (error) {
       console.error('Fehler beim Erstellen des Items:', error);

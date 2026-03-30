@@ -1,8 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
 import { useInvitations } from '../../hooks/useInvitations';
+import { useActivityNotifications } from '../../hooks/useActivityNotifications';
 import { InvitationsModal } from '../business/InvitationsModal';
+import { ActivityNotificationsModal } from '../business/ActivityNotificationsModal';
+import type { ActivityNotification } from '../../types';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,16 +13,30 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isInvitationsModalOpen, setIsInvitationsModalOpen] = useState(false);
+  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   
   const { 
     invitations, 
     loading: invitationsLoading, 
-    unreadCount, 
+    unreadCount: invitationsUnreadCount, 
     acceptInvitation, 
     declineInvitation 
   } = useInvitations();
+
+  const {
+    notifications: activityNotifications,
+    loading: activityLoading,
+    unreadCount: activityUnreadCount,
+    markAsRead: markActivityAsRead,
+    markAllAsRead: markAllActivityAsRead,
+    dismissNotification
+  } = useActivityNotifications();
+
+  const totalUnreadCount = invitationsUnreadCount + activityUnreadCount;
+  const unreadActivities = activityNotifications.filter(n => !n.isRead);
 
   const handleLogout = async () => {
     try {
@@ -44,6 +61,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setIsUserDropdownOpen(false);
   };
 
+  const openActivityModal = () => {
+    setIsActivityModalOpen(true);
+    setIsUserDropdownOpen(false);
+  };
+
+  const handleActivityNotificationClick = async (notification: ActivityNotification) => {
+    setIsUserDropdownOpen(false);
+    if (!notification.isRead) {
+      await markActivityAsRead(notification.id);
+    }
+    navigate(`/list/${notification.listId}`);
+  };
+
   return (
     <>
       {/* Navigation */}
@@ -66,10 +96,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               >
                 <i className="bi bi-person-circle"></i>
                 {/* Notification Bubble */}
-                {unreadCount > 0 && (
+                {totalUnreadCount > 0 && (
                   <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', minWidth: '1.2rem', height: '1.2rem' }}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                    <span className="visually-hidden">Neue Einladungen</span>
+                    {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                    <span className="visually-hidden">Neue Benachrichtigungen</span>
                   </span>
                 )}
               </button>
@@ -84,7 +114,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   
                   {/* Einladungen Menüpunkt */}
                   <button 
-                    className={`dropdown-item d-flex align-items-center justify-content-between ${unreadCount > 0 ? 'bg-light' : ''}`}
+                    className={`dropdown-item d-flex align-items-center justify-content-between ${invitationsUnreadCount > 0 ? 'bg-light' : ''}`}
                     type="button"
                     onClick={openInvitationsModal}
                   >
@@ -92,11 +122,46 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <i className="bi bi-envelope me-2"></i>
                       Einladungen
                     </span>
-                    {unreadCount > 0 && (
-                      <span className="badge bg-primary rounded-pill">{unreadCount}</span>
+                    {invitationsUnreadCount > 0 && (
+                      <span className="badge bg-primary rounded-pill">{invitationsUnreadCount}</span>
                     )}
                   </button>
-                  
+
+                  {/* Aktivitäten Menüpunkt */}
+                  <button
+                    className={`dropdown-item d-flex align-items-center justify-content-between ${activityUnreadCount > 0 ? 'bg-light' : ''}`}
+                    type="button"
+                    onClick={openActivityModal}
+                  >
+                    <span>
+                      <i className="bi bi-bell me-2"></i>
+                      Aktivitäten
+                    </span>
+                    {activityUnreadCount > 0 && (
+                      <span className="badge bg-primary rounded-pill">{activityUnreadCount}</span>
+                    )}
+                  </button>
+
+                  {/* Aktivitäten Vorschau: max. 3 ungelesene */}
+                  {unreadActivities.slice(0, 3).map(n => (
+                    <button
+                      key={n.id}
+                      className="dropdown-item py-1 px-3"
+                      type="button"
+                      onClick={() => handleActivityNotificationClick(n)}
+                      style={{ borderLeft: '3px solid var(--bs-primary)', fontSize: '0.8rem' }}
+                    >
+                      <div className="d-flex align-items-center gap-2">
+                        <i className={`bi flex-shrink-0 ${n.type === 'list_closed' ? 'bi-lock text-warning' : n.type === 'list_reopened' ? 'bi-unlock text-success' : 'bi-plus-circle text-primary'}`} style={{ fontSize: '0.75rem' }}></i>
+                        <span className="text-truncate" style={{ maxWidth: '160px' }}>
+                          <strong>{n.fromUserName?.split(' ')[0]}</strong>
+                          {' '}→{' '}
+                          {n.listName}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+
                   <div className="dropdown-divider"></div>
                   <Link className="dropdown-item" to="/profile" onClick={closeDropdown}>
                     <i className="bi bi-person me-2"></i>
@@ -144,6 +209,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         loading={invitationsLoading}
         onAccept={acceptInvitation}
         onDecline={declineInvitation}
+      />
+
+      {/* Aktivitäten Modal */}
+      <ActivityNotificationsModal
+        isOpen={isActivityModalOpen}
+        onClose={() => setIsActivityModalOpen(false)}
+        notifications={activityNotifications}
+        loading={activityLoading}
+        onMarkAsRead={markActivityAsRead}
+        onMarkAllAsRead={markAllActivityAsRead}
+        onDismiss={dismissNotification}
       />
 
       {/* Footer */}

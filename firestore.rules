@@ -387,6 +387,31 @@ service cloud.firestore {
       allow delete: if false;
     }
     
+    // Activity Notifications - Benachrichtigungen für geteilte Listen
+    match /activityNotifications/{notificationId} {
+      // Nur der Empfänger kann seine eigenen Benachrichtigungen lesen
+      allow read: if isValidUser() && request.auth.uid == resource.data.recipientId;
+
+      // Erstellen: Nur der Absender darf Benachrichtigungen schreiben
+      allow create: if isValidUser() &&
+                       request.auth.uid == request.resource.data.fromUserId &&
+                       request.resource.data.recipientId is string &&
+                       request.resource.data.listId is string &&
+                       isValidString(request.resource.data.listName, 1, 100) &&
+                       isValidString(request.resource.data.fromUserName, 1, 100) &&
+                       request.resource.data.type in ['items_added', 'list_closed', 'list_reopened'] &&
+                       request.resource.data.isRead == false &&
+                       request.resource.data.createdAt is timestamp;
+
+      // Update: Nur der Empfänger darf isRead ändern
+      allow update: if isValidUser() &&
+                       request.auth.uid == resource.data.recipientId &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+
+      // Delete: Nur der Empfänger darf verwerfen
+      allow delete: if isValidUser() && request.auth.uid == resource.data.recipientId;
+    }
+
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;
