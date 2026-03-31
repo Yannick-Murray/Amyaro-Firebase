@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const handleActivityNotificationClick = async (notification: ActivityNotification) => {
     setIsUserDropdownOpen(false);
     if (!notification.isRead) {
-      await markActivityAsRead(notification.id);
+      await markActivityAsRead(notification);
     }
     navigate(`/list/${notification.listId}`);
   };
@@ -97,7 +97,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <i className="bi bi-person-circle"></i>
                 {/* Notification Bubble */}
                 {totalUnreadCount > 0 && (
-                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem', minWidth: '1.2rem', height: '1.2rem' }}>
+                  <span
+                    className="position-absolute badge rounded-pill bg-danger"
+                    style={{
+                      top: '4px',
+                      right: '4px',
+                      fontSize: '0.55rem',
+                      minWidth: '1.1rem',
+                      height: '1.1rem',
+                      padding: '0 3px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      lineHeight: 1,
+                      border: '1.5px solid white',
+                      pointerEvents: 'none',
+                    }}
+                  >
                     {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                     <span className="visually-hidden">Neue Benachrichtigungen</span>
                   </span>

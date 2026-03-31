@@ -137,4 +137,26 @@ export class NotificationService {
   static async deleteNotification(notificationId: string): Promise<void> {
     await deleteDoc(doc(db, this.COLLECTION, notificationId));
   }
+
+  /**
+   * Mark multiple notifications as read in a single batch.
+   */
+  static async markManyAsRead(notificationIds: string[]): Promise<void> {
+    const batch = writeBatch(db);
+    notificationIds.forEach(id => {
+      batch.update(doc(db, this.COLLECTION, id), { isRead: true });
+    });
+    await batch.commit();
+  }
+
+  /**
+   * Delete multiple notifications in a single batch.
+   */
+  static async deleteManyNotifications(notificationIds: string[]): Promise<void> {
+    const batch = writeBatch(db);
+    notificationIds.forEach(id => {
+      batch.delete(doc(db, this.COLLECTION, id));
+    });
+    await batch.commit();
+  }
 }

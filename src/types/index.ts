@@ -42,6 +42,8 @@ export interface ListInvitation {
 // Aktivitäts-Benachrichtigungen für geteilte Listen
 export interface ActivityNotification {
   id: string;
+  /** All underlying Firestore document IDs when multiple notifications are merged client-side */
+  ids?: string[];
   recipientId: string;
   fromUserId: string;
   fromUserName: string;

@@ -9,9 +9,9 @@ interface ActivityNotificationsModalProps {
   onClose: () => void;
   notifications: ActivityNotification[];
   loading: boolean;
-  onMarkAsRead: (id: string) => Promise<void>;
+  onMarkAsRead: (notification: ActivityNotification) => Promise<void>;
   onMarkAllAsRead: () => Promise<void>;
-  onDismiss: (id: string) => Promise<void>;
+  onDismiss: (notification: ActivityNotification) => Promise<void>;
 }
 
 export const ActivityNotificationsModal: React.FC<ActivityNotificationsModalProps> = ({
@@ -27,7 +27,7 @@ export const ActivityNotificationsModal: React.FC<ActivityNotificationsModalProp
 
   const handleNavigateToList = async (notification: ActivityNotification) => {
     if (!notification.isRead) {
-      await onMarkAsRead(notification.id);
+      await onMarkAsRead(notification);
     }
     onClose();
     navigate(`/list/${notification.listId}`);
@@ -186,7 +186,7 @@ export const ActivityNotificationsModal: React.FC<ActivityNotificationsModalProp
                         <button
                           type="button"
                           className="btn btn-sm text-muted p-0 ms-2 flex-shrink-0"
-                          onClick={() => onDismiss(notification.id)}
+                          onClick={() => onDismiss(notification)}
                           title="Verwerfen"
                           style={{ lineHeight: 1 }}
                         >
