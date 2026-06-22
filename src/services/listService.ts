@@ -8,6 +8,7 @@ import {
   getDoc,
   query,
   where,
+  limit,
   orderBy,
   onSnapshot,
   serverTimestamp,
@@ -1311,6 +1312,7 @@ export class FrequencyService {
   private static readonly MIN_ITEM_FREQ = 4;
   private static readonly MIN_CAT_FREQ = 2;
   private static readonly MAX_ITEMS = 20;
+  private static readonly IN_QUERY_BATCH_SIZE = 10;
 
   private static chunkArray<T>(arr: T[], size: number): T[][] {
     const result: T[][] = [];
@@ -1346,9 +1348,9 @@ export class FrequencyService {
     const listIds = listsSnap.docs.map(d => d.id);
     if (listIds.length === 0) return { items: [], categories: [] };
 
-    // 2. Batch-query todoItems (Firestore 'in' max 30)
+    // 2. Batch-query todoItems (safe limit for Firestore `in` queries)
     const allItemDocs: any[] = [];
-    for (const batch of FrequencyService.chunkArray(listIds, 30)) {
+    for (const batch of FrequencyService.chunkArray(listIds, FrequencyService.IN_QUERY_BATCH_SIZE)) {
       const snap = await getDocs(
         query(collection(db, 'todoItems'), where('listId', 'in', batch))
       );
@@ -1357,7 +1359,7 @@ export class FrequencyService {
 
     // 3. Batch-query categories
     const allCategoryDocs: any[] = [];
-    for (const batch of FrequencyService.chunkArray(listIds, 30)) {
+    for (const batch of FrequencyService.chunkArray(listIds, FrequencyService.IN_QUERY_BATCH_SIZE)) {
       const snap = await getDocs(
         query(collection(db, 'categories'), where('listId', 'in', batch))
       );
@@ -1439,6 +1441,29 @@ export class FrequencyService {
     items: FrequentItem[]
   ): Promise<void> {
     if (!auth.currentUser) throw new Error('Benutzer muss angemeldet sein');
+
+    const listDoc = await getDoc(doc(db, 'lists', listId));
+    if (!listDoc.exists()) {
+      throw new Error('Liste wurde nicht gefunden');
+    }
+
+    const listData = listDoc.data() as { userId?: string; sharedWith?: string[] };
+    const currentUserId = auth.currentUser.uid;
+    const hasAccess =
+      listData.userId === currentUserId ||
+      (Array.isArray(listData.sharedWith) && listData.sharedWith.includes(currentUserId));
+
+    if (!hasAccess) {
+      throw new Error('Keine Berechtigung für diese Liste');
+    }
+
+    const existingItemsSnap = await getDocs(
+      query(collection(db, 'todoItems'), where('listId', '==', listId), limit(1))
+    );
+    if (!existingItemsSnap.empty) {
+      // Idempotent guard: list is no longer empty, so skip auto-population.
+      return;
+    }
 
     // 1. Create categories and build name → newId map
     const categoryNameToId = new Map<string, string>();

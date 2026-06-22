@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
-import { ListService, CategoryService, ItemService } from '../services/listService';
+import { ListService, CategoryService, ItemService, FrequencyService } from '../services/listService';
+import type { FrequentSuggestions } from '../services/listService';
 import type { List, Category, Item } from '../types/todoList';
 import { getListTypeIcon } from '../utils/helpers';
 import { QuickAddInput } from '../components/business/QuickAddInput';
@@ -38,6 +39,9 @@ const ListDetail = () => {
   const { user } = useAuth();
   const { refreshLists } = useListsContext();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as { source?: string } | null;
+  const isCreatedListFlow = locationState?.source === 'list-created';
   
   const [list, setList] = useState<List | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -65,6 +69,12 @@ const ListDetail = () => {
   
   // User names cache for assigned users
   const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
+  const [frequentSuggestions, setFrequentSuggestions] = useState<FrequentSuggestions | null>(null);
+  const [loadingFrequentSuggestions, setLoadingFrequentSuggestions] = useState(false);
+  const [showFrequentPrompt, setShowFrequentPrompt] = useState(false);
+  const [applyingFrequentSuggestions, setApplyingFrequentSuggestions] = useState(false);
+  const [frequentPromptError, setFrequentPromptError] = useState('');
+  const [hasEvaluatedFrequentPrompt, setHasEvaluatedFrequentPrompt] = useState(false);
 
   // Function to fetch user name from Firebase
   const fetchUserName = async (userId: string): Promise<string> => {
@@ -142,6 +152,115 @@ const ListDetail = () => {
   useEffect(() => {
     loadListData();
   }, [id, user]);
+
+  useEffect(() => {
+    if (!user || !list || hasEvaluatedFrequentPrompt || !isCreatedListFlow) {
+      return;
+    }
+
+    if (list.isClosed || items.length > 0) {
+      setShowFrequentPrompt(false);
+      setHasEvaluatedFrequentPrompt(true);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingFrequentSuggestions(true);
+    setFrequentPromptError('');
+
+    FrequencyService.getFrequentItemsAndCategories(user.uid, list.type)
+      .then((data) => {
+        if (cancelled) return;
+        const hasSuggestions = data.items.length > 0 || data.categories.length > 0;
+        setFrequentSuggestions(data);
+        setShowFrequentPrompt(hasSuggestions);
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden häufiger Vorschläge:', error);
+        if (cancelled) return;
+        setFrequentSuggestions(null);
+        setShowFrequentPrompt(false);
+        setFrequentPromptError('Vorschläge konnten nicht geladen werden.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingFrequentSuggestions(false);
+        setHasEvaluatedFrequentPrompt(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, list, items.length, hasEvaluatedFrequentPrompt, isCreatedListFlow]);
+
+  const handleApplyFrequentSuggestions = async () => {
+    if (!list || !frequentSuggestions) return;
+
+    try {
+      setApplyingFrequentSuggestions(true);
+      setFrequentPromptError('');
+      await FrequencyService.populateListFromFrequent(
+        list.id,
+        frequentSuggestions.categories,
+        frequentSuggestions.items
+      );
+      setShowFrequentPrompt(false);
+      setFrequentSuggestions(null);
+      await loadListData();
+      refreshLists();
+    } catch (error) {
+      console.error('Fehler beim Übernehmen häufiger Elemente:', error);
+      setFrequentPromptError('Übernahme fehlgeschlagen. Bitte später erneut versuchen.');
+    } finally {
+      setApplyingFrequentSuggestions(false);
+    }
+  };
+
+  const handleSkipFrequentSuggestions = () => {
+    setShowFrequentPrompt(false);
+    setFrequentSuggestions(null);
+  };
+
+  const handleShowFrequentSuggestionsFromMenu = async () => {
+    setShowListDropdown(false);
+
+    if (!user || !list) return;
+
+    if (list.isClosed) {
+      setFrequentPromptError('Für geschlossene Listen sind keine Vorschläge verfügbar.');
+      return;
+    }
+
+    if (items.length > 0) {
+      setFrequentPromptError('Vorschläge können nur bei leeren Listen übernommen werden.');
+      return;
+    }
+
+    try {
+      setLoadingFrequentSuggestions(true);
+      setFrequentPromptError('');
+
+      const data = await FrequencyService.getFrequentItemsAndCategories(user.uid, list.type);
+      const hasSuggestions = data.items.length > 0 || data.categories.length > 0;
+
+      if (hasSuggestions) {
+        setFrequentSuggestions(data);
+        setShowFrequentPrompt(true);
+      } else {
+        setFrequentSuggestions(null);
+        setShowFrequentPrompt(false);
+        setFrequentPromptError('Keine häufigen Vorschläge verfügbar.');
+      }
+    } catch (error) {
+      console.error('Fehler beim manuellen Laden häufiger Vorschläge:', error);
+      setFrequentSuggestions(null);
+      setShowFrequentPrompt(false);
+      setFrequentPromptError('Vorschläge konnten nicht geladen werden.');
+    } finally {
+      setLoadingFrequentSuggestions(false);
+      setHasEvaluatedFrequentPrompt(true);
+    }
+  };
 
   // Group items by category for shopping lists OR by assigned person for gift lists
   const grouped = useMemo(() => {
@@ -1046,6 +1165,15 @@ const ListDetail = () => {
                           Liste bearbeiten
                         </button>
                       </li>
+                      <li>
+                        <button
+                          className="dropdown-item"
+                          onClick={handleShowFrequentSuggestionsFromMenu}
+                        >
+                          <i className="bi bi-stars me-2"></i>
+                          Vorschläge anzeigen
+                        </button>
+                      </li>
                       <li><hr className="dropdown-divider" /></li>
                       <li>
                         <button
@@ -1123,6 +1251,58 @@ const ListDetail = () => {
             {/* Input basierend auf Listen-Typ */}
             {!list.isClosed && (
               <>
+                {isCreatedListFlow && loadingFrequentSuggestions && !showFrequentPrompt && (
+                  <div className="alert alert-light border mb-3 d-flex align-items-center gap-2">
+                    <div className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                    <span className="small text-muted">Vorschläge werden vorbereitet...</span>
+                  </div>
+                )}
+
+                {showFrequentPrompt && frequentSuggestions && (
+                  <div className="alert alert-info mb-3">
+                    <div className="d-flex flex-column gap-2">
+                      <div>
+                        <strong>Häufige Elemente übernehmen?</strong>
+                        <div className="small text-muted">
+                          {frequentSuggestions.categories.length > 0 && frequentSuggestions.items.length > 0 && (
+                            <>{frequentSuggestions.categories.length} Kategorien und {frequentSuggestions.items.length} Artikel stehen bereit.</>
+                          )}
+                          {frequentSuggestions.categories.length > 0 && frequentSuggestions.items.length === 0 && (
+                            <>{frequentSuggestions.categories.length} Kategorien stehen bereit.</>
+                          )}
+                          {frequentSuggestions.categories.length === 0 && frequentSuggestions.items.length > 0 && (
+                            <>{frequentSuggestions.items.length} Artikel stehen bereit.</>
+                          )}
+                        </div>
+                      </div>
+                      <div className="d-flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={handleSkipFrequentSuggestions}
+                          disabled={applyingFrequentSuggestions}
+                        >
+                          Überspringen
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={handleApplyFrequentSuggestions}
+                          disabled={applyingFrequentSuggestions}
+                        >
+                          {applyingFrequentSuggestions ? 'Wird übernommen...' : 'Jetzt übernehmen'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {frequentPromptError && (
+                  <div className="alert alert-warning mb-3">
+                    {frequentPromptError}
+                  </div>
+                )}
+
                 {list.type === 'shopping' ? (
                   <QuickAddInput
                     onAddItems={handleAddItems}

@@ -69,14 +69,17 @@ const Dashboard = () => {
     setToast(prev => ({ ...prev, isVisible: false }));
   };
 
-  const handleCreateList = async (_data: CreateListData) => {
+  const handleCreateList = async (_data: CreateListData, listId: string) => {
     if (!user) return;
 
     try {
       setShowCreateModal(false);
 
       // Listen neu laden um echte Daten zu bekommen
-      setTimeout(() => refreshLists(), 500);
+      await refreshLists();
+      navigate(`/list/${listId}`, {
+        state: { source: 'list-created' }
+      });
       
     } catch (error) {
       console.error('Fehler beim Aktualisieren der Listen:', error);
