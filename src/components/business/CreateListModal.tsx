@@ -53,6 +53,16 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
     return () => { cancelled = true; };
   }, [isOpen, user, formData.type]);
 
+  const handleClose = useCallback(() => {
+    setFormData({ name: '', description: '', type: 'shopping' });
+    setStep('form');
+    setCreatedListId(null);
+    setFrequentData(null);
+    setLoadingFrequent(false);
+    setAddingItems(false);
+    onClose();
+  }, [onClose]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -118,16 +128,6 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
       handleClose();
     }
   }, [createdListId, frequentData, handleClose]);
-
-  const handleClose = useCallback(() => {
-    setFormData({ name: '', description: '', type: 'shopping' });
-    setStep('form');
-    setCreatedListId(null);
-    setFrequentData(null);
-    setLoadingFrequent(false);
-    setAddingItems(false);
-    onClose();
-  }, [onClose]);
 
   const handleInputChange = useCallback((field: keyof CreateListData, value: any) => {
     setFormData(prev => ({ 

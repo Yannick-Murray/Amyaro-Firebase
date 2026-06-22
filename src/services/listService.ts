@@ -1476,4 +1476,3 @@ export class FrequencyService {
     await ListService.updateListItemCount(listId);
   }
 }
-}
