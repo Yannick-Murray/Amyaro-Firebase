@@ -1355,7 +1355,7 @@ const ListDetail = () => {
         {/* Categories */}
         <div className="row">
           <div className="col-12">
-            {items.length === 0 ? (
+            {items.length === 0 && categories.length === 0 ? (
               <div className="text-center py-5">
                 <i className="bi bi-basket fs-1 text-muted"></i>
                 <h4 className="mt-3 text-muted">Keine Items vorhanden</h4>
