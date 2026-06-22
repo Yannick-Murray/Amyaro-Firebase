@@ -1285,3 +1285,195 @@ export class ItemService {
     });
   }
 }
+
+// ─── Frequency types ──────────────────────────────────────────────────────────
+
+export interface FrequentItem {
+  name: string;
+  count: number;
+  categoryName?: string;
+}
+
+export interface FrequentCategory {
+  name: string;
+  color: string;
+  count: number;
+}
+
+export interface FrequentSuggestions {
+  items: FrequentItem[];
+  categories: FrequentCategory[];
+}
+
+// ─── FrequencyService ─────────────────────────────────────────────────────────
+
+export class FrequencyService {
+  private static readonly MIN_ITEM_FREQ = 4;
+  private static readonly MIN_CAT_FREQ = 2;
+  private static readonly MAX_ITEMS = 20;
+
+  private static chunkArray<T>(arr: T[], size: number): T[][] {
+    const result: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      result.push(arr.slice(i, i + size));
+    }
+    return result;
+  }
+
+  /**
+   * Returns items and categories that appeared on at least minItemFreq / minCatFreq
+   * *different* lists owned by the user (of the given type).
+   * Counts are per distinct list, not total occurrences.
+   */
+  static async getFrequentItemsAndCategories(
+    userId: string,
+    listType: ListType,
+    minItemFreq: number = FrequencyService.MIN_ITEM_FREQ,
+    minCatFreq: number = FrequencyService.MIN_CAT_FREQ
+  ): Promise<FrequentSuggestions> {
+    if (!auth.currentUser || auth.currentUser.uid !== userId) {
+      throw new Error('Benutzer muss angemeldet sein');
+    }
+
+    // 1. All own lists of the given type
+    const listsSnap = await getDocs(
+      query(
+        collection(db, 'lists'),
+        where('userId', '==', userId),
+        where('type', '==', listType)
+      )
+    );
+    const listIds = listsSnap.docs.map(d => d.id);
+    if (listIds.length === 0) return { items: [], categories: [] };
+
+    // 2. Batch-query todoItems (Firestore 'in' max 30)
+    const allItemDocs: any[] = [];
+    for (const batch of FrequencyService.chunkArray(listIds, 30)) {
+      const snap = await getDocs(
+        query(collection(db, 'todoItems'), where('listId', 'in', batch))
+      );
+      allItemDocs.push(...snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+
+    // 3. Batch-query categories
+    const allCategoryDocs: any[] = [];
+    for (const batch of FrequencyService.chunkArray(listIds, 30)) {
+      const snap = await getDocs(
+        query(collection(db, 'categories'), where('listId', 'in', batch))
+      );
+      allCategoryDocs.push(...snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+
+    // 4. categoryId → name map for item enrichment
+    const categoryIdToName = new Map<string, string>();
+    for (const cat of allCategoryDocs) {
+      categoryIdToName.set(cat.id as string, cat.name as string);
+    }
+
+    // 5. Count items per distinct list
+    const itemListSets = new Map<string, Set<string>>();
+    const itemDataMap = new Map<string, { name: string; categoryName?: string }>();
+
+    for (const item of allItemDocs) {
+      const key = (item.name as string).toLowerCase().trim();
+      if (!itemListSets.has(key)) itemListSets.set(key, new Set());
+      itemListSets.get(key)!.add(item.listId as string);
+
+      if (!itemDataMap.has(key)) {
+        const catName = item.categoryId
+          ? categoryIdToName.get(item.categoryId as string)
+          : undefined;
+        itemDataMap.set(key, { name: item.name as string, categoryName: catName });
+      } else if (!itemDataMap.get(key)!.categoryName && item.categoryId) {
+        const catName = categoryIdToName.get(item.categoryId as string);
+        if (catName) itemDataMap.get(key)!.categoryName = catName;
+      }
+    }
+
+    // 6. Count categories per distinct list
+    const catListSets = new Map<string, Set<string>>();
+    const catDataMap = new Map<string, { name: string; color: string }>();
+
+    for (const cat of allCategoryDocs) {
+      const key = (cat.name as string).toLowerCase().trim();
+      if (!catListSets.has(key)) catListSets.set(key, new Set());
+      catListSets.get(key)!.add(cat.listId as string);
+      if (!catDataMap.has(key)) {
+        catDataMap.set(key, {
+          name: cat.name as string,
+          color: (cat.color as string) || '#6c757d'
+        });
+      }
+    }
+
+    // 7. Build filtered results
+    const frequentItems: FrequentItem[] = Array.from(itemListSets.entries())
+      .filter(([, s]) => s.size >= minItemFreq)
+      .sort((a, b) => b[1].size - a[1].size)
+      .slice(0, FrequencyService.MAX_ITEMS)
+      .map(([key, s]) => ({
+        name: itemDataMap.get(key)!.name,
+        count: s.size,
+        categoryName: itemDataMap.get(key)!.categoryName
+      }));
+
+    const frequentCategories: FrequentCategory[] = Array.from(catListSets.entries())
+      .filter(([, s]) => s.size >= minCatFreq)
+      .sort((a, b) => b[1].size - a[1].size)
+      .map(([key, s]) => ({
+        name: catDataMap.get(key)!.name,
+        color: catDataMap.get(key)!.color,
+        count: s.size
+      }));
+
+    return { items: frequentItems, categories: frequentCategories };
+  }
+
+  /**
+   * Creates the given categories and items in the specified list.
+   * Items are linked to newly created category IDs where possible.
+   */
+  static async populateListFromFrequent(
+    listId: string,
+    categories: FrequentCategory[],
+    items: FrequentItem[]
+  ): Promise<void> {
+    if (!auth.currentUser) throw new Error('Benutzer muss angemeldet sein');
+
+    // 1. Create categories and build name → newId map
+    const categoryNameToId = new Map<string, string>();
+    for (const cat of categories) {
+      const newId = await CategoryService.createListCategory(listId, cat.name, cat.color);
+      categoryNameToId.set(cat.name.toLowerCase().trim(), newId);
+    }
+
+    if (items.length === 0) return;
+
+    // 2. Batch-create items
+    const batch = writeBatch(db);
+    const now = Timestamp.now();
+
+    items.forEach((item, index) => {
+      const docRef = doc(collection(db, 'todoItems'));
+      const categoryId = item.categoryName
+        ? categoryNameToId.get(item.categoryName.toLowerCase().trim())
+        : undefined;
+      const itemData: any = {
+        listId,
+        name: item.name,
+        quantity: 1,
+        isCompleted: false,
+        priority: 'medium',
+        createdAt: now,
+        updatedAt: now,
+        order: (index + 1) * 1000
+      };
+      if (categoryId) itemData.categoryId = categoryId;
+      batch.set(docRef, itemData);
+    });
+
+    await batch.commit();
+    await ListService.updateListItemCount(listId);
+  }
+}
+}
