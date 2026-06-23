@@ -145,11 +145,14 @@ const ListDetail = () => {
   );
 
   // Load data function
-  const loadListData = async () => {
+  // showSpinner nur beim ersten Laden true: So wird die Liste bei
+  // Aktualisierungen nach Aktionen NICHT aus-/wieder eingehängt und die
+  // Scroll-Position des Nutzers bleibt erhalten (kein Sprung an den Anfang).
+  const loadListData = async (showSpinner = false) => {
     if (!id || !user) return;
     
     try {
-      setLoading(true);
+      if (showSpinner) setLoading(true);
       setError('');
       
       const [listData, itemsData, categoriesData] = await Promise.all([
@@ -165,12 +168,12 @@ const ListDetail = () => {
       console.error('Fehler beim Laden der Liste:', error);
       setError('Fehler beim Laden der Liste');
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadListData();
+    loadListData(true);
   }, [id, user]);
 
   useEffect(() => {
