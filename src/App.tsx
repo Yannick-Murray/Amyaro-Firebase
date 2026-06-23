@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ListsProvider } from './context/ListsContext';
@@ -5,14 +6,17 @@ import Layout from './components/Layout/Layout';
 import Loading from './components/Layout/Loading';
 import AuthWrapper from './components/Auth/AuthWrapper';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import ListDetail from './pages/ListDetail';
-import Profile from './pages/Profile';
-import Statistics from './pages/Statistics';
-import AuthAction from './pages/AuthAction';
-import TermsOfService from './pages/TermsOfService';
-import Impressum from './pages/Impressum';
 import './App.css';
+
+// Seiten werden lazy geladen, damit das initiale Bundle klein bleibt
+// und schwere Abhängigkeiten (z. B. Charts, Drag & Drop) erst bei Bedarf laden.
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ListDetail = lazy(() => import('./pages/ListDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const AuthAction = lazy(() => import('./pages/AuthAction'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const Impressum = lazy(() => import('./pages/Impressum'));
 
 // Auth-Route Component (für Login/Register)
 const AuthRoute = () => {
@@ -37,6 +41,7 @@ const AuthRoute = () => {
 const AppContent = () => {
   return (
     <Router>
+      <Suspense fallback={<Loading />}>
       <Routes>
         {/* Auth Action Route - für Email Verification Links */}
         <Route path="/__/auth/action" element={<AuthAction />} />
@@ -84,6 +89,7 @@ const AppContent = () => {
         {/* Catch-all Route - Redirect to Dashboard */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </Router>
   );
 };

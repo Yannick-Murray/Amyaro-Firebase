@@ -13,5 +13,27 @@ export default defineConfig({
   define: {
     // Remove debug logs in production
     __DEV__: process.env.NODE_ENV !== 'production'
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        // Selten ändernde Vendor-Bibliotheken in eigene Chunks auslagern,
+        // um das initiale Bundle zu verkleinern und Browser-Caching zu verbessern.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('/firebase/') || id.includes('/@firebase/')) return 'firebase';
+          if (id.includes('/react-router')) return 'react-router';
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          ) {
+            return 'react-vendor';
+          }
+          if (id.includes('/@dnd-kit/')) return 'dnd-kit';
+        }
+      }
+    }
   }
 })
