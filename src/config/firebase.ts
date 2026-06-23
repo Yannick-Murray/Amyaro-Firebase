@@ -1,6 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 
 // Firebase Konfigurationsobjekt aus Umgebungsvariablen
 const firebaseConfig = {
@@ -18,7 +22,13 @@ const app = initializeApp(firebaseConfig);
 
 // Firebase Services
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Firestore mit Offline-Persistenz (IndexedDB). Dadurch sind Listen auch
+// ohne Verbindung sichtbar und Änderungen (z. B. Abhaken) werden gepuffert
+// und automatisch synchronisiert, sobald wieder Netz da ist.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 
 // 🔒 SECURITY: Configure session persistence (Local storage for convenience but with timeout)
 setPersistence(auth, browserLocalPersistence).catch((error) => {
