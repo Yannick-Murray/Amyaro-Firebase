@@ -128,7 +128,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
             <ul className="list-unstyled mb-3">
               <li className="mb-2">
                 <i className="bi bi-list-ul text-danger me-2"></i>
-                <strong>Alle Ihre Listen und Items</strong> werden gelöscht
+                <strong>Alle deine Listen und Artikel</strong> werden gelöscht
               </li>
               <li className="mb-2">
                 <i className="bi bi-person-x text-info me-2"></i>

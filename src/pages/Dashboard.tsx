@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
-import { Button, Toast } from '../components/ui';
+import { Button, Toast, Modal } from '../components/ui';
 import { 
   ListGrid, 
   CreateListModal, 
@@ -46,6 +46,10 @@ const Dashboard = () => {
   const [showCloseConfirmModal, setShowCloseConfirmModal] = useState(false);
   const [listToClose, setListToClose] = useState<List | null>(null);
   const [isReopenMode, setIsReopenMode] = useState(false);
+
+  // Delete Confirm Modal
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [listToDelete, setListToDelete] = useState<List | null>(null);
   
   // Price Modal (shown after close confirmation)
   const [showPriceModal, setShowPriceModal] = useState(false);
@@ -91,7 +95,18 @@ const Dashboard = () => {
     navigate(`/list/${list.id}`);
   };
 
-  const handleListDelete = async (list: List) => {
+  const handleListDelete = (list: List) => {
+    setListToDelete(list);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const performListDelete = async () => {
+    if (!listToDelete) return;
+
+    const list = listToDelete;
+    setShowDeleteConfirmModal(false);
+    setListToDelete(null);
+
     try {
       await ListService.deleteList(list.id);
       // Liste aus dem Context entfernen / neu laden
@@ -104,7 +119,7 @@ const Dashboard = () => {
       if (error instanceof Error && error.message.includes('Keine Berechtigung')) {
         showToast('Diese Liste kann nur vom Ersteller der Liste gelöscht werden.', 'error');
       } else {
-        showToast('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.', 'error');
+        showToast('Fehler beim Löschen der Liste. Bitte versuche es erneut.', 'error');
       }
     }
   };
@@ -143,7 +158,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       logger.error('Fehler beim Schließen/Wiedereröffnen der Liste:', error);
-      showToast('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.', 'error');
+      showToast('Ein Fehler ist aufgetreten. Bitte versuche es erneut.', 'error');
     }
   };
 
@@ -160,7 +175,7 @@ const Dashboard = () => {
       setListToClose(null);
     } catch (error) {
       logger.error('Fehler beim Abschließen der Liste:', error);
-      showToast('Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.', 'error');
+      showToast('Fehler beim Abschließen der Liste. Bitte versuche es erneut.', 'error');
     }
   };
 
@@ -425,7 +440,55 @@ const Dashboard = () => {
         }}
         onConfirm={handlePriceModalConfirm}
       />
-      
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => {
+          setShowDeleteConfirmModal(false);
+          setListToDelete(null);
+        }}
+        size="sm"
+      >
+        <div className="modal-header border-0">
+          <h5 className="modal-title d-flex align-items-center text-danger">
+            <i className="bi bi-trash3-fill me-2"></i>
+            Liste löschen
+          </h5>
+        </div>
+        <div className="modal-body">
+          <p className="mb-3">
+            <strong>Liste "{listToDelete?.name}" wirklich löschen?</strong>
+          </p>
+          <div className="alert alert-warning mb-0">
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Diese Aktion kann nicht rückgängig gemacht werden.
+          </div>
+        </div>
+        <div className="modal-footer border-0">
+          <div className="d-flex gap-2 w-100">
+            <button
+              type="button"
+              className="btn btn-outline-secondary flex-fill"
+              onClick={() => {
+                setShowDeleteConfirmModal(false);
+                setListToDelete(null);
+              }}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger flex-fill"
+              onClick={performListDelete}
+            >
+              <i className="bi bi-trash3 me-1"></i>
+              Löschen
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Toast Notifications */}
       <Toast
         message={toast.message}

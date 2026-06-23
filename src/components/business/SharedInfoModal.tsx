@@ -65,7 +65,7 @@ export const SharedInfoModal: React.FC<SharedInfoModalProps> = ({
             ) : (
               <p className="text-muted mb-3">
                 <strong>{creatorName}</strong> hat diese Liste mit Ihnen geteilt. 
-                Sie können Artikel bearbeiten und abhaken.
+                Du kannst Artikel bearbeiten und abhaken.
               </p>
             )}
             <div className="alert alert-light mb-0">

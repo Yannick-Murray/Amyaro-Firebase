@@ -97,7 +97,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                 label="Listentyp"
                 required
                 htmlFor="list-type-shopping"
-                helpText="Wählen Sie aus, welche Art von Liste Sie anlegen möchten."
+                helpText="Wähle aus, welche Art von Liste du anlegen möchtest."
               >
                 <div className="list-type-selector" role="radiogroup" aria-label="Listentyp auswählen">
                   <button

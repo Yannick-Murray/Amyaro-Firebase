@@ -222,8 +222,8 @@ export const DraggableMobileItem: React.FC<DraggableMobileItemProps> = ({
             minHeight: '28px',
             flexShrink: 0
           }}
-          aria-label="Item löschen"
-          title="Item löschen"
+          aria-label="Artikel löschen"
+          title="Artikel löschen"
         >
           <i className="bi bi-trash" style={{ fontSize: '12px' }} />
         </button>

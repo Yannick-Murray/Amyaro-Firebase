@@ -72,7 +72,7 @@ export const ActivityNotificationsModal: React.FC<ActivityNotificationsModalProp
           {unclosed > 0 && (
             <> — <span className="text-warning fw-semibold">{unclosed} {unclosed === 1 ? 'Item' : 'Items'} nicht abgehakt</span></>
           )}
-          {unclosed === 0 && <> — alle Items wurden abgehakt</>}
+          {unclosed === 0 && <> — alle Artikel wurden abgehakt</>}
         </>
       );
     }
@@ -106,7 +106,7 @@ export const ActivityNotificationsModal: React.FC<ActivityNotificationsModalProp
           type="button"
           className="btn-close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Schließen"
         ></button>
       </div>
 

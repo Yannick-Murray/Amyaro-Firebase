@@ -242,7 +242,7 @@ export class InvitationService {
           invitationToUserId: invitation.toUserId,
           currentUserId: userId
         });
-        throw new Error('Diese Einladung ist nicht für Sie bestimmt.');
+        throw new Error('Diese Einladung ist nicht für dich bestimmt.');
       }
       
       if (invitation.toEmail && auth.currentUser.email !== invitation.toEmail) {
@@ -377,7 +377,7 @@ export class InvitationService {
       const invitation = invitationDoc.data() as ListInvitation;
       
       if (invitation.fromUserId !== userId) {
-        throw new Error('Sie können nur Ihre eigenen Einladungen stornieren.');
+        throw new Error('Du kannst nur deine eigenen Einladungen stornieren.');
       }
 
       await deleteDoc(invitationRef);

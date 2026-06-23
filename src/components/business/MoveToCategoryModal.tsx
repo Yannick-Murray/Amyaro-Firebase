@@ -30,7 +30,7 @@ export const MoveToCategoryModal: React.FC<MoveToCategoryModalProps> = ({
       <div className="modal-header">
         <h5 className="modal-title mb-0">
           <i className="bi bi-arrow-right-circle text-primary me-2"></i>
-          Item verschieben
+          Artikel verschieben
         </h5>
       </div>
 

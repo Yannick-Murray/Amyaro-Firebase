@@ -168,7 +168,7 @@ const AddItemModal = ({ listId, isOpen, onClose, onItemAdded, listType = 'shoppi
       onClose();
     } catch (err: any) {
       console.error('Error creating item:', err);
-      setError('Fehler beim Erstellen des Items');
+      setError('Fehler beim Erstellen des Artikels');
     } finally {
       setIsLoading(false);
     }

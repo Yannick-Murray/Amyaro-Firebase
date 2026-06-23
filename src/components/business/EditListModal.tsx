@@ -99,7 +99,7 @@ export const EditListModal: React.FC<EditListModalProps> = ({
           className="btn-close" 
           onClick={handleClose}
           disabled={loading}
-          aria-label="Close"
+          aria-label="Schließen"
         ></button>
       </div>
       

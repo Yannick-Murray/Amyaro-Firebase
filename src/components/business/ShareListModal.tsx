@@ -91,7 +91,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
     }
 
     if (email.toLowerCase() === user.email?.toLowerCase()) {
-      setMessage('Sie können die Liste nicht mit sich selbst teilen');
+      setMessage('Du kannst die Liste nicht mit dir selbst teilen');
       setMessageType('error');
       return;
     }
@@ -126,7 +126,7 @@ export const ShareListModal: React.FC<ShareListModalProps> = ({
 
     } catch (error: any) {
       console.error('Error sending invitation:', error);
-      setMessage(error.message || 'Fehler beim Senden der Einladung. Bitte versuchen Sie es erneut.');
+      setMessage(error.message || 'Fehler beim Senden der Einladung. Bitte versuche es erneut.');
       setMessageType('error');
     } finally {
       setIsLoading(false);

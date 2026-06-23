@@ -76,7 +76,7 @@ export const Toast = ({ message, type, isVisible, onClose, duration = 4000 }: To
           type="button"
           className="btn-close"
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Schließen"
         ></button>
       </div>
       <div className="toast-body">

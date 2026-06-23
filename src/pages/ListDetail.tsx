@@ -490,7 +490,7 @@ const ListDetail = () => {
       
     } catch (error) {
       console.error('Fehler beim Hinzufügen der Items:', error);
-      setError('Fehler beim Hinzufügen der Items');
+      setError('Fehler beim Hinzufügen der Artikel');
     }
   };
 
@@ -520,7 +520,7 @@ const ListDetail = () => {
       refreshLists();
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);
-      setError('Fehler beim Erstellen der Items');
+      setError('Fehler beim Erstellen der Artikel');
     }
   };
 
@@ -543,7 +543,7 @@ const ListDetail = () => {
       
     } catch (error) {
       console.error('Fehler beim Hinzufügen der Items zur Kategorie:', error);
-      setError('Fehler beim Hinzufügen der Items');
+      setError('Fehler beim Hinzufügen der Artikel');
     }
   };
 
@@ -591,7 +591,7 @@ const ListDetail = () => {
       setPendingNewItems([]);
     } catch (error) {
       console.error('Fehler beim Erstellen der Items:', error);
-      setError('Fehler beim Erstellen der Items');
+      setError('Fehler beim Erstellen der Artikel');
     }
   };
 
@@ -807,7 +807,7 @@ const ListDetail = () => {
       }
     } catch (error) {
       console.error('Fehler beim Vorbereiten der Listen-Operation:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+      alert('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
     }
   };
 
@@ -824,7 +824,7 @@ const ListDetail = () => {
       navigate('/');
     } catch (error) {
       console.error('Fehler beim Abschließen der Liste:', error);
-      alert('Fehler beim Abschließen der Liste. Bitte versuchen Sie es erneut.');
+      alert('Fehler beim Abschließen der Liste. Bitte versuche es erneut.');
     }
   };
 
@@ -963,7 +963,7 @@ const ListDetail = () => {
       });
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
-      alert('Fehler beim Löschen der Liste. Bitte versuchen Sie es erneut.');
+      alert('Fehler beim Löschen der Liste. Bitte versuche es erneut.');
     }
   };
 
@@ -1306,7 +1306,7 @@ const ListDetail = () => {
                 {list.type === 'shopping' ? (
                   <QuickAddInput
                     onAddItems={handleAddItems}
-                    placeholder="Neue Items"
+                    placeholder="Neue Artikel"
                   />
                 ) : (
                   /* Gift-Listen: Geschenk hinzufügen Button */
@@ -1358,8 +1358,8 @@ const ListDetail = () => {
             {items.length === 0 && categories.length === 0 ? (
               <div className="text-center py-5">
                 <i className="bi bi-basket fs-1 text-muted"></i>
-                <h4 className="mt-3 text-muted">Keine Items vorhanden</h4>
-                <p className="text-muted">Füge Items über das Eingabefeld hinzu</p>
+                <h4 className="mt-3 text-muted">Keine Artikel vorhanden</h4>
+                <p className="text-muted">Füge Artikel über das Eingabefeld hinzu</p>
               </div>
             ) : list?.type === 'gift' ? (
               <>

@@ -29,7 +29,7 @@ export const CloseListConfirmModal: React.FC<CloseListConfirmModalProps> = ({
         {isReopenMode ? (
           <>
             <p>
-              Möchten Sie die Liste <strong>"{listName}"</strong> wirklich wieder öffnen?
+              Möchtest du die Liste <strong>"{listName}"</strong> wirklich wieder öffnen?
             </p>
             <div className="alert alert-info">
               <i className="bi bi-info-circle me-2"></i>
@@ -39,7 +39,7 @@ export const CloseListConfirmModal: React.FC<CloseListConfirmModalProps> = ({
         ) : (
           <>
             <p>
-              Möchten Sie die Liste <strong>"{listName}"</strong> wirklich abschließen?
+              Möchtest du die Liste <strong>"{listName}"</strong> wirklich abschließen?
             </p>
             <div className="alert alert-warning">
               <i className="bi bi-exclamation-triangle me-2"></i>

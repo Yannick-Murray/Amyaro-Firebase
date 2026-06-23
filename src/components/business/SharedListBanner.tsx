@@ -99,12 +99,12 @@ export const SharedListBanner: React.FC<SharedListBannerProps> = ({
               {loading ? (
                 <p className="mb-0 text-muted small">
                   Diese Liste wurde von einem anderen Nutzer mit Ihnen geteilt. 
-                  Sie können Artikel hinzufügen, bearbeiten und als erledigt markieren.
+                  Du kannst Artikel hinzufügen, bearbeiten und als erledigt markieren.
                 </p>
               ) : (
                 <p className="mb-0 text-muted small">
                   <strong>{creatorName}</strong> hat diese Liste mit Ihnen geteilt. 
-                  Sie können Artikel hinzufügen, bearbeiten und als erledigt markieren.
+                  Du kannst Artikel hinzufügen, bearbeiten und als erledigt markieren.
                 </p>
               )}
             </div>

@@ -88,7 +88,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(({
                   size="sm"
                   onClick={onClose}
                   className="btn-close"
-                  aria-label="Close"
+                  aria-label="Schließen"
                 >
                   <i className="bi bi-x-lg" />
                 </Button>

@@ -40,15 +40,15 @@ export const DuplicateItemModal: React.FC<DuplicateItemModalProps> = ({
       <div className="modal-header">
         <h5 className="modal-title mb-0">
           <i className="bi bi-exclamation-triangle text-warning me-2"></i>
-          {duplicates.length === 1 ? 'Item bereits vorhanden' : 'Items bereits vorhanden'}
+          {duplicates.length === 1 ? 'Artikel bereits vorhanden' : 'Artikel bereits vorhanden'}
         </h5>
       </div>
 
       <div className="modal-body">
         <p className="mb-3">
           {duplicates.length === 1 
-            ? 'Dieses Item existiert bereits auf deiner Liste:' 
-            : 'Diese Items existieren bereits auf deiner Liste:'
+            ? 'Dieser Artikel existiert bereits auf deiner Liste:' 
+            : 'Diese Artikel existieren bereits auf deiner Liste:'
           }
         </p>
 
@@ -91,8 +91,8 @@ export const DuplicateItemModal: React.FC<DuplicateItemModalProps> = ({
         </div>
 
         <p className="text-muted mb-0">
-          Möchtest du die Menge {duplicates.length === 1 ? 'dieses Items' : 'dieser Items'} um eins erhöhen, 
-          oder trotzdem {duplicates.length === 1 ? 'ein neues Item' : 'neue Items'} erstellen?
+          Möchtest du die Menge {duplicates.length === 1 ? 'dieses Artikels' : 'dieser Artikel'} um eins erhöhen, 
+          oder trotzdem {duplicates.length === 1 ? 'einen neuen Artikel' : 'neue Artikel'} erstellen?
         </p>
       </div>
 

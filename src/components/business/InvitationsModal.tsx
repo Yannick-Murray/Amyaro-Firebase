@@ -72,7 +72,7 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
           type="button" 
           className="btn-close" 
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Schließen"
         ></button>
       </div>
       

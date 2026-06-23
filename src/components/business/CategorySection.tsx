@@ -209,7 +209,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               <button
                 className="btn btn-sm btn-success"
                 onClick={handleStartQuickAdd}
-                title="Items zu dieser Kategorie hinzufügen"
+                title="Artikel zu dieser Kategorie hinzufügen"
               >
                 <i className="bi bi-plus"></i>
               </button>
@@ -306,7 +306,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
             <input
               type="text"
               className="form-control form-control-sm"
-              placeholder="Item hinzufügen (mehrere mit Komma trennen)"
+              placeholder="Artikel hinzufügen (mehrere mit Komma trennen)"
               value={quickAddInput}
               onChange={(e) => setQuickAddInput(e.target.value)}
               onKeyDown={handleQuickAddKeyPress}
@@ -365,7 +365,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 Hier ablegen
               </span>
             ) : (
-              <span>Items hier ablegen...</span>
+              <span>Artikel hier ablegen...</span>
             )}
           </div>
         )}
