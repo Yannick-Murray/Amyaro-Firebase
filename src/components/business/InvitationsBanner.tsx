@@ -9,6 +9,7 @@ export const InvitationsBanner: React.FC = () => {
   const [invitations, setInvitations] = useState<ListInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const loadInvitations = useCallback(async () => {
     if (!user) return;
@@ -36,12 +37,13 @@ export const InvitationsBanner: React.FC = () => {
     if (!user) return;
     
     setProcessingId(invitationId);
+    setErrorMessage('');
     try {
       await InvitationService.acceptInvitation(invitationId, user.uid);
       await loadInvitations(); // Neu laden
     } catch (error: any) {
       console.error('Fehler beim Annehmen der Einladung:', error);
-      alert(error.message || 'Fehler beim Annehmen der Einladung');
+      setErrorMessage(error.message || 'Fehler beim Annehmen der Einladung');
     } finally {
       setProcessingId('');
     }
@@ -49,12 +51,13 @@ export const InvitationsBanner: React.FC = () => {
 
   const handleDecline = useCallback(async (invitationId: string) => {
     setProcessingId(invitationId);
+    setErrorMessage('');
     try {
       await InvitationService.declineInvitation(invitationId);
       await loadInvitations(); // Neu laden
     } catch (error: any) {
       console.error('Fehler beim Ablehnen der Einladung:', error);
-      alert(error.message || 'Fehler beim Ablehnen der Einladung');
+      setErrorMessage(error.message || 'Fehler beim Ablehnen der Einladung');
     } finally {
       setProcessingId('');
     }
@@ -66,6 +69,20 @@ export const InvitationsBanner: React.FC = () => {
 
   return (
     <div className="mb-4">
+      {errorMessage && (
+        <div className="alert alert-danger d-flex align-items-center justify-content-between mb-3" role="alert">
+          <span>
+            <i className="bi bi-exclamation-circle me-2"></i>
+            {errorMessage}
+          </span>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setErrorMessage('')}
+            aria-label="Schließen"
+          ></button>
+        </div>
+      )}
       {invitations.map((invitation) => (
         <div key={invitation.id} className="alert alert-info border-start border-primary border-4 mb-3">
           <div className="d-flex align-items-start justify-content-between">
@@ -76,7 +93,7 @@ export const InvitationsBanner: React.FC = () => {
               </h6>
               <p className="mb-2">
                 <strong>{invitation.fromUserName}</strong> möchte die Liste{' '}
-                <strong>"{invitation.listName}"</strong> mit Ihnen teilen.
+                <strong>"{invitation.listName}"</strong> mit dir teilen.
               </p>
               <small className="text-muted">
                 Erhalten am {invitation.createdAt.toLocaleDateString('de-DE')} um{' '}

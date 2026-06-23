@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DeleteAccountModal, ProfileEditModal } from '../components/business';
 import { ManageShopModal } from '../components/business/ManageShopModal';
+import { Modal, Toast } from '../components/ui';
 import { ShopService } from '../services/shopService';
 import type { Shop } from '../types/todoList';
 
@@ -14,6 +15,24 @@ const Profile = () => {
   const [editingShop, setEditingShop] = useState<Shop | undefined>();
   const [userShops, setUserShops] = useState<Shop[]>([]);
   const [isLoadingShops, setIsLoadingShops] = useState(false);
+  const [shopToDelete, setShopToDelete] = useState<Shop | null>(null);
+  const [toast, setToast] = useState<{
+    isVisible: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    isVisible: false,
+    message: '',
+    type: 'info'
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   // Lade User-Shops
   useEffect(() => {
@@ -63,17 +82,23 @@ const Profile = () => {
     setShowShopModal(true);
   };
 
-  const handleDeleteShop = async (shopId: string) => {
-    if (!confirm('Möchtest du diesen Shop wirklich löschen?')) {
-      return;
-    }
+  const handleDeleteShop = (shop: Shop) => {
+    setShopToDelete(shop);
+  };
+
+  const performDeleteShop = async () => {
+    if (!shopToDelete) return;
+
+    const shop = shopToDelete;
+    setShopToDelete(null);
 
     try {
-      await ShopService.deleteUserShop(shopId);
+      await ShopService.deleteUserShop(shop.id);
       await loadUserShops();
+      showToast(`Shop "${shop.displayName}" wurde gelöscht`, 'success');
     } catch (error) {
       console.error('Fehler beim Löschen des Shops:', error);
-      alert('Fehler beim Löschen des Shops');
+      showToast('Fehler beim Löschen des Shops', 'error');
     }
   };
 
@@ -205,7 +230,7 @@ const Profile = () => {
                         </button>
                         <button 
                           className="btn btn-sm btn-outline-danger"
-                          onClick={() => handleDeleteShop(shop.id)}
+                          onClick={() => handleDeleteShop(shop)}
                           title="Löschen"
                         >
                           <i className="bi bi-trash"></i>
@@ -275,6 +300,52 @@ const Profile = () => {
         onSave={handleSaveShop}
         mode={shopModalMode}
         existingShop={editingShop}
+      />
+
+      {/* Delete Shop Confirmation Modal */}
+      <Modal
+        isOpen={shopToDelete !== null}
+        onClose={() => setShopToDelete(null)}
+        size="sm"
+      >
+        <div className="modal-header border-0">
+          <h5 className="modal-title d-flex align-items-center text-danger">
+            <i className="bi bi-trash3-fill me-2"></i>
+            Shop löschen
+          </h5>
+        </div>
+        <div className="modal-body">
+          <p className="mb-0">
+            <strong>Shop "{shopToDelete?.displayName}" wirklich löschen?</strong>
+          </p>
+        </div>
+        <div className="modal-footer border-0">
+          <div className="d-flex gap-2 w-100">
+            <button
+              type="button"
+              className="btn btn-outline-secondary flex-fill"
+              onClick={() => setShopToDelete(null)}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger flex-fill"
+              onClick={performDeleteShop}
+            >
+              <i className="bi bi-trash3 me-1"></i>
+              Löschen
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Toast Notifications */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
       />
     </div>
   );

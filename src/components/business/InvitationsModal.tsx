@@ -21,13 +21,15 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
   onDecline
 }) => {
   const [processingId, setProcessingId] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleAccept = async (invitationId: string) => {
     setProcessingId(invitationId);
+    setErrorMessage('');
     try {
       await onAccept(invitationId);
     } catch (error: any) {
-      alert(error.message || 'Fehler beim Annehmen der Einladung');
+      setErrorMessage(error.message || 'Fehler beim Annehmen der Einladung');
     } finally {
       setProcessingId('');
     }
@@ -35,10 +37,11 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
 
   const handleDecline = async (invitationId: string) => {
     setProcessingId(invitationId);
+    setErrorMessage('');
     try {
       await onDecline(invitationId);
     } catch (error: any) {
-      alert(error.message || 'Fehler beim Ablehnen der Einladung');
+      setErrorMessage(error.message || 'Fehler beim Ablehnen der Einladung');
     } finally {
       setProcessingId('');
     }
@@ -77,6 +80,20 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
       </div>
       
       <div className="modal-body px-3">
+        {errorMessage && (
+          <div className="alert alert-danger d-flex align-items-center justify-content-between" role="alert">
+            <span>
+              <i className="bi bi-exclamation-circle me-2"></i>
+              {errorMessage}
+            </span>
+            <button
+              type="button"
+              className="btn-close"
+              onClick={() => setErrorMessage('')}
+              aria-label="Schließen"
+            ></button>
+          </div>
+        )}
         {loading ? (
           <div className="text-center py-4">
             <div className="spinner-border text-primary" role="status">
