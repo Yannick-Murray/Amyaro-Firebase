@@ -20,6 +20,7 @@ import { EditListModal } from '../components/business/EditListModal';
 import { CloseListConfirmModal } from '../components/business/CloseListConfirmModal';
 import { ListPriceModal } from '../components/business/ListPriceModal';
 import { Modal } from '../components/ui/Modal';
+import { Toast } from '../components/ui/Toast';
 import { 
   DndContext, 
   DragOverlay,
@@ -75,6 +76,25 @@ const ListDetail = () => {
   const [applyingFrequentSuggestions, setApplyingFrequentSuggestions] = useState(false);
   const [frequentPromptError, setFrequentPromptError] = useState('');
   const [hasEvaluatedFrequentPrompt, setHasEvaluatedFrequentPrompt] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState<{
+    isVisible: boolean;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    isVisible: false,
+    message: '',
+    type: 'info'
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info') => {
+    setToast({ isVisible: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
 
   // Function to fetch user name from Firebase
   const fetchUserName = async (userId: string): Promise<string> => {
@@ -807,7 +827,7 @@ const ListDetail = () => {
       }
     } catch (error) {
       console.error('Fehler beim Vorbereiten der Listen-Operation:', error);
-      alert('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      showToast('Ein Fehler ist aufgetreten. Bitte versuche es erneut.', 'error');
     }
   };
 
@@ -824,7 +844,7 @@ const ListDetail = () => {
       navigate('/');
     } catch (error) {
       console.error('Fehler beim Abschließen der Liste:', error);
-      alert('Fehler beim Abschließen der Liste. Bitte versuche es erneut.');
+      showToast('Fehler beim Abschließen der Liste. Bitte versuche es erneut.', 'error');
     }
   };
 
@@ -963,7 +983,7 @@ const ListDetail = () => {
       });
     } catch (error) {
       console.error('❌ Fehler beim Löschen der Liste:', error);
-      alert('Fehler beim Löschen der Liste. Bitte versuche es erneut.');
+      showToast('Fehler beim Löschen der Liste. Bitte versuche es erneut.', 'error');
     }
   };
 
@@ -1675,7 +1695,7 @@ const ListDetail = () => {
               <strong>Liste "{list?.name}" wirklich löschen?</strong>
             </p>
             <div className="alert alert-warning mb-3">
-              <strong>Achtung!</strong> Dies löscht auch alle {items.length} Items und {categories.length} Kategorien unwiderruflich!
+              <strong>Achtung!</strong> Dies löscht auch alle {items.length} Artikel und {categories.length} Kategorien unwiderruflich!
             </div>
             <p className="text-muted small mb-0">
               Diese Aktion kann nicht rückgängig gemacht werden.
@@ -1701,6 +1721,14 @@ const ListDetail = () => {
             </div>
           </div>
         </Modal>
+
+        {/* Toast Notifications */}
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={hideToast}
+        />
       </div>
     </DndContext>
   );
