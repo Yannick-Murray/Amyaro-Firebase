@@ -47,6 +47,12 @@
   box-sizing: border-box;
 }
 
+/* iOS: verhindert, dass beim Drehen des Geräts der Text/Viewport hineinzoomt */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -153,6 +159,22 @@ body {
   border-color: var(--amyaro-primary);
   box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
   transform: translateY(-1px);
+}
+
+/*
+ * iOS Safari zoomt beim Fokussieren automatisch hinein, sobald ein
+ * Eingabefeld eine Schriftgröße < 16px hat. Mindestens 16px verhindert
+ * dieses ungewollte Hineinzoomen beim Tippen (z. B. Artikel zur Kategorie
+ * hinzufügen), ohne Pinch-Zoom zu deaktivieren.
+ */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .form-control,
+  .form-select {
+    font-size: 16px;
+  }
 }
 
 /* Modern Modal */

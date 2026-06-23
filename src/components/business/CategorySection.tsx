@@ -310,7 +310,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
               value={quickAddInput}
               onChange={(e) => setQuickAddInput(e.target.value)}
               onKeyDown={handleQuickAddKeyPress}
-              style={{ fontSize: '0.875rem' }}
+              style={{ fontSize: '16px' }}
               autoFocus
             />
             <button

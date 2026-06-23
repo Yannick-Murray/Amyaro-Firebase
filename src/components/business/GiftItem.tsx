@@ -266,7 +266,7 @@ export const GiftItem: React.FC<GiftItemProps> = ({
                 <div className="mt-2 ms-4">
                   <select
                     className="form-select form-select-sm"
-                    style={{ fontSize: '12px', maxWidth: '200px' }}
+                    style={{ fontSize: '16px', maxWidth: '200px' }}
                     value={item.assignedTo || ''}
                     onChange={(e) => {
                       onAssignmentChange(item.id, e.target.value || undefined);
