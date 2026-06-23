@@ -1,7 +1,16 @@
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useId, useRef } from 'react';
 import type { HTMLAttributes } from 'react';
 import { cn } from '../../utils/cn';
 import { Button } from './Button';
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])'
+].join(',');
 
 export interface ModalProps extends HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
@@ -25,24 +34,85 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(({
   children,
   ...props
 }, ref) => {
-  // ESC-Key Handler
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+
+  const setContentRef = (node: HTMLDivElement | null) => {
+    contentRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
+  };
+
+  // ESC-Key Handler + Focus-Trap (Tab bleibt innerhalb des Modals)
   useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const content = contentRef.current;
+      if (!content) return;
+
+      const focusable = Array.from(
+        content.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+      if (focusable.length === 0) {
+        // Kein fokussierbares Element: Fokus auf dem Container halten
+        event.preventDefault();
+        content.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey) {
+        if (active === first || active === content) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
-    }
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
 
     return () => {
-      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
+
+  // Initialfokus setzen und beim Schließen an den Auslöser zurückgeben
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+
+    const content = contentRef.current;
+    if (content) {
+      const firstFocusable = content.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      (firstFocusable ?? content).focus();
+    }
+
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -66,6 +136,7 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(({
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
     >
       <div 
         className={cn(
@@ -75,13 +146,14 @@ const Modal = forwardRef<HTMLDivElement, ModalProps>(({
         )}
       >
         <div
-          ref={ref}
+          ref={setContentRef}
+          tabIndex={-1}
           className={cn('modal-content border-0 shadow-lg', className)}
           {...props}
         >
           {(title || showCloseButton) && (
             <div className="modal-header border-bottom border-light">
-              {title && <h5 className="modal-title">{title}</h5>}
+              {title && <h5 className="modal-title" id={titleId}>{title}</h5>}
               {showCloseButton && (
                 <Button
                   variant="light"
