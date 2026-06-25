@@ -61,6 +61,29 @@ export interface MonthlyChartData {
 export class StatisticsService {
   private static readonly HISTORY_COLLECTION = 'listHistory';
 
+  private static mapHistoryDoc(doc: { id: string; data: () => Record<string, any> }): ListHistory {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      closedAt: data.closedAt
+    } as ListHistory;
+  }
+
+  private static getOwnerId(entry: ListHistory): string {
+    // Legacy-Einträge hatten nur userId. Bei neuen Einträgen ist ownerId eindeutig.
+    return entry.ownerId || entry.userId;
+  }
+
+  private static dedupeHistory(entries: ListHistory[]): ListHistory[] {
+    return Array.from(new Map(entries.map(entry => [entry.id, entry])).values())
+      .sort((a, b) => {
+        const aDate = typeof a.closedAt === 'string' ? new Date(a.closedAt) : a.closedAt.toDate();
+        const bDate = typeof b.closedAt === 'string' ? new Date(b.closedAt) : b.closedAt.toDate();
+        return bDate.getTime() - aDate.getTime();
+      });
+  }
+
   /**
    * Lädt die History-Einträge für einen User aus Firestore
    */
@@ -69,62 +92,47 @@ export class StatisticsService {
     ownership: ListOwnership = 'all'
   ): Promise<ListHistory[]> {
     try {
-      let historyQuery;
+      const ownerQuery = query(
+        collection(db, this.HISTORY_COLLECTION),
+        where('ownerId', '==', currentUserId),
+        orderBy('closedAt', 'desc')
+      );
+
+      // Legacy-Fallback: alte Einträge hatten noch kein ownerId.
+      const legacyUserQuery = query(
+        collection(db, this.HISTORY_COLLECTION),
+        where('userId', '==', currentUserId),
+        orderBy('closedAt', 'desc')
+      );
+
+      const sharedQuery = query(
+        collection(db, this.HISTORY_COLLECTION),
+        where('sharedWith', 'array-contains', currentUserId),
+        orderBy('closedAt', 'desc')
+      );
+
+      const queryPromises = ownership === 'own'
+        ? [getDocs(ownerQuery), getDocs(legacyUserQuery)]
+        : ownership === 'shared'
+          ? [getDocs(sharedQuery)]
+          : [getDocs(ownerQuery), getDocs(legacyUserQuery), getDocs(sharedQuery)];
+
+      const snapshots = await Promise.all(queryPromises);
+      const entries = snapshots.flatMap(snapshot => snapshot.docs.map(doc => this.mapHistoryDoc(doc)));
+      const uniqueEntries = this.dedupeHistory(entries);
 
       if (ownership === 'own') {
-        // Nur eigene Listen
-        historyQuery = query(
-          collection(db, this.HISTORY_COLLECTION),
-          where('userId', '==', currentUserId),
-          orderBy('closedAt', 'desc')
-        );
-      } else if (ownership === 'shared') {
-        // Nur geteilte Listen (wo User in sharedWith ist, aber nicht owner)
-        historyQuery = query(
-          collection(db, this.HISTORY_COLLECTION),
-          where('sharedWith', 'array-contains', currentUserId),
-          orderBy('closedAt', 'desc')
-        );
-      } else {
-        // Alle Listen - eigene + geteilte
-        // Da wir keine OR-Query machen können, müssen wir zwei Queries machen
-        const ownQuery = query(
-          collection(db, this.HISTORY_COLLECTION),
-          where('userId', '==', currentUserId),
-          orderBy('closedAt', 'desc')
-        );
-        
-        const sharedQuery = query(
-          collection(db, this.HISTORY_COLLECTION),
-          where('sharedWith', 'array-contains', currentUserId),
-          orderBy('closedAt', 'desc')
-        );
-
-        const [ownSnapshot, sharedSnapshot] = await Promise.all([
-          getDocs(ownQuery),
-          getDocs(sharedQuery)
-        ]);
-
-        const allDocs = [...ownSnapshot.docs, ...sharedSnapshot.docs];
-        
-        // Duplikate entfernen (falls ein User sowohl owner als auch in sharedWith ist)
-        const uniqueDocs = Array.from(
-          new Map(allDocs.map(doc => [doc.id, doc])).values()
-        );
-
-        return uniqueDocs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          closedAt: doc.data().closedAt
-        } as ListHistory));
+        return uniqueEntries.filter(entry => this.getOwnerId(entry) === currentUserId);
       }
 
-      const snapshot = await getDocs(historyQuery);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        closedAt: doc.data().closedAt
-      } as ListHistory));
+      if (ownership === 'shared') {
+        return uniqueEntries.filter(entry =>
+          this.getOwnerId(entry) !== currentUserId &&
+          (entry.sharedWith || []).includes(currentUserId)
+        );
+      }
+
+      return uniqueEntries;
     } catch (error) {
       console.error('Fehler beim Laden der History:', error);
       return [];

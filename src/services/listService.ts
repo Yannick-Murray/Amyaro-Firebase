@@ -415,6 +415,8 @@ export class ListService {
         listId: listId,
         listName: listData.name,
         userId: auth.currentUser.uid,
+        ownerId: listData.userId,
+        closedBy: auth.currentUser.uid,
         shop: destination,
         price: price,
         itemCount: completedItemsCount,

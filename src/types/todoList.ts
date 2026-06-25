@@ -90,7 +90,9 @@ export interface ListHistory {
   id: string;
   listId: string; // Referenz zur ursprünglichen Liste
   listName: string; // Name der Liste zum Zeitpunkt des Schließens
-  userId: string; // Der User, der die Liste geschlossen hat
+  userId: string; // Legacy: Der User, der die Liste geschlossen hat
+  ownerId?: string; // Besitzer der Liste
+  closedBy?: string; // User, der die Liste abgeschlossen hat
   shop?: string; // Einkaufsort/Shop
   price?: number; // Gesamtpreis
   itemCount: number; // Anzahl der abgehakten Items

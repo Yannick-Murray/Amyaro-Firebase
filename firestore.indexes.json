@@ -109,6 +109,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "closedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "sharedWith",
           "arrayConfig": "CONTAINS"
         },
