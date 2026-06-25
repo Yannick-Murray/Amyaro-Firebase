@@ -20,7 +20,7 @@ export default function Statistics() {
   const [history, setHistory] = useState<ListHistory[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // History laden wenn User oder Filter sich ändert
+  // History laden, Filter werden danach clientseitig einheitlich angewendet.
   useEffect(() => {
     const loadHistory = async () => {
       if (!user) {
@@ -31,7 +31,7 @@ export default function Statistics() {
 
       try {
         setLoading(true);
-        const data = await StatisticsService.fetchHistory(user.uid, ownershipFilter);
+        const data = await StatisticsService.fetchHistory(user.uid, 'all');
         setHistory(data);
       } catch (error) {
         console.error('Fehler beim Laden der History:', error);
@@ -42,21 +42,21 @@ export default function Statistics() {
     };
 
     loadHistory();
-  }, [user, ownershipFilter]);
+  }, [user]);
 
-  // Statistiken berechnen
-  const shopStats = StatisticsService.calculateShopStatistics(history);
-  const timeline = StatisticsService.createTimeline(history);
-  const overallStats = StatisticsService.calculateOverallStatistics(history);
+  const ownershipFilteredHistory = user
+    ? StatisticsService.filterHistoryByOwnership(history, user.uid, ownershipFilter)
+    : [];
+  const timeFilteredHistory = StatisticsService.filterHistoryByTimeRange(ownershipFilteredHistory, timeRange);
+  const filteredHistory = selectedShop === 'all'
+    ? timeFilteredHistory
+    : timeFilteredHistory.filter(entry => entry.shop === selectedShop);
 
-  // Chart-Daten für TimeRange (gefilterte Timeline)
-  const filteredHistoryForChart = StatisticsService.filterHistoryByTimeRange(history, timeRange);
-  let chartTimeline = StatisticsService.createTimeline(filteredHistoryForChart);
-  
-  // Chart-Daten auch nach Shop filtern wenn ein Shop ausgewählt ist
-  if (selectedShop !== 'all') {
-    chartTimeline = StatisticsService.filterTimelineByShop(chartTimeline, selectedShop);
-  }
+  // Statistiken berechnen: alle Bereiche nutzen denselben Filterstand.
+  const shopStats = StatisticsService.calculateShopStatistics(filteredHistory);
+  const timeline = StatisticsService.createTimeline(filteredHistory);
+  const overallStats = StatisticsService.calculateOverallStatistics(filteredHistory);
+  const chartTimeline = timeline;
   
   // TimeRange Labels
   const timeRangeLabels: Record<TimeRange, string> = {
@@ -66,20 +66,18 @@ export default function Statistics() {
     all: 'Alle Daten'
   };
 
-  // Timeline nach Shop filtern
-  const filteredTimeline = selectedShop === 'all' 
-    ? timeline 
-    : StatisticsService.filterTimelineByShop(timeline, selectedShop);
-
-  // Alle verfügbaren Shops für Dropdown
-  const availableShops = shopStats.map(stat => stat.shopName);
+  // Alle verfügbaren Shops für Dropdown im aktuell gewählten Ownership-/Zeitraum.
+  const availableShops = StatisticsService
+    .calculateShopStatistics(timeFilteredHistory)
+    .map(stat => stat.shopName);
 
   // Anzahl Listen pro Kategorie (aus History)
-  const ownListsCount = history.filter(h => h.userId === user?.uid).length;
-  const sharedListsCount = history.filter(h => 
-    h.userId !== user?.uid && 
-    h.sharedWith?.includes(user?.uid || '')
-  ).length;
+  const ownListsCount = user
+    ? StatisticsService.filterHistoryByOwnership(history, user.uid, 'own').length
+    : 0;
+  const sharedListsCount = user
+    ? StatisticsService.filterHistoryByOwnership(history, user.uid, 'shared').length
+    : 0;
   const allListsCount = history.length;
 
   return (
@@ -148,7 +146,7 @@ export default function Statistics() {
             {/* TimeRange Filter */}
             <div className="col-md-4">
               <label htmlFor="time-range-filter" className="form-label fw-medium">
-                Zeitraum (Chart)
+                Zeitraum
               </label>
               <select
                 id="time-range-filter"
@@ -319,18 +317,18 @@ export default function Statistics() {
             <div className="card-header d-flex justify-content-between align-items-center">
               <h5 className="mb-0">📅 Einkaufs-Verlauf</h5>
               <span className="badge bg-secondary">
-                {filteredTimeline.length} Einträge
+                {timeline.length} Einträge
               </span>
             </div>
             <div className="card-body">
-              {filteredTimeline.length === 0 ? (
+              {timeline.length === 0 ? (
                 <p className="text-muted mb-0 text-center">
                   Keine Einkäufe gefunden
                   {selectedShop !== 'all' && ` bei ${StatisticsService.formatShopName(selectedShop)}`}
                 </p>
               ) : (
                 <div className="list-group list-group-flush">
-                  {filteredTimeline.slice(0, 20).map((entry) => (
+                  {timeline.slice(0, 20).map((entry) => (
                     <div 
                       key={entry.id} 
                       className="list-group-item list-group-item-action cursor-pointer"
@@ -349,7 +347,7 @@ export default function Statistics() {
                             {StatisticsService.formatDate(entry.closedAt)}
                             <span className="mx-2">•</span>
                             <i className="bi bi-cart3 me-1"></i>
-                            {entry.itemCount} Items
+                            {entry.itemCount} Artikel
                           </div>
                         </div>
                         <div className="text-end">
@@ -360,9 +358,9 @@ export default function Statistics() {
                       </div>
                     </div>
                   ))}
-                  {filteredTimeline.length > 20 && (
+                  {timeline.length > 20 && (
                     <div className="text-center text-muted small py-2">
-                      ... und {filteredTimeline.length - 20} weitere
+                      ... und {timeline.length - 20} weitere
                     </div>
                   )}
                 </div>

@@ -84,6 +84,25 @@ export class StatisticsService {
       });
   }
 
+  static filterHistoryByOwnership(
+    history: ListHistory[],
+    currentUserId: string,
+    ownership: ListOwnership
+  ): ListHistory[] {
+    if (ownership === 'own') {
+      return history.filter(entry => this.getOwnerId(entry) === currentUserId);
+    }
+
+    if (ownership === 'shared') {
+      return history.filter(entry =>
+        this.getOwnerId(entry) !== currentUserId &&
+        (entry.sharedWith || []).includes(currentUserId)
+      );
+    }
+
+    return history;
+  }
+
   /**
    * Lädt die History-Einträge für einen User aus Firestore
    */
