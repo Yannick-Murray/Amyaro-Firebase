@@ -19,7 +19,7 @@ import {
 import { db, auth } from '../config/firebase';
 import { logger } from '../utils/logger';
 import { NotificationService } from './notificationService';
-import type { List, Category, ListType, Item, ListHistory } from '../types/todoList';
+import type { List, Category, ListType, Item, ListHistory, ListHistoryItemSnapshot } from '../types/todoList';
 
 // List Service (umbenannt von TodoListService)
 export class ListService {
@@ -368,6 +368,41 @@ export class ListService {
       const completedItemsSnapshot = await getDocs(completedItemsQuery);
       const completedItemsCount = completedItemsSnapshot.docs.length;
 
+      const categoriesSnapshot = await getDocs(
+        query(collection(db, 'categories'), where('listId', '==', listId))
+      );
+      const categoryNameById = new Map(
+        categoriesSnapshot.docs.map(categoryDoc => [
+          categoryDoc.id,
+          categoryDoc.data().name as string
+        ])
+      );
+
+      const completedItemsHistorySnapshot: ListHistoryItemSnapshot[] = completedItemsSnapshot.docs.map(itemDoc => {
+        const itemData = itemDoc.data();
+        const categoryId = itemData.categoryId as string | undefined;
+        const categoryName =
+          (categoryId ? categoryNameById.get(categoryId) : undefined) ||
+          (itemData.category as string | undefined);
+
+        const snapshot: ListHistoryItemSnapshot = {
+          name: itemData.name as string,
+          quantity: itemData.quantity || 1
+        };
+
+        if (categoryId) {
+          snapshot.categoryId = categoryId;
+        }
+        if (categoryName) {
+          snapshot.categoryName = categoryName;
+        }
+        if (typeof itemData.price === 'number') {
+          snapshot.price = itemData.price;
+        }
+
+        return snapshot;
+      });
+
       // Wenn destination angegeben, alle abgehakten Items mit destination updaten
       if (destination) {
         completedItemsSnapshot.docs.forEach(itemDoc => {
@@ -420,6 +455,7 @@ export class ListService {
         shop: destination,
         price: price,
         itemCount: completedItemsCount,
+        itemsSnapshot: completedItemsHistorySnapshot,
         closedAt: serverTimestamp() as any,
         sharedWith: listData.sharedWith || []
       };

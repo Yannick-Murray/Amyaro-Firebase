@@ -86,6 +86,14 @@ export interface Item {
   order: number;
 }
 
+export interface ListHistoryItemSnapshot {
+  name: string;
+  quantity: number;
+  categoryId?: string;
+  categoryName?: string;
+  price?: number;
+}
+
 export interface ListHistory {
   id: string;
   listId: string; // Referenz zur ursprünglichen Liste
@@ -96,6 +104,7 @@ export interface ListHistory {
   shop?: string; // Einkaufsort/Shop
   price?: number; // Gesamtpreis
   itemCount: number; // Anzahl der abgehakten Items
+  itemsSnapshot?: ListHistoryItemSnapshot[]; // Abgehakte Artikel zum Zeitpunkt des Abschlusses
   closedAt: Timestamp; // Zeitpunkt des Schließens
   sharedWith?: string[]; // Wer hatte Zugriff auf die Liste
 }
