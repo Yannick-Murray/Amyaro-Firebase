@@ -47,6 +47,20 @@ export interface OverallStatistics {
   } | null;
 }
 
+export interface ItemStatistics {
+  name: string;
+  purchaseCount: number;
+  totalQuantity: number;
+  lastPurchase?: Date;
+}
+
+export interface CategoryStatistics {
+  categoryName: string;
+  itemCount: number;
+  totalQuantity: number;
+  purchaseCount: number;
+}
+
 export type ListOwnership = 'all' | 'own' | 'shared';
 export type TimeRange = 'thisMonth' | 'thisYear' | 'lastYear' | 'all';
 
@@ -283,6 +297,98 @@ export class StatisticsService {
         shop: cheapest.shop || 'Unbekannt'
       } : null
     };
+  }
+
+  static calculateItemStatistics(history: ListHistory[], limit = 10): ItemStatistics[] {
+    const itemMap = new Map<string, ItemStatistics>();
+
+    history.forEach(entry => {
+      if (!entry.itemsSnapshot || entry.itemsSnapshot.length === 0) return;
+
+      const closedAt = typeof entry.closedAt === 'string'
+        ? new Date(entry.closedAt)
+        : entry.closedAt.toDate();
+      const seenInPurchase = new Set<string>();
+
+      entry.itemsSnapshot.forEach(item => {
+        const name = item.name.trim();
+        if (!name) return;
+
+        const key = name.toLowerCase();
+        const quantity = item.quantity || 1;
+        const existing = itemMap.get(key);
+
+        if (existing) {
+          existing.totalQuantity += quantity;
+          existing.lastPurchase = !existing.lastPurchase || closedAt > existing.lastPurchase
+            ? closedAt
+            : existing.lastPurchase;
+
+          if (!seenInPurchase.has(key)) {
+            existing.purchaseCount += 1;
+          }
+        } else {
+          itemMap.set(key, {
+            name,
+            purchaseCount: 1,
+            totalQuantity: quantity,
+            lastPurchase: closedAt
+          });
+        }
+
+        seenInPurchase.add(key);
+      });
+    });
+
+    return Array.from(itemMap.values())
+      .sort((a, b) =>
+        b.purchaseCount - a.purchaseCount ||
+        b.totalQuantity - a.totalQuantity ||
+        a.name.localeCompare(b.name, 'de')
+      )
+      .slice(0, limit);
+  }
+
+  static calculateCategoryStatistics(history: ListHistory[], limit = 8): CategoryStatistics[] {
+    const categoryMap = new Map<string, CategoryStatistics>();
+
+    history.forEach(entry => {
+      if (!entry.itemsSnapshot || entry.itemsSnapshot.length === 0) return;
+
+      const seenInPurchase = new Set<string>();
+
+      entry.itemsSnapshot.forEach(item => {
+        const categoryName = item.categoryName?.trim() || 'Ohne Kategorie';
+        const key = categoryName.toLowerCase();
+        const quantity = item.quantity || 1;
+        const existing = categoryMap.get(key);
+
+        if (existing) {
+          existing.itemCount += 1;
+          existing.totalQuantity += quantity;
+          if (!seenInPurchase.has(key)) {
+            existing.purchaseCount += 1;
+          }
+        } else {
+          categoryMap.set(key, {
+            categoryName,
+            itemCount: 1,
+            totalQuantity: quantity,
+            purchaseCount: 1
+          });
+        }
+
+        seenInPurchase.add(key);
+      });
+    });
+
+    return Array.from(categoryMap.values())
+      .sort((a, b) =>
+        b.purchaseCount - a.purchaseCount ||
+        b.totalQuantity - a.totalQuantity ||
+        a.categoryName.localeCompare(b.categoryName, 'de')
+      )
+      .slice(0, limit);
   }
 
   /**

@@ -60,6 +60,9 @@ export default function Statistics() {
   const shopStats = StatisticsService.calculateShopStatistics(filteredHistory);
   const timeline = StatisticsService.createTimeline(filteredHistory);
   const overallStats = StatisticsService.calculateOverallStatistics(filteredHistory);
+  const itemStats = StatisticsService.calculateItemStatistics(filteredHistory);
+  const categoryStats = StatisticsService.calculateCategoryStatistics(filteredHistory);
+  const itemSnapshotCount = filteredHistory.filter(entry => (entry.itemsSnapshot?.length || 0) > 0).length;
   const chartTimeline = timeline;
   
   // TimeRange Labels
@@ -279,6 +282,90 @@ export default function Statistics() {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* Item Statistics */}
+          <div className="row g-3 mb-4">
+            <div className="col-lg-6">
+              <Card className="h-100">
+                <div className="card-header">
+                  <h5 className="mb-0">🛒 Häufige Artikel</h5>
+                </div>
+                <div className="card-body">
+                  {itemStats.length === 0 ? (
+                    <div className="alert alert-info mb-0">
+                      <i className="bi bi-info-circle me-2"></i>
+                      Artikel-Auswertungen werden ab den nächsten abgeschlossenen Listen aufgebaut.
+                    </div>
+                  ) : (
+                    <div className="list-group list-group-flush">
+                      {itemStats.map((item, index) => (
+                        <div key={item.name} className="list-group-item px-0 d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center min-w-0">
+                            <span className="badge bg-primary me-2">{index + 1}</span>
+                            <div className="text-truncate">
+                              <strong>{item.name}</strong>
+                              {item.lastPurchase && (
+                                <div className="text-muted small">
+                                  zuletzt {StatisticsService.formatDate(item.lastPurchase)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-end ms-3">
+                            <div className="fw-bold">{item.purchaseCount}x</div>
+                            <div className="text-muted small">Menge {item.totalQuantity}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            <div className="col-lg-6">
+              <Card className="h-100">
+                <div className="card-header">
+                  <h5 className="mb-0">🏷️ Top-Kategorien</h5>
+                </div>
+                <div className="card-body">
+                  {categoryStats.length === 0 ? (
+                    <div className="alert alert-info mb-0">
+                      <i className="bi bi-info-circle me-2"></i>
+                      Kategorien erscheinen hier, sobald neue abgeschlossene Listen Artikel-Snapshots enthalten.
+                    </div>
+                  ) : (
+                    <div className="list-group list-group-flush">
+                      {categoryStats.map((category, index) => (
+                        <div key={category.categoryName} className="list-group-item px-0 d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center min-w-0">
+                            <span className="badge bg-success me-2">{index + 1}</span>
+                            <strong className="text-truncate">{category.categoryName}</strong>
+                          </div>
+                          <div className="text-end ms-3">
+                            <div className="fw-bold">{category.purchaseCount} Einkäufe</div>
+                            <div className="text-muted small">
+                              {category.itemCount} Artikel · Menge {category.totalQuantity}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            {itemSnapshotCount > 0 && itemSnapshotCount < filteredHistory.length && (
+              <div className="col-12">
+                <div className="alert alert-light border mb-0 small text-muted">
+                  <i className="bi bi-info-circle me-2"></i>
+                  Artikel-Auswertungen basieren aktuell auf {itemSnapshotCount} von {filteredHistory.length} gefilterten Einkäufen.
+                  Ältere Einkäufe ohne Artikel-Snapshot werden dafür nicht rückwirkend ausgewertet.
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Shop Statistics */}
