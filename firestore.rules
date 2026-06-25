@@ -360,6 +360,8 @@ service cloud.firestore {
       // Read access: list owner or shared users
       allow read: if isValidUser() && (
         request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.ownerId ||
+        request.auth.uid == resource.data.closedBy ||
         (resource.data.sharedWith != null && 
          request.auth.uid in resource.data.sharedWith)
       );
@@ -378,6 +380,13 @@ service cloud.firestore {
                        (!('price' in request.resource.data) || 
                         request.resource.data.price is number ||
                         request.resource.data.price == null) &&
+                       // Optional ownership metadata validation
+                       (!('ownerId' in request.resource.data) ||
+                        request.resource.data.ownerId is string) &&
+                       (!('closedBy' in request.resource.data) ||
+                        request.resource.data.closedBy == request.auth.uid) &&
+                       (!('itemsSnapshot' in request.resource.data) ||
+                        request.resource.data.itemsSnapshot is list) &&
                        // Optional sharedWith validation
                        (!('sharedWith' in request.resource.data) || 
                         request.resource.data.sharedWith is list);
