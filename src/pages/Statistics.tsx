@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -19,30 +19,34 @@ export default function Statistics() {
   const [timeRange, setTimeRange] = useState<TimeRange>('thisYear');
   const [history, setHistory] = useState<ListHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   
+  const loadHistory = useCallback(async () => {
+    if (!user) {
+      setHistory([]);
+      setLoadError('');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setLoadError('');
+      const data = await StatisticsService.fetchHistory(user.uid, 'all');
+      setHistory(data);
+    } catch (error) {
+      console.error('Fehler beim Laden der History:', error);
+      setHistory([]);
+      setLoadError('Statistiken konnten nicht geladen werden. Bitte prüfe deine Verbindung und versuche es erneut.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   // History laden, Filter werden danach clientseitig einheitlich angewendet.
   useEffect(() => {
-    const loadHistory = async () => {
-      if (!user) {
-        setHistory([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const data = await StatisticsService.fetchHistory(user.uid, 'all');
-        setHistory(data);
-      } catch (error) {
-        console.error('Fehler beim Laden der History:', error);
-        setHistory([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadHistory();
-  }, [user]);
+  }, [loadHistory]);
 
   const ownershipFilteredHistory = user
     ? StatisticsService.filterHistoryByOwnership(history, user.uid, ownershipFilter)
@@ -192,6 +196,22 @@ export default function Statistics() {
               <span className="visually-hidden">Laden...</span>
             </div>
             <p className="text-muted mb-0">Lade Statistiken...</p>
+          </div>
+        </Card>
+      ) : loadError ? (
+        <Card>
+          <div className="card-body text-center py-5">
+            <i className="bi bi-exclamation-triangle display-1 text-warning mb-3"></i>
+            <h5 className="mb-3">Statistiken konnten nicht geladen werden</h5>
+            <p className="text-muted mb-4">{loadError}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={loadHistory}
+            >
+              <i className="bi bi-arrow-clockwise me-2"></i>
+              Erneut versuchen
+            </button>
           </div>
         </Card>
       ) : overallStats.totalPurchases === 0 ? (

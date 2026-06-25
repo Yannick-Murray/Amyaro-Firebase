@@ -154,7 +154,7 @@ export class StatisticsService {
       return uniqueEntries;
     } catch (error) {
       console.error('Fehler beim Laden der History:', error);
-      return [];
+      throw error;
     }
   }
 
