@@ -272,35 +272,44 @@ export class TemplateService {
         throw new Error('Keine Berechtigung für diese Liste');
       }
 
-      const existingItemsSnap = await getDocs(
-        query(collection(db, 'todoItems'), where('listId', '==', listId), limit(1))
-      );
-      if (!existingItemsSnap.empty) {
+      // Nur auf eine komplett leere Liste anwenden, damit ein zweiter Aufruf
+      // keine doppelten Kategorien oder Artikel erzeugt.
+      const [existingItemsSnap, existingCategoriesSnap] = await Promise.all([
+        getDocs(query(collection(db, 'todoItems'), where('listId', '==', listId), limit(1))),
+        getDocs(query(collection(db, 'categories'), where('listId', '==', listId), limit(1)))
+      ]);
+      if (!existingItemsSnap.empty || !existingCategoriesSnap.empty) {
         return;
       }
+
+      // Kategorien und Artikel gehen zusammen in einen Batch, damit eine
+      // gescheiterte Anwendung keine halb befüllte Liste hinterlässt.
+      // Das Maximum von 50 Kategorien plus 300 Artikeln bleibt unter dem
+      // Firestore-Limit von 500 Operationen pro Batch.
+      const batch = writeBatch(db);
+      const now = Timestamp.now();
 
       const categoryNameToId = new Map<string, string>();
       const sortedCategories = [...template.categories].sort((a, b) => a.order - b.order);
 
-      for (const category of sortedCategories) {
-        const newId = await CategoryService.createListCategory(
+      sortedCategories.forEach((category, index) => {
+        const categoryRef = doc(collection(db, 'categories'));
+        batch.set(categoryRef, {
+          name: category.name,
+          color: category.color,
           listId,
-          category.name,
-          category.color
-        );
-        categoryNameToId.set(category.name.toLowerCase().trim(), newId);
-      }
+          userId: currentUserId,
+          createdAt: now,
+          updatedAt: now,
+          order: (index + 1) * 1000
+        });
+        categoryNameToId.set(category.name.toLowerCase().trim(), categoryRef.id);
+      });
 
-      if (template.items.length === 0) {
-        return;
-      }
-
-      const batch = writeBatch(db);
-      const now = Timestamp.now();
       const sortedItems = [...template.items].sort((a, b) => a.order - b.order);
 
       sortedItems.forEach((item, index) => {
-        const docRef = doc(collection(db, 'todoItems'));
+        const itemRef = doc(collection(db, 'todoItems'));
         const categoryId = item.categoryName
           ? categoryNameToId.get(item.categoryName.toLowerCase().trim())
           : undefined;
@@ -317,11 +326,14 @@ export class TemplateService {
         };
         if (categoryId) itemData.categoryId = categoryId;
 
-        batch.set(docRef, itemData);
+        batch.set(itemRef, itemData);
       });
 
       await batch.commit();
-      await ListService.updateListItemCount(listId);
+
+      if (sortedItems.length > 0) {
+        await ListService.updateListItemCount(listId);
+      }
     } catch (error) {
       logger.error('Fehler beim Anwenden der Vorlage:', error);
       throw error;
