@@ -19,6 +19,13 @@ export type {
   ListShare 
 } from './todoList';
 
+export type {
+  ListTemplate,
+  ListTemplateCategory,
+  ListTemplateItem
+} from './listTemplate';
+export { TEMPLATE_LIMITS } from './listTemplate';
+
 // Aliases for backward compatibility
 export type TodoList = import('./todoList').List;
 export type TodoItem = import('./todoList').Item;

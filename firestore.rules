@@ -60,6 +60,13 @@ service cloud.firestore {
              request.auth.uid == shopData.userId;
     }
     
+    function isValidTemplateContent(template) {
+      return template.categories is list &&
+             template.categories.size() <= 50 &&
+             template.items is list &&
+             template.items.size() <= 300;
+    }
+    
     function isWithinRateLimit() {
       // Rate limiting: Max 5 invitations per user per hour
       let now = request.time;
@@ -155,6 +162,29 @@ service cloud.firestore {
       
       // Allow deleting only own user-specific shops (soft delete by setting isActive=false)
       allow delete: if isValidUser() && isShopOwner(resource.data);
+    }
+    
+    // List Templates - user-scoped Vorlagen mit eingebetteten Kategorien und Artikeln
+    match /listTemplates/{templateId} {
+      allow read: if isValidUser() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isValidUser() &&
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidString(request.resource.data.name, 1, 100) &&
+                       request.resource.data.type == 'shopping' &&
+                       isValidTemplateContent(request.resource.data) &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.updatedAt is timestamp;
+      
+      allow update: if isValidUser() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.type == resource.data.type &&
+                       isValidString(request.resource.data.name, 1, 100) &&
+                       isValidTemplateContent(request.resource.data) &&
+                       request.resource.data.updatedAt is timestamp;
+      
+      allow delete: if isValidUser() && resource.data.userId == request.auth.uid;
     }
     
     // Categories - secure with proper list access control
