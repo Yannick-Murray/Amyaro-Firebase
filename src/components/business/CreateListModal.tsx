@@ -1,10 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Modal } from '../ui';
 import { Button } from '../ui';
 import { FormField, Input } from '../forms';
+import { TemplateSelector } from './TemplateSelector';
 import { ListService } from '../../services/listService';
+import { TemplateService } from '../../services/templateService';
 import { useAuth } from '../../context/AuthContext';
 import { sanitizeString } from '../../utils/helpers';
+import type { ListTemplate } from '../../types/listTemplate';
 
 export interface CreateListModalProps {
   isOpen: boolean;
@@ -16,6 +19,10 @@ export interface CreateListData {
   name: string;
   description: string;
   type: 'shopping' | 'gift';
+  /** ID der erfolgreich angewendeten Vorlage */
+  templateId?: string;
+  /** Die Liste wurde angelegt, das Anwenden der Vorlage ist aber fehlgeschlagen */
+  templateFailed?: boolean;
 }
 
 export const CreateListModal: React.FC<CreateListModalProps> = ({
@@ -31,9 +38,37 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [templates, setTemplates] = useState<ListTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // Vorlagen gibt es nur für Einkaufslisten, daher erst bei diesem Typ laden.
+  useEffect(() => {
+    if (!isOpen || formData.type !== 'shopping') return;
+
+    let cancelled = false;
+    setLoadingTemplates(true);
+
+    TemplateService.getUserTemplates()
+      .then((data) => {
+        if (!cancelled) setTemplates(data);
+      })
+      .catch((error) => {
+        console.error('Fehler beim Laden der Vorlagen:', error);
+        if (!cancelled) setTemplates([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTemplates(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, formData.type]);
 
   const handleClose = useCallback(() => {
     setFormData({ name: '', description: '', type: 'shopping' });
+    setSelectedTemplateId(null);
     onClose();
   }, [onClose]);
 
@@ -55,6 +90,11 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
       return;
     }
 
+    const template =
+      formData.type === 'shopping' && selectedTemplateId
+        ? templates.find(item => item.id === selectedTemplateId)
+        : undefined;
+
     setSubmitting(true);
     try {
       const listId = await ListService.createList(
@@ -63,23 +103,58 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
         formData.type,
         formData.description.trim() ? sanitizeString(formData.description) : undefined,
         undefined, // categoryId
-        false // isPrivate - default to false
+        false // isPrivate
       );
-      await onSubmit(formData, listId);
+
+      let appliedTemplateId: string | undefined;
+      let templateFailed = false;
+
+      if (template) {
+        try {
+          await TemplateService.applyTemplateToList(listId, template);
+          appliedTemplateId = template.id;
+        } catch (error) {
+          // Die Liste existiert bereits und wird bewusst nicht zurueckgerollt.
+          // Der Nutzer landet auf einer leeren Liste statt auf einem Fehlerzustand.
+          console.error('Fehler beim Anwenden der Vorlage:', error);
+          templateFailed = true;
+        }
+      }
+
+      await onSubmit({ ...formData, templateId: appliedTemplateId, templateFailed }, listId);
       handleClose();
     } catch (error) {
       console.error('Fehler beim Erstellen der Liste:', error);
     } finally {
       setSubmitting(false);
     }
-  }, [formData, onSubmit, handleClose, user]);
+  }, [formData, onSubmit, handleClose, user, selectedTemplateId, templates]);
 
   const handleInputChange = useCallback((field: keyof CreateListData, value: any) => {
+    if (field === 'type' && value !== 'shopping') {
+      setSelectedTemplateId(null);
+    }
+
     setFormData(prev => ({ 
       ...prev, 
       [field]: field === 'name' || field === 'description' ? sanitizeString(value) : value 
     }));
   }, []);
+
+  const handleTemplateSelect = useCallback((templateId: string | null) => {
+    setSelectedTemplateId(templateId);
+
+    // Den Vorlagennamen nur als Startwert anbieten, niemals eine Eingabe überschreiben.
+    if (templateId) {
+      const template = templates.find(item => item.id === templateId);
+      if (template) {
+        setFormData(prev => (prev.name.trim() ? prev : { ...prev, name: template.name }));
+      }
+    }
+  }, [templates]);
+
+  const showTemplateSection =
+    formData.type === 'shopping' && (loadingTemplates || templates.length > 0);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
@@ -133,6 +208,23 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
               </FormField>
             </div>
 
+            {showTemplateSection && (
+              <div className="col-12">
+                <FormField
+                  label="Vorlage"
+                  helpText="Kategorien und Artikel der Vorlage werden direkt in die neue Liste übernommen."
+                >
+                  <TemplateSelector
+                    templates={templates}
+                    selectedTemplateId={selectedTemplateId}
+                    onSelect={handleTemplateSelect}
+                    loading={loadingTemplates}
+                    disabled={submitting}
+                  />
+                </FormField>
+              </div>
+            )}
+
             <div className="col-12">
               <FormField
                 label="Listen-Name"
@@ -151,6 +243,7 @@ export const CreateListModal: React.FC<CreateListModalProps> = ({
                 />
               </FormField>
             </div>
+
           </div>
         </div>
 

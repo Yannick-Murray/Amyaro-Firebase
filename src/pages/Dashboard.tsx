@@ -73,7 +73,7 @@ const Dashboard = () => {
     setToast(prev => ({ ...prev, isVisible: false }));
   };
 
-  const handleCreateList = async (_data: CreateListData, listId: string) => {
+  const handleCreateList = async (data: CreateListData, listId: string) => {
     if (!user) return;
 
     try {
@@ -82,7 +82,12 @@ const Dashboard = () => {
       // Listen neu laden um echte Daten zu bekommen
       await refreshLists();
       navigate(`/list/${listId}`, {
-        state: { source: 'list-created' }
+        state: {
+          // Bei einer angewendeten Vorlage ist die Liste bereits gefüllt,
+          // der Prompt für häufige Elemente wäre dort nur störend.
+          source: data.templateId ? 'list-created-from-template' : 'list-created',
+          templateFailed: data.templateFailed === true
+        }
       });
       
     } catch (error) {

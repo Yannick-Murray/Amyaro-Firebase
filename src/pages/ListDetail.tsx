@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -45,8 +45,9 @@ const ListDetail = () => {
   const { refreshLists } = useListsContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as { source?: string } | null;
+  const locationState = location.state as { source?: string; templateFailed?: boolean } | null;
   const isCreatedListFlow = locationState?.source === 'list-created';
+  const templateApplyFailed = locationState?.templateFailed === true;
   
   const [list, setList] = useState<List | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -75,6 +76,7 @@ const ListDetail = () => {
   // Vorlagen-Modal state
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [userTemplates, setUserTemplates] = useState<ListTemplate[]>([]);
+  const hasReportedTemplateFailure = useRef(false);
   
   // User names cache for assigned users
   const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
@@ -183,6 +185,16 @@ const ListDetail = () => {
   useEffect(() => {
     loadListData(true);
   }, [id, user]);
+
+  useEffect(() => {
+    if (!templateApplyFailed || hasReportedTemplateFailure.current) return;
+
+    hasReportedTemplateFailure.current = true;
+    showToast(
+      'Die Liste wurde erstellt, die Vorlage konnte aber nicht angewendet werden.',
+      'warning'
+    );
+  }, [templateApplyFailed]);
 
   useEffect(() => {
     if (!user || !list || hasEvaluatedFrequentPrompt || !isCreatedListFlow) {
