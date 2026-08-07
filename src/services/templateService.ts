@@ -34,6 +34,16 @@ export class TemplateService {
   }
 
   /**
+   * Begrenzt die Menge auf den Bereich, den die Security Rules für todoItems
+   * zulassen. Sonst könnte eine Vorlage entstehen, die sich nie anwenden lässt.
+   */
+  private static normalizeQuantity(quantity: unknown): number {
+    const value = Number(quantity);
+    if (!Number.isFinite(value)) return 1;
+    return Math.min(Math.max(Math.round(value), 1), 99);
+  }
+
+  /**
    * Alle Vorlagen des angemeldeten Users, alphabetisch sortiert.
    * Sortierung bewusst clientseitig, um keinen Composite Index zu benötigen.
    */
@@ -98,7 +108,7 @@ export class TemplateService {
     const templateItems: ListTemplateItem[] = items.map((item, index) => {
       const templateItem: ListTemplateItem = {
         name: item.name,
-        quantity: item.quantity && item.quantity > 0 ? item.quantity : 1,
+        quantity: this.normalizeQuantity(item.quantity),
         order: index
       };
 
@@ -298,7 +308,7 @@ export class TemplateService {
         const itemData: Record<string, unknown> = {
           listId,
           name: item.name,
-          quantity: item.quantity,
+          quantity: TemplateService.normalizeQuantity(item.quantity),
           isCompleted: false,
           priority: 'medium',
           createdAt: now,

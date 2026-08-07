@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DeleteAccountModal, ProfileEditModal } from '../components/business';
 import { ManageShopModal } from '../components/business/ManageShopModal';
+import { ManageTemplateModal } from '../components/business/ManageTemplateModal';
+import type { TemplateModalResult } from '../components/business/ManageTemplateModal';
 import { Modal, Toast } from '../components/ui';
 import { ShopService } from '../services/shopService';
+import { TemplateService } from '../services/templateService';
 import type { Shop } from '../types/todoList';
+import type { ListTemplate } from '../types/listTemplate';
 
 const Profile = () => {
   const { user, logout, refreshUserData } = useAuth();
@@ -16,6 +20,10 @@ const Profile = () => {
   const [userShops, setUserShops] = useState<Shop[]>([]);
   const [isLoadingShops, setIsLoadingShops] = useState(false);
   const [shopToDelete, setShopToDelete] = useState<Shop | null>(null);
+  const [templates, setTemplates] = useState<ListTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [templateToRename, setTemplateToRename] = useState<ListTemplate | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<ListTemplate | null>(null);
   const [toast, setToast] = useState<{
     isVisible: boolean;
     message: string;
@@ -38,6 +46,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       loadUserShops();
+      loadTemplates();
     }
   }, [user]);
 
@@ -50,6 +59,17 @@ const Profile = () => {
       console.error('Fehler beim Laden der Shops:', error);
     } finally {
       setIsLoadingShops(false);
+    }
+  };
+
+  const loadTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      setTemplates(await TemplateService.getUserTemplates());
+    } catch (error) {
+      console.error('Fehler beim Laden der Vorlagen:', error);
+    } finally {
+      setIsLoadingTemplates(false);
     }
   };
 
@@ -118,6 +138,30 @@ const Profile = () => {
     } catch (error) {
       console.error('Fehler beim Speichern des Shops:', error);
       throw error;
+    }
+  };
+
+  const handleRenameTemplate = async (result: TemplateModalResult) => {
+    if (result.action !== 'rename' || !templateToRename) return;
+
+    await TemplateService.renameTemplate(templateToRename.id, result.name);
+    await loadTemplates();
+    showToast('Vorlage wurde umbenannt', 'success');
+  };
+
+  const performDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+
+    const template = templateToDelete;
+    setTemplateToDelete(null);
+
+    try {
+      await TemplateService.deleteTemplate(template.id);
+      await loadTemplates();
+      showToast(`Vorlage "${template.name}" wurde gelöscht`, 'success');
+    } catch (error) {
+      console.error('Fehler beim Löschen der Vorlage:', error);
+      showToast('Fehler beim Löschen der Vorlage', 'error');
     }
   };
 
@@ -242,6 +286,60 @@ const Profile = () => {
               )}
             </div>
 
+            {/* Meine Vorlagen Section */}
+            <div className="mb-4">
+              <h5 className="mb-3">Meine Vorlagen</h5>
+
+              {isLoadingTemplates ? (
+                <div className="text-center py-3">
+                  <div className="spinner-border spinner-border-sm" role="status">
+                    <span className="visually-hidden">Lädt...</span>
+                  </div>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="alert alert-info mb-0">
+                  <i className="bi bi-info-circle me-2"></i>
+                  Du hast noch keine Vorlagen. Öffne eine Einkaufsliste und wähle im Menü
+                  "Als Vorlage speichern", um ihre Kategorien und Artikel zu sichern.
+                </div>
+              ) : (
+                <div className="list-group">
+                  {templates.map(template => (
+                    <div
+                      key={template.id}
+                      className="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                      <div className="me-2 text-truncate">
+                        <strong className="d-block text-truncate">{template.name}</strong>
+                        <small className="text-muted">
+                          {template.categories.length}{' '}
+                          {template.categories.length === 1 ? 'Kategorie' : 'Kategorien'}
+                          {' · '}
+                          {template.items.length} Artikel
+                        </small>
+                      </div>
+                      <div className="text-nowrap">
+                        <button
+                          className="btn btn-sm btn-outline-secondary me-2"
+                          onClick={() => setTemplateToRename(template)}
+                          title="Umbenennen"
+                        >
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => setTemplateToDelete(template)}
+                          title="Löschen"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="d-grid gap-2">
               <button 
                 className="btn btn-outline-primary"
@@ -332,6 +430,56 @@ const Profile = () => {
               type="button"
               className="btn btn-danger flex-fill"
               onClick={performDeleteShop}
+            >
+              <i className="bi bi-trash3 me-1"></i>
+              Löschen
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Vorlage umbenennen */}
+      <ManageTemplateModal
+        isOpen={templateToRename !== null}
+        onClose={() => setTemplateToRename(null)}
+        mode="rename"
+        template={templateToRename ?? undefined}
+        onSave={handleRenameTemplate}
+      />
+
+      {/* Delete Template Confirmation Modal */}
+      <Modal
+        isOpen={templateToDelete !== null}
+        onClose={() => setTemplateToDelete(null)}
+        size="sm"
+      >
+        <div className="modal-header border-0">
+          <h5 className="modal-title d-flex align-items-center text-danger">
+            <i className="bi bi-trash3-fill me-2"></i>
+            Vorlage löschen
+          </h5>
+        </div>
+        <div className="modal-body">
+          <p className="mb-0">
+            <strong>Vorlage "{templateToDelete?.name}" wirklich löschen?</strong>
+          </p>
+          <small className="text-muted">
+            Bereits erstellte Listen bleiben davon unberührt.
+          </small>
+        </div>
+        <div className="modal-footer border-0">
+          <div className="d-flex gap-2 w-100">
+            <button
+              type="button"
+              className="btn btn-outline-secondary flex-fill"
+              onClick={() => setTemplateToDelete(null)}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger flex-fill"
+              onClick={performDeleteTemplate}
             >
               <i className="bi bi-trash3 me-1"></i>
               Löschen
