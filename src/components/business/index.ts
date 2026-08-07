@@ -15,6 +15,12 @@ export { SaveShopModal } from './SaveShopModal';
 
 export { ManageShopModal } from './ManageShopModal';
 
+export { ManageTemplateModal } from './ManageTemplateModal';
+export type { TemplateModalResult } from './ManageTemplateModal';
+
+export { TemplateSelector } from './TemplateSelector';
+export type { TemplateSelectorProps } from './TemplateSelector';
+
 export { CreateListModal } from './CreateListModal';
 export type { CreateListModalProps, CreateListData } from './CreateListModal';
 
