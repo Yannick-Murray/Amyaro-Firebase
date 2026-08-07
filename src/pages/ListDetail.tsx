@@ -6,7 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useListsContext } from '../context/ListsContext';
 import { ListService, CategoryService, ItemService, FrequencyService } from '../services/listService';
 import type { FrequentSuggestions } from '../services/listService';
+import { TemplateService } from '../services/templateService';
 import type { List, Category, Item } from '../types/todoList';
+import type { ListTemplate } from '../types/listTemplate';
 import { getListTypeIcon } from '../utils/helpers';
 import { QuickAddInput } from '../components/business/QuickAddInput';
 import { CategorySection } from '../components/business/CategorySection';
@@ -19,6 +21,8 @@ import { MoveToCategoryModal } from '../components/business/MoveToCategoryModal'
 import { EditListModal } from '../components/business/EditListModal';
 import { CloseListConfirmModal } from '../components/business/CloseListConfirmModal';
 import { ListPriceModal } from '../components/business/ListPriceModal';
+import { ManageTemplateModal } from '../components/business/ManageTemplateModal';
+import type { TemplateModalResult } from '../components/business/ManageTemplateModal';
 import { Modal } from '../components/ui/Modal';
 import { Toast } from '../components/ui/Toast';
 import { 
@@ -67,6 +71,10 @@ const ListDetail = () => {
   
   // Price Modal state
   const [showPriceModal, setShowPriceModal] = useState(false);
+
+  // Vorlagen-Modal state
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [userTemplates, setUserTemplates] = useState<ListTemplate[]>([]);
   
   // User names cache for assigned users
   const [userNames, setUserNames] = useState<{[userId: string]: string}>({});
@@ -282,6 +290,41 @@ const ListDetail = () => {
     } finally {
       setLoadingFrequentSuggestions(false);
       setHasEvaluatedFrequentPrompt(true);
+    }
+  };
+
+  const handleOpenSaveTemplateModal = async () => {
+    setShowListDropdown(false);
+
+    if (!list) return;
+
+    if (items.length === 0 && categories.length === 0) {
+      showToast('Die Liste ist leer und kann nicht als Vorlage gespeichert werden', 'warning');
+      return;
+    }
+
+    try {
+      setUserTemplates(await TemplateService.getUserTemplates());
+    } catch (error) {
+      console.error('Fehler beim Laden der Vorlagen:', error);
+      setUserTemplates([]);
+    }
+
+    setShowSaveTemplateModal(true);
+  };
+
+  const handleSaveTemplate = async (result: TemplateModalResult) => {
+    if (!id) return;
+
+    if (result.action === 'overwrite') {
+      await TemplateService.overwriteTemplateFromList(result.templateId, id);
+      showToast('Vorlage wurde aktualisiert', 'success');
+      return;
+    }
+
+    if (result.action === 'create') {
+      await TemplateService.createTemplateFromList(id, result.name);
+      showToast('Vorlage wurde gespeichert', 'success');
     }
   };
 
@@ -1197,6 +1240,17 @@ const ListDetail = () => {
                           Vorschläge anzeigen
                         </button>
                       </li>
+                      {list.type === 'shopping' && (
+                        <li>
+                          <button
+                            className="dropdown-item"
+                            onClick={handleOpenSaveTemplateModal}
+                          >
+                            <i className="bi bi-bookmark-plus me-2"></i>
+                            Als Vorlage speichern
+                          </button>
+                        </li>
+                      )}
                       <li><hr className="dropdown-divider" /></li>
                       <li>
                         <button
@@ -1657,6 +1711,18 @@ const ListDetail = () => {
             isOpen={showPriceModal}
             onClose={() => setShowPriceModal(false)}
             onConfirm={handlePriceModalConfirm}
+          />
+        )}
+
+        {/* Als Vorlage speichern */}
+        {list && (
+          <ManageTemplateModal
+            isOpen={showSaveTemplateModal}
+            onClose={() => setShowSaveTemplateModal(false)}
+            mode="create-from-list"
+            existingTemplates={userTemplates}
+            suggestedName={list.name}
+            onSave={handleSaveTemplate}
           />
         )}
 
