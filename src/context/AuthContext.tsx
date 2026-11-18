@@ -13,6 +13,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import type { AuthContextType, User as UserType } from '../types';
 import { DisplayNameRequiredModal } from '../components/business';
+import { clearAuthRedirect } from '../utils/authRedirect';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -137,6 +138,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Benutzer abmelden
   const logout = async () => {
     try {
+      clearAuthRedirect();
       await signOut(auth);
     } catch (error: any) {
       console.error('Logout error:', error);

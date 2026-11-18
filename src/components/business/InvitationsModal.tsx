@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { InvitationCard } from './InvitationCard';
 import type { ListInvitation } from '../../types';
+import { getErrorMessage } from '../../utils/errors';
 
 interface InvitationsModalProps {
   isOpen: boolean;
@@ -28,8 +30,8 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
     setErrorMessage('');
     try {
       await onAccept(invitationId);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Fehler beim Annehmen der Einladung');
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, 'Fehler beim Annehmen der Einladung'));
     } finally {
       setProcessingId('');
     }
@@ -40,25 +42,11 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
     setErrorMessage('');
     try {
       await onDecline(invitationId);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Fehler beim Ablehnen der Einladung');
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, 'Fehler beim Ablehnen der Einladung'));
     } finally {
       setProcessingId('');
     }
-  };
-
-  const formatDateTime = (date: Date) => {
-    return {
-      date: date.toLocaleDateString('de-DE', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      }),
-      time: date.toLocaleTimeString('de-DE', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })
-    };
   };
 
   return (
@@ -111,57 +99,16 @@ export const InvitationsModal: React.FC<InvitationsModalProps> = ({
           </div>
         ) : (
           <div className="row g-3">
-            {invitations.map((invitation) => {
-              const { date, time } = formatDateTime(invitation.createdAt);
-              return (
-                <div key={invitation.id} className="col-12">
-                  <div className="card border border-primary border-opacity-25">
-                    <div className="card-body p-3">
-                      {/* Header */}
-                      <div className="d-flex align-items-start justify-content-between mb-3">
-                        <div className="flex-grow-1 min-w-0">
-                          <h6 className="card-title mb-1 text-truncate">
-                            {invitation.listName}
-                          </h6>
-                          <p className="card-text text-muted small mb-1">
-                            von <strong>{invitation.fromUserName}</strong>
-                          </p>
-                          <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                            {date} um {time}
-                          </div>
-                        </div>
-                        <i className="bi bi-share text-primary ms-2" style={{ fontSize: '1.25rem' }}></i>
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="d-grid gap-2 d-sm-flex">
-                        <Button
-                          variant="success"
-                          size="sm"
-                          onClick={() => handleAccept(invitation.id)}
-                          disabled={processingId === invitation.id}
-                          isLoading={processingId === invitation.id}
-                          className="flex-grow-1 flex-sm-grow-0"
-                        >
-                          <i className="bi bi-check-lg me-1"></i>
-                          Annehmen
-                        </Button>
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={() => handleDecline(invitation.id)}
-                          disabled={processingId === invitation.id}
-                          className="flex-grow-1 flex-sm-grow-0"
-                        >
-                          <i className="bi bi-x-lg me-1"></i>
-                          Ablehnen
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {invitations.map((invitation) => (
+              <div key={invitation.id} className="col-12">
+                <InvitationCard
+                  invitation={invitation}
+                  isProcessing={processingId === invitation.id}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
