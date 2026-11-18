@@ -35,6 +35,7 @@ export { CreateCategoryModal } from './CreateCategoryModal';
 export { ShareListModal } from './ShareListModal';
 export { InvitationsBanner } from './InvitationsBanner';
 export { InvitationsModal } from './InvitationsModal';
+export { InvitationCard } from './InvitationCard';
 export { ActivityNotificationsModal } from './ActivityNotificationsModal';
 export { SharedListBanner } from './SharedListBanner';
 export { SharedInfoModal } from './SharedInfoModal';

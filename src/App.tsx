@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ListsProvider } from './context/ListsContext';
 import Layout from './components/Layout/Layout';
 import Loading from './components/Layout/Loading';
 import AuthWrapper from './components/Auth/AuthWrapper';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
+import { peekAuthRedirect } from './utils/authRedirect';
 import './App.css';
 
 // Seiten werden lazy geladen, damit das initiale Bundle klein bleibt
@@ -17,17 +18,30 @@ const Statistics = lazy(() => import('./pages/Statistics'));
 const AuthAction = lazy(() => import('./pages/AuthAction'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const Impressum = lazy(() => import('./pages/Impressum'));
+const Invitations = lazy(() => import('./pages/Invitations'));
 
 // Auth-Route Component (für Login/Register)
 const AuthRoute = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <Loading />;
   }
 
   if (user) {
-    return <Navigate to="/" replace />;
+    // Nach Login/Registrierung zurück zum ursprünglichen Ziel (z. B. Einladung).
+    const from = (
+      location.state as {
+        from?: { pathname?: string; search?: string; hash?: string };
+      } | null
+    )?.from;
+    const stateRedirect = from?.pathname
+      ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
+      : null;
+    const target = stateRedirect ?? peekAuthRedirect() ?? '/';
+
+    return <Navigate to={target} replace />;
   }
 
   return (
@@ -62,6 +76,14 @@ const AppContent = () => {
           <ProtectedRoute>
             <Layout>
               <ListDetail />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/invitations" element={
+          <ProtectedRoute>
+            <Layout>
+              <Invitations />
             </Layout>
           </ProtectedRoute>
         } />

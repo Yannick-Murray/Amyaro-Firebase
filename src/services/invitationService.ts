@@ -106,7 +106,7 @@ export class InvitationService {
         if (!userSnapshot.empty) {
           toUserId = userSnapshot.docs[0].id;
         }
-      } catch (error) {
+      } catch {
         console.log('User not found, will create invitation anyway');
       }
 
@@ -128,7 +128,7 @@ export class InvitationService {
       };
 
       // Filter undefined values before saving to Firestore
-      const invitationData: any = {
+      const invitationData: Record<string, unknown> = {
         listId: invitation.listId,
         listName: invitation.listName,
         fromUserId: invitation.fromUserId,
@@ -188,11 +188,51 @@ export class InvitationService {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Nach Datum sortieren
 
       return invitations;
-    } catch (error: any) {
+    } catch (error) {
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? (error as { code?: unknown }).code
+          : undefined;
+
       // Nur loggen wenn es nicht ein Permission-Problem für unverifizierte Benutzer ist
-      if (error.code !== 'permission-denied' || auth.currentUser?.emailVerified) {
+      if (code !== 'permission-denied' || auth.currentUser?.emailVerified) {
         console.error('Fehler beim Laden der Einladungen:', error);
       }
+      return [];
+    }
+  }
+
+  // Ausstehende Einladungen, die der aktuelle Nutzer für eine Liste verschickt hat
+  static async getPendingInvitationsForList(
+    listId: string,
+    fromUserId: string
+  ): Promise<ListInvitation[]> {
+    try {
+      // Nach Absender filtern (passend zur Firestore-Regel), Liste clientseitig.
+      const q = query(
+        collection(db, 'listInvitations'),
+        where('fromUserId', '==', fromUserId)
+      );
+
+      const snapshot = await getDocs(q);
+      const now = new Date();
+
+      return snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate(),
+          expiresAt: doc.data().expiresAt.toDate(),
+          respondedAt: doc.data().respondedAt?.toDate(),
+        } as ListInvitation))
+        .filter(invitation =>
+          invitation.listId === listId &&
+          invitation.status === 'pending' &&
+          new Date(invitation.expiresAt) > now
+        )
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    } catch (error) {
+      console.error('Fehler beim Laden der ausstehenden Einladungen:', error);
       return [];
     }
   }
@@ -378,6 +418,10 @@ export class InvitationService {
       
       if (invitation.fromUserId !== userId) {
         throw new Error('Du kannst nur deine eigenen Einladungen stornieren.');
+      }
+
+      if (invitation.status !== 'pending') {
+        throw new Error('Nur ausstehende Einladungen können zurückgezogen werden.');
       }
 
       await deleteDoc(invitationRef);
